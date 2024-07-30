@@ -1,4 +1,7 @@
+from dotenv import load_dotenv
 import os
+
+load_dotenv()
 
 db_user = os.getenv('DB_USER', 'app_user')
 db_password = os.getenv('DB_PASSWORD', 'password')
