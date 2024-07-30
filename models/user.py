@@ -1,41 +1,37 @@
 from sqlalchemy import Column, Integer, String, Sequence
-import bcrypt
+from sqlalchemy.orm import relationship
+import argon2
+from constantes import ROLE_ADM, ROLE_COM, ROLE_GES, ROLE_SUP
 from .base import Base
 
 
 class User(Base):
     __tablename__ = 'users'
 
-    # Définition des rôles en tant que constantes
-    ROLE_COM = 'com'
-    ROLE_GES = 'ges'
-    ROLE_SUP = 'sup'
-
     user_id = Column(Integer, Sequence('user_id_seq'), primary_key=True)
     first_name = Column(String(50), nullable=False)
-    last_name = Column(String(50), nullable=False)
-    username = Column(String(100), unique=True, nullable=False)
-    role = Column(String(10), nullable=False)
-    hashed_password = Column(String(60), nullable=False)
+    last_name = Column(String(50), nullable=False, index=True)
+    username = Column(String(100), unique=True, nullable=False, index=True)
+    role = Column(String(10), nullable=False, index=True)
+    password = Column(String(60), nullable=False)
+
+    com_contracts = relationship("Contract", foreign_keys='Contract.com_contact_id', back_populates="com_contact")
+    ges_contracts = relationship("Contract", foreign_keys='Contract.ges_contact_id', back_populates="ges_contact")
 
     @classmethod
-    def generate_unique_username(cls, session, first_name, last_name):
-        base_username = f"{first_name}.{last_name}".lower()
-        username = base_username
-        index = 0
-        while session.query(cls).filter_by(username=username).first():
-            username = f"{base_username}{index}"
-            index += 1
-        return username
+    def generate_unique_username():
+        pass
 
     @staticmethod
     def get_all_roles():
-        return [User.ROLE_COM, User.ROLE_GES, User.ROLE_SUP]
+        return [ROLE_GES, ROLE_COM, ROLE_SUP, ROLE_ADM]
 
-    def set_password(self, plain_password):
+    def set_password(self, password):
         """Hache le mot de passe et le stocke."""
-        self.hashed_password = bcrypt.hashpw(plain_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        salt = argon2.using(salt_size=16).generate_salt()
+        salted_password = salt + password
+        self.hashed_password = argon2.using(rounds=10).hash(salted_password)
 
-    def check_password(self, plain_password):
+    def check_password(self, hashed_password, verification_password):
         """Vérifie que le mot de passe fourni correspond au mot de passe haché."""
-        return bcrypt.checkpw(plain_password.encode('utf-8'), self.hashed_password.encode('utf-8'))
+        return argon2.verify_password(hashed_password, verification_password)
