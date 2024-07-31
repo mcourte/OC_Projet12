@@ -1,5 +1,8 @@
 argon2==0.1.10
+argon2-cffi==23.1.0
+argon2-cffi-bindings==21.2.0
 bcrypt==4.2.0
+cffi==1.16.0
 greenlet==3.0.3
 iniconfig==2.0.0
 packaging==24.1
@@ -7,6 +10,7 @@ pluggy==1.5.0
 postgres==4.0
 psycopg2-binary==2.9.9
 psycopg2-pool==1.2
+pycparser==2.22
 pytest==8.3.2
 pytest-mock==3.14.0
 python-dotenv==1.0.1
