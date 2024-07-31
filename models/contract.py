@@ -8,7 +8,7 @@ class Contract(Base):
     __tablename__ = 'contracts'
 
     contract_id = Column(Integer, Sequence('contract_id_seq'), primary_key=True)
-    total_amount = Column(Float, nullable=False)
+    total_amount = Column(Float, nullable=False)  # Voir si Integer = & faire x100, /100
     remaining_amount = Column(Float, nullable=True)
     is_signed = Column(Boolean, nullable=False, index=True)
     com_contact_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, index=True)
