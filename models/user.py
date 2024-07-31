@@ -6,7 +6,7 @@ from .base import Base
 
 
 class User(Base):
-    """ Définition de la classe User qui sera la table dans la BD"""
+    """ Définition de la classe User qui sera la table dans la BD """
     __tablename__ = 'users'
 
     user_id = Column(Integer, Sequence('user_id_seq'), primary_key=True)
@@ -16,14 +16,25 @@ class User(Base):
     role = Column(String(10), nullable=False, index=True)
     password = Column(String(60), nullable=False)
 
-    # Relation entre les différents models
+    # Relations entre les différents modèles
     com_contracts = relationship("Contract", foreign_keys='Contract.com_contact_id', back_populates="com_contact")
     ges_contracts = relationship("Contract", foreign_keys='Contract.ges_contact_id', back_populates="ges_contact")
+    ges_events = relationship("Event", foreign_keys='Event.ges_contact_id', back_populates="ges_contact")
+    sup_events = relationship("Event", foreign_keys='Event.sup_contact_id', back_populates="sup_contact")
 
     @classmethod
-    def generate_unique_username():
-        """Vérifie que l'username n'existe pas sinon ajoute un index ( à partir de 1 ) à la suite"""
-        pass
+    def generate_unique_username(cls, session, first_name, last_name):
+        """Vérifie que l'username n'existe pas sinon ajoute un index (à partir de 1) à la suite"""
+        # Combiner la première lettre du prénom et le nom de famille sans point
+        base_username = (first_name[0] + last_name).lower()
+        username = base_username
+        counter = 1
+
+        # Vérifie l'existence de l'username
+        while session.query(cls).filter_by(username=username).first():
+            username = f"{base_username}{counter}"
+            counter += 1
+        return username
 
     @staticmethod
     def get_all_roles():

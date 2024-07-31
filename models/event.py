@@ -1,10 +1,10 @@
-from sqlalchemy import Column, Integer, Sequence, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, Sequence, DateTime, String, ForeignKey
 from sqlalchemy.orm import relationship
 from .base import Base
 
 
 class Event(Base):
-    """ Définition de la classe Event qui sera la table dans la BD"""
+    """ Définition de la classe Event qui sera la table dans la BD """
     __tablename__ = 'events'
 
     event_id = Column(Integer, Sequence('event_id_seq'), primary_key=True)
@@ -17,5 +17,7 @@ class Event(Base):
     attendees = Column(Integer, nullable=False)
     notes = Column(String(1000), nullable=False)
 
-    # Relation entre les différents models
-    events = relationship("Event", back_populates="customer")
+    # Relations entre les différents modèles
+    customer = relationship("Customer", back_populates="events")
+    ges_contact = relationship("User", foreign_keys=[ges_contact_id], back_populates="ges_events")
+    sup_contact = relationship("User", foreign_keys=[sup_contact_id], back_populates="sup_events")

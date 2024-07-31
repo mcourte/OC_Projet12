@@ -1,11 +1,11 @@
-from sqlalchemy import Column, Integer, String, Sequence, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, Sequence, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .base import Base
 
 
 class Customer(Base):
-    """ Définition de la classe Customer qui sera la table dans la BD"""
+    """ Définition de la classe Customer qui sera la table dans la BD """
     __tablename__ = 'customers'
 
     customer_id = Column(Integer, Sequence('customer_id_seq'), primary_key=True)
@@ -18,6 +18,6 @@ class Customer(Base):
     update_time = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
     com_contact_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
 
-    # Relation entre les différents models
+    # Relations entre les différents modèles
     contracts = relationship("Contract", back_populates="customer")
     events = relationship("Event", back_populates="customer")
