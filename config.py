@@ -1,6 +1,10 @@
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 from dotenv import load_dotenv
 import os
 import sys
+
 
 # Charger les variables d'environnement depuis le fichier .env
 load_dotenv()
@@ -19,3 +23,8 @@ db_host = os.getenv('DB_HOST', 'localhost')
 db_name = os.getenv('DB_NAME', 'app_db')
 
 DATABASE_URL = f'postgresql+psycopg2://{db_user}:{db_password}@{db_host}/{db_name}'
+
+
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
