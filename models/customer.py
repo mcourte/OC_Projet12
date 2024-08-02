@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, Sequence, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from .base import Base
+from config import Base
 
 
 class Customer(Base):
@@ -21,3 +21,15 @@ class Customer(Base):
     # Relations entre les différents modèles
     contracts = relationship("Contract", back_populates="customer")
     events = relationship("Event", back_populates="customer")
+
+    def __init__(self, customer_id, first_name, last_name, email, phone, company_name,
+                 creation_time, update_time, com_contact_id):
+        self.customer_id = customer_id
+        self.first_name = first_name
+        self.last_name = last_name
+        self.phone = phone
+        self.email = email
+        self.company_name = company_name
+        self.creation_time = creation_time
+        self.update_time_time = update_time
+        self.com_contact_id = com_contact_id

@@ -1,9 +1,10 @@
 from sqlalchemy import Column, Integer, String, Sequence, Enum as SQLAlchemyEnum
 from sqlalchemy.orm import relationship
 from enum import Enum
+from argon2 import PasswordHasher
 import argon2
 from constantes import ROLE_ADM, ROLE_COM, ROLE_GES, ROLE_SUP
-from .base import Base
+from config import Base
 
 
 # Définition des rôles en tant qu'énumération
@@ -66,13 +67,13 @@ class User(Base):
             counter += 1
         return email
 
-
     def set_password(self, password):
-        """Hache le mot de passe et le stocke."""
-        salt = argon2.using(salt_size=16).generate_salt()
-        salted_password = salt + password
-        self.hashed_password = argon2.using(rounds=10).hash(salted_password)
+        ph = PasswordHasher()
+        self.password = ph.hash(password)
 
-    def check_password(self, hashed_password, verification_password):
-        """Vérifie que le mot de passe fourni correspond au mot de passe haché."""
-        return argon2.verify_password(hashed_password, verification_password)
+    def check_password(self, verification_password):
+        ph = PasswordHasher()
+        try:
+            return ph.verify(self.password, verification_password)
+        except argon2.exceptions.VerifyMismatchError:
+            return False
