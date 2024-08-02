@@ -15,7 +15,6 @@ postgres==4.0
 psycopg2-binary==2.9.9
 psycopg2-pool==1.2
 pycparser==2.22
-pytest==8.3.2
 pytest-mock==3.14.0
 python-dotenv==1.0.1
 SQLAlchemy==2.0.31
