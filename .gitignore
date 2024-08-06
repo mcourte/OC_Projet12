@@ -4,3 +4,5 @@ __pycache__/
 .coverage
 /.coverage
 pytest.ini
+alembic.ini
+alembic/
