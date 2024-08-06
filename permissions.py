@@ -81,3 +81,7 @@ role_permissions = {
         Permission.SORT_EVENT,
     }
 }
+
+
+def has_permission(role, permission):
+    return permission in role_permissions.get(role, set())
