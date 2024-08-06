@@ -27,11 +27,10 @@ class User(Base):
     password = Column(String(60), nullable=False)
     email = Column(String(254), unique=True, nullable=False)
 
-    # Relations entre les différents modèles
-    com_contracts = relationship("Contract", foreign_keys='Contract.com_contact_id', back_populates="com_contact")
-    ges_contracts = relationship("Contract", foreign_keys='Contract.ges_contact_id', back_populates="ges_contact")
-    ges_events = relationship("Event", foreign_keys='Event.ges_contact_id', back_populates="ges_contact")
-    sup_events = relationship("Event", foreign_keys='Event.sup_contact_id', back_populates="sup_contact")
+    com_contracts = relationship('Contract', foreign_keys='Contract.com_contact_id', back_populates='com_contact')
+    ges_contracts = relationship('Contract', foreign_keys='Contract.ges_contact_id', back_populates='ges_contact')
+    ges_events = relationship('Event', foreign_keys='Event.ges_contact_id', back_populates='ges_contact')
+    sup_events = relationship('Event', foreign_keys='Event.sup_contact_id', back_populates='sup_contact')
 
     def __init__(self, first_name, last_name, username, role, password, email):
         self.first_name = first_name
@@ -44,13 +43,11 @@ class User(Base):
     @classmethod
     def generate_unique_username(cls, session, first_name, last_name):
         """Vérifie que l'username n'existe pas sinon ajoute un index (à partir de 1) à la suite"""
-        base_username = (first_name[0] + last_name).lower()
-        username = base_username
+        username = f"{first_name[0].lower()}{last_name.lower()}"
         counter = 1
 
-        # Vérifie l'existence de l'username
         while session.query(cls).filter_by(username=username).first():
-            username = f"{base_username}{counter}"
+            username = f"{username}{counter}"
             counter += 1
         return username
 

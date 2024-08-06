@@ -5,10 +5,11 @@ from config import Base
 
 class Event(Base):
     """ Définition de la classe Event qui sera la table dans la BD """
+
     __tablename__ = 'events'
 
-    name = notes = Column(String(50), nullable=False)
     event_id = Column(Integer, Sequence('event_id_seq'), primary_key=True)
+    name = Column(String(50), nullable=False)
     customer_id = Column(Integer, ForeignKey("customers.customer_id"), nullable=False, index=True)
     ges_contact_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, index=True)
     sup_contact_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, index=True)
@@ -18,10 +19,9 @@ class Event(Base):
     attendees = Column(Integer, nullable=False)
     notes = Column(String(1000), nullable=False)
 
-    # Relations entre les différents modèles
-    customer = relationship("Customer", back_populates="events")
-    ges_contact = relationship("User", foreign_keys=[ges_contact_id], back_populates="ges_events")
-    sup_contact = relationship("User", foreign_keys=[sup_contact_id], back_populates="sup_events")
+    customer = relationship('Customer', back_populates='events')
+    ges_contact = relationship('User', foreign_keys=[ges_contact_id], back_populates='ges_events')
+    sup_contact = relationship('User', foreign_keys=[sup_contact_id], back_populates='sup_events')
 
     def __init__(self, name, event_id, customer_id, ges_contact_id, sup_contact_id,
                  start_date, end_date, location, attendees, notes):
