@@ -1,8 +1,8 @@
 # Définition des rôles en tant que constantes
-ROLE_COM = 'com'
-ROLE_GES = 'ges'
-ROLE_SUP = 'sup'
-ROLE_ADM = 'adm'
+ROLE_COM = 'COM'
+ROLE_GES = 'GES'
+ROLE_SUP = 'SUP'
+ROLE_ADM = 'ADM'
 
 # Définition des permissions en tant que constantes
 READ_ACCESS = "read_access"
@@ -19,9 +19,9 @@ CREATE_CONTRACT = "create_contract"
 EDIT_CONTRACT = "edit_contract"
 DELETE_CONTRACT = "delete_contract"
 SORT_USER = "sort_user"
-SORT_CUSTOMER = "sort_user"
-SORT_CONTRACT = "sort_user"
-SORT_EVENT = "sort_user"
+SORT_CUSTOMER = "sort_customer"
+SORT_CONTRACT = "sort_contract"
+SORT_EVENT = "sort_event"
 
 
 # Constantes pour le tri des élements avec la méthode générique
@@ -35,6 +35,7 @@ def get_sortable_attributes():
     return {
         User: {
             Role.ADM: ['user_id', 'first_name', 'last_name', 'username'],
+
         },
         Contract: {
             Role.ADM: ['contract_id', 'ges_contact_id', 'com_contact_id', 'remaining_amount', 'is_signed'],
