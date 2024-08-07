@@ -1,5 +1,4 @@
 from models.user import User, Role
-from permissions import has_permission, Permission
 from .generic_controllers import get_readonly_items
 from constantes import get_sortable_attributes
 
@@ -17,9 +16,8 @@ class UserController:
         return self.session.query(User).all()
 
     def get_all_users(self):
-        if not has_permission(self.user_role, Permission.READ_ACCESS):
-            print("Permission refusée : Vous n'avez pas les droits pour afficher les utilisateurs.")
-            return []
+        if self.user_role not in [Role.GES, Role.ADM, Role.COM, Role.SUP]:
+            raise PermissionError("Vous n'avez pas la permission de voir la liste des Users.")
         return get_readonly_items(self.session, User)
 
     def create_user(self, first_name, last_name, role, password):
@@ -52,6 +50,8 @@ class UserController:
 
     def _create_user_in_db(self, first_name, last_name, role, password):
         """Méthode privée pour créer l'utilisateur dans la base de données"""
+        if self.user_role not in [Role.GES, Role.ADM]:
+            raise PermissionError("Vous n'avez pas la permission de créer un User.")
         try:
             username = User.generate_unique_username(self.session, first_name, last_name)
             email = User.generate_unique_email(self.session, username)
@@ -76,8 +76,8 @@ class UserController:
 
     def edit_user(self, user_id, new_first_name, new_last_name, new_role):
         """Permet de modifier un utilisateur dans la BD"""
-        if not has_permission(self.user_role, Permission.EDIT_USER):
-            raise PermissionError("Vous n'avez pas les droits pour modifier cet utilisateur.")
+        if self.user_role not in [Role.GES, Role.ADM]:
+            raise PermissionError("Vous n'avez pas la permission de modifier un User.")
 
         user_to_edit = self.session.query(User).filter_by(user_id=user_id).first()
 
@@ -93,8 +93,8 @@ class UserController:
 
     def delete_user(self, user_id):
         """Permet de supprimer un utilisateur de la BD"""
-        if not has_permission(self.user_role, Permission.DELETE_USER):
-            raise PermissionError("Vous n'avez pas les droits pour supprimer un utilisateur.")
+        if self.user_role not in [Role.ADM]:
+            raise PermissionError("Vous n'avez pas la permission de supprimer un User.")
 
         user_to_delete = self.session.query(User).filter_by(user_id=user_id).first()
 
@@ -107,8 +107,8 @@ class UserController:
             raise ValueError("User not found")
 
     def sort_users(self, attribute):
-        if not has_permission(self.user_role, Permission.SORT_USER):
-            raise PermissionError("Vous n'avez pas les droits pour trier les utilisateurs.")
+        if self.user_role not in [Role.GES, Role.ADM]:
+            raise PermissionError("Vous n'avez pas la permission de trier la liste des User.")
 
         sortable_attributes = get_sortable_attributes().get(User, {}).get(self.user_role, [])
         if attribute not in sortable_attributes:
