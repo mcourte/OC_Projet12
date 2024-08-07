@@ -5,9 +5,6 @@ from sqlalchemy import asc, desc
 
 
 def sort_items(session, model, sort_by, order, role, sortable_attributes):
-    """Générique méthode pour trier les éléments d'une classe modèle donnée."""
-
-    """Trie les éléments du modèle donné en fonction des attributs spécifiés et du rôle de l'utilisateur."""
     if model not in sortable_attributes or role not in sortable_attributes[model]:
         print(f"Tri non autorisé pour le modèle {model.__name__} et le rôle {role.name}.")
         return []
