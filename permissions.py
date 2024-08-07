@@ -65,6 +65,7 @@ role_permissions = {
         Permission.DELETE_CONTRACT,
         Permission.EDIT_EVENT,
         Permission.SORT_EVENT,
+        Permission.SORT_USER,
     },
     Role.COM: {
         Permission.READ_ACCESS,
