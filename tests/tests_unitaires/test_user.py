@@ -42,7 +42,7 @@ def user_controller_session(session):
         first_name="Admin",
         last_name="User",
         username="auser",
-        role="ADM",
+        role=Role.ADM.value,
         password="password123",
         email="auser@epic.com"
     )
@@ -244,7 +244,7 @@ def test_edit_user_details(user_controller_session):
     new_role = Role.GES.value
 
     user_controller_session.edit_user(created_user.user_id, new_first_name, new_last_name, new_role)
-    assert has_permission(user_controller_session.user_role, Permission.SORT_USER), "L'utilisateur n'a pas la permission de trier les utilisateurs."
+    assert user_controller_session.user_role in [Role.ADM, Role.GES], "L'utilisateur n'a pas la permission de modifier les utilisateurs."
     updated_user = user_controller_session.get_users()[-1]
     assert updated_user.first_name == new_first_name
     assert updated_user.last_name == new_last_name
@@ -255,7 +255,7 @@ def test_sort_users_by_role(user_controller_session):
     user_controller_session.create_user("Alice", "Admin", Role.ADM.value, "password123")
     user_controller_session.create_user("Bob", "Manager", Role.GES.value, "password123")
     user_controller_session.create_user("Charlie", "User", Role.COM.value, "password123")
-    assert has_permission(user_controller_session.user_role, Permission.SORT_USER), "L'utilisateur n'a pas la permission de trier les utilisateurs."
+    assert user_controller_session.user_role in [Role.ADM, Role.GES], "L'utilisateur n'a pas la permission de trier les utilisateurs."
 
     sorted_users = user_controller_session.sort_users('role')
     roles = [user.role for user in sorted_users]
@@ -265,7 +265,7 @@ def test_sort_users_by_role(user_controller_session):
 def test_get_all_users(user_controller_session):
     user_controller_session.create_user("Romain", "Martin", Role.COM.value, "password123")
     user_controller_session.create_user("John", "Doe", Role.GES.value, "password123")
-    assert has_permission(user_controller_session.user_role, Permission.SORT_USER), "L'utilisateur n'a pas la permission de trier les utilisateurs."
+    assert user_controller_session.user_role in [Role.ADM, Role.GES, Role.COM, Role.SUP], "L'utilisateur n'a pas la permission de trier les utilisateurs."
 
     users = user_controller_session.get_all_users()
     assert len(users) > 0, "Aucun user n'a été trouvé"
@@ -287,7 +287,7 @@ def test_delete_user_permission(user_controller_session):
 
     # Retrouver l'ID de l'utilisateur crée
     created_user = user_controller_session.get_users()[-1]
-    assert has_permission(user_controller_session.user_role, Permission.SORT_USER), "L'utilisateur n'a pas la permission de trier les utilisateurs."
+    assert user_controller_session.user_role == Role.ADM, "L'utilisateur n'a pas la permission de supprimer un User."
     # Essayer de supprimer l'utilisateur
     try:
         user_controller_session.delete_user(created_user.user_id)
