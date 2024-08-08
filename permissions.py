@@ -1,6 +1,5 @@
 from enum import Enum
 from constantes import (
-    ROLE_COM, ROLE_GES, ROLE_SUP, ROLE_ADM,
     READ_ACCESS, CREATE_EVENT, EDIT_EVENT, DELETE_EVENT,
     CREATE_USER, EDIT_USER, DELETE_USER,
     CREATE_CUSTOMER, EDIT_CUSTOMER, DELETE_CUSTOMER,
@@ -10,10 +9,10 @@ from constantes import (
 
 
 class Role(Enum):
-    COM = ROLE_COM
-    GES = ROLE_GES
-    SUP = ROLE_SUP
-    ADM = ROLE_ADM
+    ADM = 'ADM'
+    GES = 'GES'
+    COM = 'COM'
+    SUP = 'SUP'
 
 
 class Permission(Enum):
@@ -85,4 +84,10 @@ role_permissions = {
 
 
 def has_permission(role, permission):
-    return permission in role_permissions.get(role, set())
+    print(f"Checking permission for role: {role}, permission: {permission}")
+    if not isinstance(role, Role):
+        raise ValueError("Role should be an instance of Role Enum")
+    if not isinstance(permission, Permission):
+        raise ValueError("Permission should be an instance of Permission Enum")
+    permissions = role_permissions.get(role, set())
+    return permission in permissions
