@@ -1,7 +1,8 @@
 from models.contract import Contract
-from models.user import User, Role
+from models.user import User
 from controllers.generic_controllers import get_readonly_items
 from constantes import get_sortable_attributes
+from permissions import Permission, has_permission
 
 
 class ContractController:
@@ -14,7 +15,7 @@ class ContractController:
         self.user_role = user.role
 
     def sort_contracts(self, attribute):
-        if self.user_role not in [Role.GES, Role.ADM]:
+        if not has_permission(self.user_role, Permission.SORT_CONTRACT):
             raise PermissionError("Vous n'avez pas la permission de trier la liste des User.")
 
         sortable_attributes = get_sortable_attributes().get(User, {}).get(self.user_role, [])
@@ -26,57 +27,52 @@ class ContractController:
         return sorted_users
 
     def get_all_contracts(self):
-        if self.user_role not in [Role.GES, Role.ADM, Role.COM, Role.SUP]:
+        if not has_permission(self.user_role, Permission.READ_ACCESS):
             raise PermissionError("Vous n'avez pas la permission pour afficher les contracts.")
         return get_readonly_items(self.session, Contract)
 
-    def create_contract(self, total_amount, remaining_amount, is_signed):
+    def create_contract(self, total_amount, remaining_amount, is_signed,
+                        com_contact_id=None, ges_contact_id=None, customer_id=None):
         """Permet de créer un Contract dans la BD"""
-        # Vérification des champs requis
-        if not total_amount:
-            raise ValueError("Le prénom ne peut pas être nul.")
+        if total_amount is None:
+            raise ValueError("Le montant total ne peut pas être nul.")
+        if remaining_amount is None:
+            raise ValueError("Le montant restant ne peut pas être nul.")
+        if is_signed is None:
+            raise ValueError("Le statut de signature ne peut être nul.")
 
-        if not remaining_amount:
-            raise ValueError("Le nom ne peut pas être nul.")
-
-        if not is_signed:
-            raise ValueError("Le statut de signature ne peut être vide.")
-
-        if self.user_role not in [Role.GES, Role.ADM]:
+        if not has_permission(self.user_role, Permission.CREATE_CONTRACT):
             raise PermissionError("Vous n'avez pas la permission de créer un Contract.")
 
-        # Si toutes les conditions sont remplies, vous pouvez procéder à la création
         print("Validation passed for creating contract")
 
-        # Ici, vous pouvez appeler une méthode ou un service pour procéder à la création effective
-        self._create_event_in_db(total_amount, remaining_amount, is_signed)
+        self._create_contract_in_db(total_amount, remaining_amount, is_signed,
+                                    com_contact_id, ges_contact_id, customer_id)
 
-    def _create_event_in_db(self, total_amount, remaining_amount, is_signed):
-        """Méthode privée pour créer l'utilisateur dans la base de données"""
-        if self.user_role not in [Role.GES, Role.ADM]:
-            raise PermissionError("Vous n'avez pas la permission de créer un User.")
+    def _create_contract_in_db(self, total_amount, remaining_amount, is_signed,
+                               com_contact_id=None, ges_contact_id=None, customer_id=None):
+        """Méthode privée pour créer le contrat dans la base de données"""
+        if not has_permission(self.user_role, Permission.CREATE_CONTRACT):
+            raise PermissionError("Vous n'avez pas la permission de créer un Contract.")
         try:
-            # Créer un nouveau client
             new_contract = Contract(
                 total_amount=total_amount,
                 remaining_amount=remaining_amount,
                 is_signed=is_signed,
+                com_contact_id=com_contact_id,
+                ges_contact_id=ges_contact_id,
+                customer_id=customer_id
             )
-
-            # Ajouter le client à la session
             self.session.add(new_contract)
             self.session.commit()
-
-            print(f"Nouveau Contrat crée : {new_contract.contract_id} ")
-
+            print(f"Nouveau Contrat créé : {new_contract.contract_id}")
         except Exception as e:
-            # Autres exceptions possibles
             self.session.rollback()
             print(f"Erreur lors de la création du Contrat : {e}")
 
     def edit_contract(self, contract_id, **kwargs):
         """Permet de modifier un Evènement dans la BD"""
-        if self.user_role not in [Role.GES, Role.ADM, Role.COM]:
+        if not has_permission(self.user_role, Permission.EDIT_CONTRACT):
             raise PermissionError("Vous n'avez pas la permission de modifier un Contrat.")
 
         contract_to_edit = self.session.query(Contract).filter_by(contract_id=contract_id).first()
@@ -96,7 +92,7 @@ class ContractController:
 
     def delete_contract(self, contract_id):
         """Permet de supprimer un contrat de la BD"""
-        if self.user_role not in [Role.ADM]:
+        if not has_permission(self.user_role, Permission.DELETE_CONTRACT):
             raise PermissionError("Vous n'avez pas la permission de supprimer un User.")
 
         contract_to_delete = self.session.query(Contract).filter_by(contract_id=contract_id).first()

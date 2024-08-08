@@ -1,7 +1,6 @@
 from models.customer import Customer
-from generic_controllers import sort_items, get_readonly_items
-from permissions import has_permission, Permission
-from generic_controllers import sort_items, get_readonly_items
+from generic_controllers import get_readonly_items
+from permissions import Permission, has_permission, Role
 from models.user import User
 from constantes import get_sortable_attributes
 
@@ -14,12 +13,17 @@ class CustomerController:
             raise ValueError("Utilisateur non trouvé")
         self.user_role = user.role
 
-    def sort_customers(self, sort_by: str, order: str = 'asc'):
+    def sort_customers(self, attribute):
         if not has_permission(self.user_role, Permission.SORT_CUSTOMER):
-            print("Permission refusée : Vous n'avez pas les droits pour trier les clients.")
+            raise PermissionError("Vous n'avez pas les droits pour trier les utilisateurs.")
+
+        sortable_attributes = get_sortable_attributes().get(Customer, {}).get(self.user_role, [])
+        if attribute not in sortable_attributes:
+            print(f"Attribut de tri '{attribute}' non valide pour le rôle {self.user_role}.")
             return []
-        sortable_attributes = get_sortable_attributes()
-        return sort_items(self.session, Customer, sort_by, order, self.user_role, sortable_attributes)
+
+        sorted_users = sorted(self.get_users(), key=lambda x: getattr(x, attribute))
+        return sorted_users
 
     def get_all_customers(self):
         if not has_permission(self.user_role, Permission.READ_ACCESS):
@@ -28,13 +32,19 @@ class CustomerController:
         return get_readonly_items(self.session, Customer)
 
     def create_customer(self, first_name, last_name, phone, email, company_name):
-        """Permet de créer un Customer dans la BD"""
-        if not has_permission(self.user_role, Permission.CREATE_CUSTOMER):
-            print("Permission refusée : Vous n'avez pas les droits pour créer un client.")
-            return
-        try:
+        """Permet de créer un Event dans la BD"""
+        if not first_name or not last_name or not phone or not email or not company_name:
+            raise ValueError("Tous les champs doivent être remplis.")
 
-            # Créer un nouveau client
+        if not has_permission(self.user_role, Permission.CREATE_CUSTOMER):
+            raise PermissionError("Vous n'avez pas la permission de créer un Client.")
+
+        print(f"Validation passed for creating Customer: {first_name} from {company_name}")
+        self._create_customer_in_db(self, first_name, last_name, phone, email, company_name)
+
+    def _create_customer_in_db(self, first_name, last_name, phone, email, company_name):
+        """Méthode privée pour créer l'évènement dans la base de données"""
+        try:
             new_customer = Customer(
                 first_name=first_name,
                 last_name=last_name,
@@ -42,73 +52,50 @@ class CustomerController:
                 email=email,
                 company_name=company_name
             )
-
-            # Ajouter le client à la session
             self.session.add(new_customer)
             self.session.commit()
-
-            print(f"Nouveau client créé : {new_customer.first_name}, {new_customer.last_name}")
-
+            print(f"Nouveau Client crée : {new_customer.name}")
         except Exception as e:
-            # Autres exceptions possibles
             self.session.rollback()
             print(f"Erreur lors de la création du client : {e}")
 
-    def edit_customer(self, customer_id, first_name=None, last_name=None, phone=None, email=None, company_name=None):
-        """Permet de modifier un utilisateur dans la BD"""
-
+    def edit_customer(self, customer_id, **kwargs):
         if not has_permission(self.user_role, Permission.EDIT_CUSTOMER):
-            print("Permission refusée : Vous n'avez pas les droits pour modifier un client.")
+            print("Permission refusée : Vous n'avez pas les droits pour modifier ce client.")
             return
 
-        customer = self.session.query(Customer).filter_by(customer_id=customer_id).first()
-
-        if customer is None:
-            print(f"Aucun client trouvé avec l'ID {customer_id}")
+        event = self.session.query(Customer).filter_by(customer_id=customer_id).first()
+        if event is None:
+            print(f"Aucun évènement trouvé avec l'ID {customer_id}")
             return
 
         try:
-            if first_name:
-                customer.first_name = first_name
-            if last_name:
-                customer.last_name = last_name
-            if phone:
-                customer.phone = phone
-            if email:
-                customer.email = email
-            if company_name:
-                customer.company_name = company_name
-
-            # Ajouter les modifications à la session
+            for key, value in kwargs.items():
+                if self.user_role == Role.SUP and key == 'assignee_id':
+                    print("Permission refusée : Vous ne pouvez pas modifier l'attribution.")
+                    continue
+                setattr(event, key, value)
             self.session.commit()
             print(f"Client avec l'ID {customer_id} mis à jour avec succès.")
-
         except Exception as e:
-            # Autres exceptions possibles
             self.session.rollback()
             print(f"Erreur lors de la mise à jour du client : {e}")
 
     def delete_customer(self, customer_id):
         """Permet de supprimer un client de la BD"""
-
         if not has_permission(self.user_role, Permission.DELETE_CUSTOMER):
-            print("Permission refusée : Vous n'avez pas les droits pour modifier un client.")
+            print("Permission refusée : Vous n'avez pas les droits pour supprimer ce client.")
             return
 
-        customer = self.session.query(Customer).filter_by(customer_id=customer_id).first()
-
-        if customer is None:
-            print(f"Aucun client trouvé avec l'ID {customer_id}")
-            return
+        customer_to_delete = self.session.query(User).filter_by(customer_id=customer_id).first()
 
         try:
-            self.session.delete(customer)
+            self.session.delete(customer_to_delete)
             self.session.commit()
             print(f"Client avec l'ID {customer_id} supprimé avec succès.")
-
         except Exception as e:
             self.session.rollback()
-            print(f"Erreur lors de la suppression du client : {e}")
+            print(f"Erreur lors de la suppression de l'évènement : {e}")
 
     def get_customer(self):
         return self.session.query(Customer).all()

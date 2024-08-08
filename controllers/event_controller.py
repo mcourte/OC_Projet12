@@ -3,6 +3,7 @@ from permissions import has_permission, Permission, Role
 from models.user import User
 from controllers.generic_controllers import get_readonly_items
 from constantes import get_sortable_attributes
+from datetime import datetime
 
 
 class EventController:
@@ -34,59 +35,30 @@ class EventController:
 
     def create_event(self, name, start_date, end_date, location, attendees, notes):
         """Permet de créer un Event dans la BD"""
-        """Vérifie les conditions avant de créer un utilisateur dans la BD"""
+        if not name or not start_date or not end_date or not location or not attendees or not notes:
+            raise ValueError("Tous les champs doivent être remplis.")
 
-        # Vérification des champs requis
-        if not name:
-            raise ValueError("Le nom ne peut pas être nul.")
-
-        if not start_date:
-            raise ValueError("La date de début ne peut pas être nulle.")
-
-        if not end_date:
-            raise ValueError("La date de fin ne peut pas être nulle.")
-
-        if not location:
-            raise ValueError("Le lieu ne peut pas être nul.")
-
-        if not attendees:
-            raise ValueError("Le nombre de participants ne peut pas être nul.")
-
-        if not notes:
-            raise ValueError("La description ne peut pas être nulle.")
-
-        if self.user_role not in [Role.COM, Role.ADM]:
+        if not has_permission(self.user_role, Permission.CREATE_EVENT):
             raise PermissionError("Vous n'avez pas la permission de créer un Event.")
 
-        # Si toutes les conditions sont remplies, vous pouvez procéder à la création
         print(f"Validation passed for creating event: {name}")
         self._create_event_in_db(name, start_date, end_date, location, attendees, notes)
 
     def _create_event_in_db(self, name, start_date, end_date, location, attendees, notes):
-        """Méthode privée pour créer l'utilisateur dans la base de données"""
-        if not has_permission(self.user_role, Permission.CREATE_EVENT):
-            print("Permission refusée : Vous n'avez pas les droits pour supprimer cet évènement.")
-            return
+        """Méthode privée pour créer l'évènement dans la base de données"""
         try:
-
-            # Créer un nouvel évènement
             new_event = Event(
                 name=name,
-                start_date=start_date,
-                end_date=end_date,
+                start_date=datetime.strptime(start_date, '%Y-%m-%d'),
+                end_date=datetime.strptime(end_date, '%Y-%m-%d'),
                 location=location,
                 attendees=attendees,
                 notes=notes
             )
-
-            # Ajouter l'évènement à la session
             self.session.add(new_event)
             self.session.commit()
-
-            print(f"Nouvel Evenement crée : {new_event.name} ")
-
+            print(f"Nouvel Evenement créé : {new_event.name}")
         except Exception as e:
-            # Autres exceptions possibles
             self.session.rollback()
             print(f"Erreur lors de la création de l'évènement : {e}")
 
