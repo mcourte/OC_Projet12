@@ -19,12 +19,10 @@ class Contract(Base):
     ges_contact = relationship('User', foreign_keys=[ges_contact_id], back_populates='ges_contracts')
     customer = relationship('Customer', back_populates='contracts')
 
-    def __init__(self, contract_id, total_amount, remaining_amount, is_signed,
-                 com_contact_id, ges_contact_id, customer_id):
-        self.contract_id = contract_id
-        self.customer_id = customer_id
-        self.ges_contact_id = ges_contact_id
-        self.com_contact_id = com_contact_id
+    def __init__(self, total_amount, remaining_amount, is_signed, com_contact_id, ges_contact_id, customer_id):
         self.total_amount = total_amount
         self.remaining_amount = remaining_amount
         self.is_signed = is_signed
+        self.com_contact_id = com_contact_id
+        self.ges_contact_id = ges_contact_id
+        self.customer_id = customer_id
