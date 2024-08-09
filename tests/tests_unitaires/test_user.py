@@ -1,54 +1,32 @@
-import os
-import sys
 import pytest
-from sqlalchemy import create_engine, inspect
-from sqlalchemy.orm import sessionmaker
-
-# Déterminez le chemin absolu du répertoire parent
-current_dir = os.path.dirname(__file__)
-parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
-
-# Ajoutez le répertoire parent au PYTHONPATH
-sys.path.insert(0, parent_dir)
-
-# Importez les fonctions depuis server.py
-from models.user import User
-from config import Base
-from permissions import Role, role_permissions, Permission, has_permission
-from controllers.user_controller import UserController
-
-
-@pytest.fixture(scope='function')
-def init_db():
-    engine = create_engine('sqlite:///:memory:')
-    Base.metadata.create_all(engine)
-    yield engine
-    Base.metadata.drop_all(engine)
-
-
-@pytest.fixture(scope='function')
-def session(init_db):
-    Session = sessionmaker(bind=init_db)
-    session = Session()
-    session.query(User).delete()  # Réinitialiser les utilisateurs
-    yield session
-    session.close()
+from sqlalchemy import inspect
+from models.entities import EpicUser
+from controllers.user_controller import EpicUserBase
 
 
 @pytest.fixture
 def user_controller_session(session):
-    # Créer un utilisateur pour initialiser le UserController
-    admin_user = User(
+    admin_user = EpicUser(
         first_name="Admin",
         last_name="User",
         username="auser",
-        role=Role.ADM.value,
+        role="ADM",
         password="password123",
         email="auser@epic.com"
     )
     session.add(admin_user)
     session.commit()
-    return UserController(session, admin_user.user_id)
+    return EpicUserBase(session)
+
+
+@pytest.fixture
+def unique_username():
+    return lambda first_name, last_name: f"{first_name[0]}{last_name}"
+
+
+@pytest.fixture
+def unique_email():
+    return lambda first_name, last_name: f"{first_name[0]}{last_name}@epic.com"
 
 
 def test_database_structure(session):
@@ -60,241 +38,315 @@ def test_database_structure(session):
         print(f"Colonnes dans {table_name} :", [column['name'] for column in columns])
 
 
-def test_create_user_valid_role(user_controller_session):
-    first_name = "Romain"
-    last_name = "Martin"
-    role = Role.COM.value
-    password = "password123"
-    User.generate_unique_username = lambda session, first, last: f"{first}.{last}".lower()
-    try:
-        user_controller_session.create_user(first_name, last_name, role, password)
-        assert True
-    except Exception as e:
-        pytest.fail(f"Exception inattendue : {e}")
+def test_create_user(session, unique_username, unique_email):
+    epic_user_base = EpicUserBase(session)
+
+    username = unique_username("David", "Courté")
+    email = unique_email("David", "Courté")
+
+    data = {
+        "first_name": "David",
+        "last_name": "Courté",
+        "username": username,
+        "password": "password",
+        "role": "Commercial",
+        "email": email
+    }
+    epic_user_base.create_user(data)
+
+    user = session.query(EpicUser).filter_by(username=username).first()
+    assert user is not None
+    assert user.first_name == "David"
+    assert user.last_name == "Courté"
+    assert user.check_password("password") is True
+    assert user.role == 'COM'
 
 
-def test_create_user_invalid_role(user_controller_session):
-    first_name = "Romain"
-    last_name = "Martin"
-    role = "invalid_role"
-    password = "password123"
-    with pytest.raises(ValueError, match=f"Invalid role: {role}"):
-        user_controller_session.create_user(first_name, last_name, role, password)
+def test_create_user_duplicate_username(session, unique_username, unique_email):
+    epic_user_base = EpicUserBase(session)
+
+    username = unique_username("Pauline", "Legrand")
+    email = unique_email("Pauline", "Legrand")
+
+    data = {
+        "first_name": "Pauline",
+        "last_name": "Legrand",
+        "username": username,
+        "password": "password",
+        "role": "Admin",
+        "email": email
+    }
+    epic_user_base.create_user(data)
+
+    with pytest.raises(ValueError):
+        epic_user_base.create_user(data)  # Essayer de créer un utilisateur avec le même nom d'utilisateur
+
+    users = session.query(EpicUser).filter_by(username=username).all()
+    assert len(users) == 1
 
 
-def test_generate_username(user_controller_session):
-    first_name = "Romain"
-    last_name = "Martin"
-    role = Role.COM.value
-    password = "password123"
-    User.generate_unique_username = lambda session, first, last: f"{first[0]}{last}".lower()
-    try:
-        user_controller_session.create_user(first_name, last_name, role, password)
-        assert True
-    except Exception as e:
-        pytest.fail(f"Exception inattendue : {e}")
+def test_add_user_commercial(session, unique_username, unique_email):
+    epic_user_base = EpicUserBase(session)
+    username = unique_username("John", "Doe")
+    email = unique_email("John", "Doe")
+
+    data = {
+        "first_name": "John",
+        "last_name": "Doe",
+        "username": username,
+        "password": "correctpassword",
+        "role": "Commercial",
+        "email": email
+    }
+    epic_user_base.create_user(data)
+
+    user = epic_user_base.get_user(username)
+    assert user is not None
+    assert user.username == username
+    assert user.role == "COM"
 
 
-def test_create_user_attributes(user_controller_session):
-    first_name = "Romain"
-    last_name = "Martin"
-    role = Role.ADM.value
-    password = "password123"
+def test_add_user_support(session, unique_username, unique_email):
+    epic_user_base = EpicUserBase(session)
+    username = unique_username("Pauline", "Bellec")
+    email = unique_email("Pauline", "Bellec")
 
-    user_controller_session.create_user(first_name, last_name, role, password)
-    created_users = user_controller_session.get_users()
+    data = {
+        "first_name": "Pauline",
+        "last_name": "Bellec",
+        "username": username,
+        "password": "correctpassword",
+        "role": "Support",
+        "email": email
+    }
+    epic_user_base.create_user(data)
 
-    assert len(created_users) > 0, "Aucun utilisateur créé"
-    created_user = created_users[1]
-    assert created_user.first_name == first_name
-    assert created_user.last_name == last_name
-
-
-def test_generate_unique_username(session):
-    first_name = "Romain"
-    last_name = "Martin"
-    username = User.generate_unique_username(session, first_name, last_name)
-    assert username == f"{first_name[0].lower()}{last_name.lower()}"
-
-
-def test_generate_unique_email(session):
-    username = "rmartin"
-    email = User.generate_unique_email(session, username)
-    assert email == f"{username}@epic.com"
+    user = epic_user_base.get_user(username)
+    assert user is not None
+    assert user.username == username
+    assert user.role == "SUP"
 
 
-def test_set_password(session):
-    user_password = User(
-        first_name="Romain",
-        last_name="Martin",
-        username="romain.martin",
-        role=Role.COM.value,
-        password="initial_password",
-        email="rmartin@epic.com"
-    )
-    user_password.set_password("password123")
-    assert user_password.check_password("password123") is True
+def test_add_user_invalid_role(session, unique_username, unique_email):
+    epic_user_base = EpicUserBase(session)
+    username = unique_username("Romain", "Martin")
+    email = unique_email("Romain", "Martin")
+
+    data = {
+        "first_name": "Romain",
+        "last_name": "Martin",
+        "username": username,
+        "password": "password",
+        "role": "InvalidRole",
+        "email": email
+    }
+    with pytest.raises(ValueError):
+        epic_user_base.create_user(data)
 
 
-def test_create_user_role_assignment(user_controller_session):
-    first_name = "Romain"
-    last_name = "Martin"
-    role = 'GES'
-    password = "password123"
+def test_get_user(session, unique_username, unique_email):
+    epic_user_base = EpicUserBase(session)
 
-    user_controller_session.create_user(first_name, last_name, role, password)
-    created_users = user_controller_session.get_users()
+    users = epic_user_base.get_employees()
+    init_len = len(users)
 
-    assert len(created_users) > 0, "Aucun utilisateur créé"
-    created_user = created_users[-1]
+    username1 = unique_username("Mickaël", "Courté")
+    email1 = unique_email("Mickaël", "Courté")
+    username2 = unique_username("Maël", "Inizan")
+    email2 = unique_email("Maël", "Inizan")
 
-    print(f"Created user role: {created_user.role}, expected role: {Role.GES}")
-    assert created_user.role.value == role, f"Expected role value '{role}', but got '{created_user.role.value}'"
+    data1 = {
+        "first_name": "Mickaël",
+        "last_name": "Courté",
+        "username": username1,
+        "password": "password",
+        "role": "Commercial",
+        "email": email1
+    }
+    data2 = {
+        "first_name": "Maël",
+        "last_name": "Inizan",
+        "username": username2,
+        "password": "password",
+        "role": "Support",
+        "email": email2
+    }
+    epic_user_base.create_user(data1)
+    epic_user_base.create_user(data2)
 
-
-def test_create_user_permission(user_controller_session):
-    first_name = "Romain"
-    last_name = "Martin"
-    role = Role.COM.value
-    password = "password123"
-
-    # Test avec un utilisateur ayant le rôle GES
-    user_controller_session.role = Role.GES
-    try:
-        user_controller_session.create_user(first_name, last_name, role, password)
-    except PermissionError:
-        pytest.fail("PermissionError inattendue: l'utilisateur avec le rôle GES devrait pouvoir créer un utilisateur.")
-
-
-def test_edit_user_permission(user_controller_session):
-    first_name = "Romain"
-    last_name = "Martin"
-    role = Role.COM.value
-    password = "password123"
-    User.generate_unique_username = lambda session, first, last: f"{first[0]}{last}".lower()
-    user_controller_session.create_user(first_name, last_name, role, password)
-    first_name = "Joann"
-    last_name = "Martine"
-    role = Role.SUP.value
-    password = "password1234"
-
-    # Test avec un utilisateur ayant le rôle GES
-    user_controller_session.role = Role.GES
-    assert has_permission(user_controller_session.user_role, Permission.SORT_USER)
-    try:
-        user_controller_session.edit_user(first_name, last_name, role, password)
-    except PermissionError:
-        pytest.fail("PermissionError inattendue: l'utilisateur avec le rôle GES" +
-                    "devrait pouvoir modifier un utilisateur.")
-    # Test avec un utilisateur ayant le rôle SUP
-    user_controller_session.role = Role.SUP
-    try:
-        user_controller_session.edit_user(first_name, last_name, role, password)
-    except PermissionError:
-        pytest.fail("Vous n'avez pas la permission pour modifier un utilisateur.")
+    users = epic_user_base.get_employees()
+    assert len(users) == init_len + 2
+    assert users[-2].username in [username1, username2]
+    assert users[-1].username in [username1, username2]
 
 
-def test_create_user_with_empty_first_name(user_controller_session):
-    with pytest.raises(ValueError, match="Le prénom ne peut pas être nul."):
-        user_controller_session.create_user("", "Martin", Role.COM.value, "password123")
+def test_get_roles():
+    epic_user_base = EpicUserBase(None)
+    roles = epic_user_base.get_roles()
+
+    assert len(roles) == 4
+    assert "Commercial" in roles
+    assert "Gestion" in roles
+    assert "Support" in roles
+    assert "Admin" in roles
 
 
-def test_create_user_with_empty_last_name(user_controller_session):
-    with pytest.raises(ValueError, match="Le nom ne peut pas être nul."):
-        user_controller_session.create_user("Romain", "", Role.COM.value, "password123")
+def test_get_rolecode():
+    epic_user_base = EpicUserBase(None)
+
+    assert epic_user_base.get_rolecode("Commercial") == "COM"
+    assert epic_user_base.get_rolecode("Gestion") == "GES"
+    assert epic_user_base.get_rolecode("Support") == "SUP"
+    assert epic_user_base.get_rolecode("Admin") == "ADM"
+    assert epic_user_base.get_rolecode("NonExistentRole") is None
 
 
-def test_create_user_with_empty_role(user_controller_session):
-    with pytest.raises(ValueError, match="Le rôle ne peut pas être nul."):
-        user_controller_session.create_user("Romain", "Martin", "", "password123")
+def test_update_user_role(session, unique_username, unique_email):
+    epic_user_base = EpicUserBase(session)
+    username = unique_username("Test", "User")
+    email = unique_email("Test", "User")
+
+    data = {
+        "first_name": "Test",
+        "last_name": "User",
+        "username": username,
+        "password": "password",
+        "role": "Commercial",
+        "email": email
+    }
+    epic_user_base.create_user(data)
+
+    epic_user_base.update_user(name=username, role="Support")
+
+    user = session.query(EpicUser).filter_by(username=username).first()
+    assert user is not None
+    assert user.role == 'SUP'
 
 
-def test_create_user_with_empty_password(user_controller_session):
-    with pytest.raises(ValueError, match="Le mot de passe ne peut pas être nul."):
-        user_controller_session.create_user("Romain", "Martin", Role.COM.value, "")
+def test_update_user_password(session, unique_username, unique_email):
+    epic_user_base = EpicUserBase(session)
+    username = unique_username("No", "Idea")
+    email = unique_email("No", "Idea")
+
+    data = {
+        "first_name": "No",
+        "last_name": "Idea",
+        "username": username,
+        "password": "password",
+        "role": "Commercial",
+        "email": email
+    }
+    epic_user_base.create_user(data)
+
+    epic_user_base.update_user(name=username, password="newpassword")
+
+    user = session.query(EpicUser).filter_by(username=username).first()
+    assert user is not None
+    assert user.check_password("newpassword") is True
 
 
-def test_role_based_permission_check(user_controller_session):
-    # Créer un utilisateur par un utilisateur qui n'a pas la permission de DELETE_USER
-    first_name = "Romain"
-    last_name = "Martin"
-    role = Role.COM.value
-    password = "password123"
-    User.generate_unique_username = lambda session, first, last: f"{first[0]}{last}".lower()
-    user_controller_session.create_user(first_name, last_name, role, password)
+def test_getall_commercials(session, unique_username, unique_email):
 
-    created_user = user_controller_session.get_users()[-1]
+    epic_user_base = EpicUserBase(session)
 
-    # Changer la permission vers un rôle qui n'a pas l'autorisation de DELETE_USER
-    user_controller_session.user_role = Role.COM
-    with pytest.raises(PermissionError):
-        user_controller_session.delete_user(created_user.user_id)
+    commercials = epic_user_base.get_commercials()
+    init_len = len(commercials)
 
+    username1 = unique_username("Pouf", "User")
+    email1 = unique_email("Pouf", "User")
+    username2 = unique_username("Lolilol", "User")
+    email2 = unique_email("Lolilol", "User")
 
-def test_edit_user_details(user_controller_session):
-    first_name = "Romain"
-    last_name = "Martin"
-    role = Role.COM.value
-    password = "password123"
-    user_controller_session.create_user(first_name, last_name, role, password)
+    data1 = {
+        "first_name": "Pouf",
+        "last_name": "User",
+        "username": username1,
+        "password": "password",
+        "role": "Commercial",
+        "email": email1
+    }
+    data2 = {
+        "first_name": "Lolilol",
+        "last_name": "User",
+        "username": username2,
+        "password": "password",
+        "role": "Commercial",
+        "email": email2
+    }
+    epic_user_base.create_user(data1)
+    epic_user_base.create_user(data2)
 
-    created_user = user_controller_session.get_users()[-1]
-    new_first_name = "Updated"
-    new_last_name = "Name"
-    new_role = Role.GES.value
-
-    user_controller_session.edit_user(created_user.user_id, new_first_name, new_last_name, new_role)
-    assert user_controller_session.user_role in [Role.ADM, Role.GES], "L'utilisateur n'a pas la permission de modifier les utilisateurs."
-    updated_user = user_controller_session.get_users()[-1]
-    assert updated_user.first_name == new_first_name
-    assert updated_user.last_name == new_last_name
-    assert updated_user.role == new_role
-
-
-def test_sort_users_by_role(user_controller_session):
-    user_controller_session.create_user("Alice", "Admin", Role.ADM.value, "password123")
-    user_controller_session.create_user("Bob", "Manager", Role.GES.value, "password123")
-    user_controller_session.create_user("Charlie", "User", Role.COM.value, "password123")
-    assert user_controller_session.user_role in [Role.ADM, Role.GES], "L'utilisateur n'a pas la permission de trier les utilisateurs."
-
-    sorted_users = user_controller_session.sort_users('role')
-    roles = [user.role for user in sorted_users]
-    assert roles == sorted(roles), "User sont triés par rôle"
+    commercials = epic_user_base.get_commercials()
+    assert len(commercials) == init_len + 2
+    assert all(user.role == 'COM' for user in commercials)
 
 
-def test_get_all_users(user_controller_session):
-    user_controller_session.create_user("Romain", "Martin", Role.COM.value, "password123")
-    user_controller_session.create_user("John", "Doe", Role.GES.value, "password123")
-    assert user_controller_session.user_role in [Role.ADM, Role.GES, Role.COM, Role.SUP], "L'utilisateur n'a pas la permission de trier les utilisateurs."
+def test_getall_supports(session, unique_username, unique_email):
+    epic_user_base = EpicUserBase(session)
 
-    users = user_controller_session.get_all_users()
-    assert len(users) > 0, "Aucun user n'a été trouvé"
-    assert all(isinstance(user, User) for user in users), "Les objets renvoyés ne sont pas des User"
+    supports = epic_user_base.get_supports()
+    init_len = len(supports)
+
+    username1 = unique_username("Brad", "Pitt")
+    email1 = unique_email("Brad", "Pitt")
+    username2 = unique_username("Morgan", "Freeman")
+    email2 = unique_email("Morgan", "Freeman")
+
+    data1 = {
+        "first_name": "Brad",
+        "last_name": "Pitt",
+        "username": username1,
+        "password": "password",
+        "role": "Support",
+        "email": email1
+    }
+    data2 = {
+        "first_name": "Morgan",
+        "last_name": "Freeman",
+        "username": username2,
+        "password": "password",
+        "role": "Support",
+        "email": email2
+    }
+    epic_user_base.create_user(data1)
+    epic_user_base.create_user(data2)
+
+    supports = epic_user_base.get_supports()
+    assert len(supports) == init_len + 2
+    assert all(user.role == 'SUP' for user in supports)
 
 
-def test_role_permission_mapping():
-    assert Role.ADM in role_permissions, "Admin role is missing in role permissions"
-    assert Permission.CREATE_USER in role_permissions[Role.ADM], "Admin role does not have create user permission"
+def test_getall_gestion(session, unique_username, unique_email):
+    epic_user_base = EpicUserBase(session)
 
+    gestions = epic_user_base.get_gestions()
+    init_len = len(gestions)
 
-def test_delete_user_permission(user_controller_session):
-    # Create a user with GES role
-    first_name = "Romain"
-    last_name = "Martin"
-    role = Role.GES.value
-    password = "password123"
-    user_controller_session.create_user(first_name, last_name, role, password)
+    username1 = unique_username("Angelina", "Jolie")
+    email1 = unique_email("Angelina", "Jolie")
+    username2 = unique_username("Nathalie", "Portman")
+    email2 = unique_email("Nathalie", "Portman")
 
-    # Retrouver l'ID de l'utilisateur crée
-    created_user = user_controller_session.get_users()[-1]
-    assert user_controller_session.user_role == Role.ADM, "L'utilisateur n'a pas la permission de supprimer un User."
-    # Essayer de supprimer l'utilisateur
-    try:
-        user_controller_session.delete_user(created_user.user_id)
-    except PermissionError:
-        pytest.fail("PermissionError inattendue: l'utilisateur avec le rôle ADM" +
-                    "devrait pouvoir supprimer un utilisateur.")
+    data1 = {
+        "first_name": "Angelina",
+        "last_name": "Jolie",
+        "username": username1,
+        "password": "password",
+        "role": "Gestion",
+        "email": email1
+    }
+    data2 = {
+        "first_name": "Nathalie",
+        "last_name": "Portman",
+        "username": username2,
+        "password": "password",
+        "role": "Gestion",
+        "email": email2
+    }
+    epic_user_base.create_user(data1)
+    epic_user_base.create_user(data2)
 
-    # Verifie que l'user a été supprimé
-    remaining_users = user_controller_session.get_users()
-    assert created_user not in remaining_users, "L'utilisateur n'a pas été supprimé"
+    gestions = epic_user_base.get_gestions()
+
+    assert len(gestions) == init_len + 2
+    assert all(user.role == 'GES' for user in gestions)

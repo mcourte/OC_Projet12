@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 original_database_url = os.getenv('DATABASE_URL')
 
 # Définir l'URL pour les tests
-os.environ['DATABASE_URL'] = 'postgresql+psycopg2://admin:S3cretadmin!@localhost:5432/app_db'
+os.environ['DATABASE_URL'] = 'postgresql+psycopg2://postgres:password@localhost:5432/app_db'
 
 
 @pytest.fixture(scope='module', autouse=True)
