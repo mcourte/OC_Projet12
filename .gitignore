@@ -7,3 +7,4 @@ pytest.ini
 alembic.ini
 alembic/
 /sqlite3
+.vscode/
