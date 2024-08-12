@@ -12,21 +12,26 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 sys.path.insert(0, parent_dir)
 
 from config import SessionLocal
-from controllers.user_controller import UserController
+from controllers.user_controller import EpicUserBase
 
 
 @click.command()
 @click.argument('first_name')
 @click.argument('last_name')
-@click.argument('username')
 @click.argument('role')
 @click.argument('password')
-@click.argument('email')
-def add_user(first_name, last_name, username, role, password, email):
+def add_user(first_name, last_name, role, password):
     session: Session = SessionLocal()
-    user_controller = UserController(session)
+    user_controller = EpicUserBase(session)
     try:
-        user = user_controller.create_user(first_name, last_name, username, role, password, email)
+        # Construire le dictionnaire avec les données de l'utilisateur
+        user_data = {
+            'first_name': first_name,
+            'last_name': last_name,
+            'role': role,
+            'password': password,
+        }
+        user = user_controller.create_user(user_data)  # Passer le dictionnaire ici
         click.echo(f"Utilisateur {user.username} ajouté avec succès")
     except ValueError as e:
         click.echo(str(e))
@@ -37,9 +42,10 @@ def add_user(first_name, last_name, username, role, password, email):
 @click.command()
 def list_users():
     session: Session = SessionLocal()
-    user_controller = UserController(session)
+    user_controller = EpicUserBase(session)
     users = user_controller.get_all_users()
-    print(users)
+    for user in users:
+        click.echo(f"{user.first_name} {user.last_name} ({user.username}) - {user.email}")
     session.close()
 
 
