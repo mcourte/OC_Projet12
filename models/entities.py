@@ -1,15 +1,25 @@
+import os
+import sys
 import random
 from sqlalchemy import (
     ForeignKey,
     Column, Integer, String, TIMESTAMP, Sequence, Float
 )
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship, configure_mappers
 from sqlalchemy_utils import ChoiceType
+from sqlalchemy.sql import func
 from sqlalchemy.exc import NoResultFound
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from datetime import datetime
+
+# Déterminez le chemin absolu du répertoire parent
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
+
+# Ajoutez le répertoire parent au PYTHONPATH
+sys.path.insert(0, parent_dir)
+
 from config import Base
 
 
@@ -30,7 +40,7 @@ class EpicUser(Base):
     first_name = Column(String(50), nullable=False)
     last_name = Column(String(50), nullable=False, index=True)
     username = Column(String(100), unique=True, nullable=False, index=True)
-    password = Column(String(60), nullable=False)
+    password = Column(String(250), nullable=False)
     email = Column(String(254), unique=True, nullable=False)
 
     __mapper_args__ = {
@@ -211,7 +221,7 @@ class Event(Base):
     customer_id = Column(Integer, ForeignKey('customers.customer_id'))
     support_id = Column(Integer, ForeignKey('epic_users.epicuser_id'))
 
-    customer = relationship('Customer', back_populates='events')
+    customer = relationship('Customer', back_populates='events')  # à quoi ça sert, qui fait quoi
     support = relationship('Support', back_populates='events')
     contract = relationship('Contract', back_populates='events')
 
@@ -266,3 +276,6 @@ class Contract(Base):
             query = query.join(EpicUser, EpicUser.epicuser_id == Customer.commercial_id).filter(
                 EpicUser.username == commercial)
         return query.order_by(cls.contract_id).all()
+
+
+configure_mappers()
