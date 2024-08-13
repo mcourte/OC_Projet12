@@ -1,53 +1,63 @@
 import pytest
-from sqlalchemy import inspect
-from models.entities import EpicUser, Customer, Event, Commercial, Support
-from controllers.user_controller import EpicUserBase
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from models.entities import Base
+from controllers.event_controller import EventBase
 from datetime import datetime
 
 
-@pytest.fixture
-def user_controller_session(session):
-    admin_user = EpicUser(
-        first_name="Admin",
-        last_name="User",
-        username="auser",
-        role="ADM",
-        password="password123",
-        email="auser@epic.com"
-    )
-    session.add(admin_user)
-    session.commit()
-    return EpicUserBase(session)
-
-
-def test_database_structure(session):
-    inspector = inspect(session.bind)
-    tables = inspector.get_table_names()
-    print("Tables dans la base de données :", tables)
-    for table_name in tables:
-        columns = inspector.get_columns(table_name)
-        print(f"Colonnes dans {table_name} :", [column['name'] for column in columns])
+@pytest.fixture(scope='module')
+def session():
+    engine = create_engine('sqlite:///:memory:')
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    yield session
+    session.close()
+    Base.metadata.drop_all(engine)
 
 
 def test_create_event(session):
-    com_user = Commercial(first_name='John', last_name='Doe', username='jdoe', password='password',
-                          email='jdoe@epic.com', role='COM')
-    sup_user = Support(first_name='Romain', last_name='Martin', username='rmartin', password='password',
-                       email='rmartin@epic.com', role='SUP')
-    customer = Customer(first_name='Jane', last_name='Doe', email='jane.doe@example.com',
-                        phone='1234567890', company_name='TestCorp', creation_time=datetime.utcnow(),
-                        update_time=datetime.utcnow(), commercial=com_user)
+    event_controller = EventBase(session)
+    create_data = {
+        'title': 'Company Meeting',
+        'date_started': datetime(2023, 1, 1, 10, 0, 0),
+        'date_ended': datetime(2023, 1, 1, 12, 0, 0),
+        'description': 'Annual meeting',
+        'location': 'Conference Room',
+        'attendees': 10,
+        'report': 'Summary Report',
+        'customer_id': None,
+        'support_id': None,
+        'contract_id': None
+    }
+    event = event_controller.create_event(create_data)
+    assert event.title == 'Company Meeting'
 
-    session.add(com_user)
-    session.add(sup_user)
-    session.add(customer)
-    session.commit()
 
-    event = Event(title='Test Event', date_started=datetime.utcnow(),
-                  date_ended=datetime.utcnow(), customer=customer, support=sup_user)
-    session.add(event)
-    session.commit()
+def test_get_event(session):
+    event_controller = EventBase(session)
+    event = event_controller.get_event(1)
 
-    events = session.query(Event).all()
-    assert len(events) > 0
-    assert events[0].title == 'Test Event'
+    assert event is not None
+    assert event.title == 'Company Meeting'
+
+
+def test_update_event(session):
+    event_controller = EventBase(session)
+    update_data = {
+        'title': 'Updated Meeting',
+        'date_started': datetime(2023, 1, 1, 10, 0, 0),
+        'date_ended': datetime(2023, 1, 1, 12, 0, 0),
+    }
+    event_controller.update_event(1, update_data)
+    updated_event = event_controller.get_event(1)
+    assert updated_event.title == 'Updated Meeting'
+
+
+def test_delete_event(session):
+    event_controller = EventBase(session)
+    event_controller.delete_event(1)
+    event = event_controller.get_event(1)
+
+    assert event is None
