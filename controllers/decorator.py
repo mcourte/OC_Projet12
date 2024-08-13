@@ -22,7 +22,7 @@ def is_commercial(f):
         if role_code == 'COM':
             return f(*args, **kwargs)
         else:
-            return "vous n'avez pas les autorisation"
+            return "Vous n'avez pas les autorisations nécessaire pour effectuer cette action"
     return decorator
 
 
@@ -32,7 +32,7 @@ def is_support(f):
         if role_code == 'SUP':
             return f(*args, **kwargs)
         else:
-            return "vous n'avez pas les autorisation"
+            return "Vous n'avez pas les autorisations nécessaire pour effectuer cette action"
     return decorator
 
 
@@ -42,7 +42,7 @@ def is_gestion(f):
         if role_code == 'GES':
             return f(*args, **kwargs)
         else:
-            return "vous n'avez pas les autorisation"
+            return "Vous n'avez pas les autorisations nécessaire pour effectuer cette action"
     return decorator
 
 
@@ -52,5 +52,5 @@ def is_admin(f):
         if role_code == 'ADM':
             return f(*args, **kwargs)
         else:
-            return "vous n'avez pas les autorisation"
+            return "Vous n'avez pas les autorisations nécessaire pour effectuer cette action"
     return decorator

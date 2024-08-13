@@ -49,7 +49,7 @@ class EventBase:
         """Permet de mettre à jour un évènement"""
         event = self.session.query(Event).filter_by(event_id=event_id).first()
         if not event:
-            raise ValueError("Event not found")
+            raise ValueError("Evenèment non trouvé.")
 
         for key, value in data.items():
             setattr(event, key, value)
