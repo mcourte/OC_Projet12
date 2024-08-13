@@ -1,7 +1,9 @@
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
-from config import Base
+import jwt
+from datetime import datetime, timedelta
+from config import SECRET_KEY, Base
 
 
 @pytest.fixture(scope='session')
@@ -23,3 +25,16 @@ def session(engine):
     session.remove()
     transaction.rollback()
     connection.close()
+
+
+@pytest.fixture(scope='function')
+def valid_token():
+    """Fixture pour un token JWT valide."""
+    payload = {
+        'exp': datetime.utcnow() + timedelta(hours=1),
+        'iat': datetime.utcnow(),
+        'sub': 'test_user',
+        'role': 'ADM'
+    }
+    token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+    return token
