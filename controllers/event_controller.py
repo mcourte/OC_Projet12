@@ -6,6 +6,9 @@ class EventBase:
         self.session = session
 
     def create_event(self, data):
+        """Permet de créer un Evènement
+        Informations à fournir : Titre, description, Location, Nombre de participants,
+        Date de début, Date de fin, l'ID du contrat, l'ID du Client, et l'ID de l'utilisateur Support"""
         event = Event(
             title=data['title'],
             description=data.get('description'),
@@ -23,12 +26,15 @@ class EventBase:
         return event
 
     def get_event(self, event_id):
+        """Permet de retrouver un évènement via son ID"""
         return self.session.query(Event).filter_by(event_id=event_id).first()
 
     def get_all_events(self):
+        """Permet de lister la liste de tous les évènements"""
         return self.session.query(Event).all()
 
     def update_event(self, event_id, data):
+        """Permet de mettre à jour un évènement"""
         event = self.session.query(Event).filter_by(event_id=event_id).first()
         if not event:
             raise ValueError("Event not found")
@@ -36,12 +42,4 @@ class EventBase:
         for key, value in data.items():
             setattr(event, key, value)
 
-        self.session.commit()
-
-    def delete_event(self, event_id):
-        event = self.get_event(event_id)
-        if not event:
-            raise ValueError("Event not found")
-
-        self.session.delete(event)
         self.session.commit()

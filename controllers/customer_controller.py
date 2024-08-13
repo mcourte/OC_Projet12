@@ -7,6 +7,7 @@ class CustomerBase:
         self.session = session
 
     def create_customer(self, customer_data):
+        """Permet de créer un Client"""
         customer = Customer(
             first_name=customer_data['first_name'],
             last_name=customer_data['last_name'],
@@ -22,12 +23,15 @@ class CustomerBase:
         return customer
 
     def get_customer(self, customer_id):
+        """Permet de retrouver un client via son ID"""
         return self.session.query(Customer).filter_by(customer_id=customer_id).first()
 
     def get_all_customers(self):
+        """Permet de retourner la liste de tous les CLients"""
         return self.session.query(Customer).all()
 
     def update_customer(self, customer_id, data):
+        """Permet de mettre à jour le profil d'un Client via son ID"""
         customer = self.session.query(Customer).filter_by(customer_id=customer_id).first()
         if not customer:
             raise ValueError("Aucun client n'a été trouvé.")
@@ -37,13 +41,6 @@ class CustomerBase:
 
         self.session.commit()
 
-    def delete_customer(self, customer_id):
-        customer = self.get_customer(customer_id)
-        if not customer:
-            raise ValueError("Aucun client n'a été trouvé.")
-
-        self.session.delete(customer)
-        self.session.commit()
-
     def find_without_contract(self):
+        """Permet de lister tous les clients qui n'ont pas de contract associé"""
         return self.session.query(Customer).outerjoin(Customer.contracts).filter(Contract.customer_id.is_(None)).all()
