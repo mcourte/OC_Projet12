@@ -1,10 +1,14 @@
 from models.entities import Event
+from .decorator import is_authenticated, is_admin, is_commercial, is_gestion
 
 
 class EventBase:
     def __init__(self, session):
         self.session = session
 
+    @is_authenticated
+    @is_admin
+    @is_commercial
     def create_event(self, data):
         """Permet de créer un Evènement
         Informations à fournir : Titre, description, Location, Nombre de participants,
@@ -25,14 +29,22 @@ class EventBase:
         self.session.commit()
         return event
 
+    @is_authenticated
+    @is_admin
+    @is_commercial
     def get_event(self, event_id):
         """Permet de retrouver un évènement via son ID"""
         return self.session.query(Event).filter_by(event_id=event_id).first()
 
+    @is_authenticated
     def get_all_events(self):
         """Permet de lister la liste de tous les évènements"""
         return self.session.query(Event).all()
 
+    @is_authenticated
+    @is_admin
+    @is_commercial
+    @is_gestion
     def update_event(self, event_id, data):
         """Permet de mettre à jour un évènement"""
         event = self.session.query(Event).filter_by(event_id=event_id).first()

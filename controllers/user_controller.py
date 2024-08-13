@@ -1,10 +1,14 @@
 from models.entities import EpicUser
+from .decorator import is_authenticated, is_admin, is_gestion
 
 
 class EpicUserBase:
     def __init__(self, session):
         self.session = session
 
+    @is_authenticated
+    @is_admin
+    @is_gestion
     def create_user(self, data):
         """Permet de créer un Utilisateur
         Informations à fournir : Nom, Prénom, Mot de passe"""
@@ -35,14 +39,21 @@ class EpicUserBase:
         self.session.commit()
         return user
 
+    @is_authenticated
+    @is_admin
+    @is_gestion
     def get_user(self, username):
         """Permet de retrouver un Utilisateur via son username"""
         return self.session.query(EpicUser).filter_by(username=username).first()
 
+    @is_authenticated
     def get_all_users(self):
         """Permet de retourner la liste de tous les utilisateurs"""
         return self.session.query(EpicUser).all()
 
+    @is_authenticated
+    @is_admin
+    @is_gestion
     def update_user(self, name, password=None, role=None):
         """Permet de mettre à jour un utilisateur"""
         user = self.session.query(EpicUser).filter_by(username=name).first()
@@ -67,14 +78,23 @@ class EpicUserBase:
         }
         return role_map.get(role_name)
 
+    @is_authenticated
+    @is_admin
+    @is_gestion
     def get_commercials(self):
         """Permet de lister tous les utilisateurs avec le rôle de Commercial"""
         return self.session.query(EpicUser).filter_by(role='COM').all()
 
+    @is_authenticated
+    @is_admin
+    @is_gestion
     def get_supports(self):
         """Permet de lister tous les utilisateurs avec le rôle de Support"""
         return self.session.query(EpicUser).filter_by(role='SUP').all()
 
+    @is_authenticated
+    @is_admin
+    @is_gestion
     def get_gestions(self):
         """Permet de lister tous les utilisateurs avec le rôle de Gestion"""
         return self.session.query(EpicUser).filter_by(role='GES').all()

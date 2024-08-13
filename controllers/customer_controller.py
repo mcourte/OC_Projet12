@@ -1,11 +1,15 @@
 from models.entities import Customer, Contract
 from datetime import datetime
+from .decorator import is_authenticated, is_admin, is_commercial
 
 
 class CustomerBase:
     def __init__(self, session):
         self.session = session
 
+    @is_authenticated
+    @is_admin
+    @is_commercial
     def create_customer(self, customer_data):
         """Permet de créer un Client"""
         customer = Customer(
@@ -22,14 +26,21 @@ class CustomerBase:
         self.session.commit()
         return customer
 
+    @is_authenticated
+    @is_admin
+    @is_commercial
     def get_customer(self, customer_id):
         """Permet de retrouver un client via son ID"""
         return self.session.query(Customer).filter_by(customer_id=customer_id).first()
 
+    @is_authenticated
     def get_all_customers(self):
         """Permet de retourner la liste de tous les CLients"""
         return self.session.query(Customer).all()
 
+    @is_authenticated
+    @is_admin
+    @is_commercial
     def update_customer(self, customer_id, data):
         """Permet de mettre à jour le profil d'un Client via son ID"""
         customer = self.session.query(Customer).filter_by(customer_id=customer_id).first()
@@ -41,6 +52,9 @@ class CustomerBase:
 
         self.session.commit()
 
+    @is_authenticated
+    @is_admin
+    @is_commercial
     def find_without_contract(self):
         """Permet de lister tous les clients qui n'ont pas de contract associé"""
         return self.session.query(Customer).outerjoin(Customer.contracts).filter(Contract.customer_id.is_(None)).all()
