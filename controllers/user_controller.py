@@ -19,7 +19,7 @@ class EpicUserBase:
             data['email'] = EpicUser.generate_unique_email(self.session, data['username'])
 
         if self.session.query(EpicUser).filter_by(username=data['username']).first():
-            raise ValueError("Username already exists")
+            raise ValueError("L'username existe déjà")
 
         user = EpicUser(
             first_name=data['first_name'],
@@ -42,7 +42,7 @@ class EpicUserBase:
     def update_user(self, name, password=None, role=None):
         user = self.session.query(EpicUser).filter_by(username=name).first()
         if not user:
-            raise ValueError("User not found")
+            raise ValueError("Utilisateur non trouvé")
         if password:
             user.set_password(password)
         if role:
