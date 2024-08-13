@@ -32,6 +32,10 @@ class EpicUser(Base):
         ('SUP', 'Support'),
         ('ADM', 'Admin')
     )
+    USER_STATES = (
+        ('A', 'Actif'),
+        ('I', 'Inactif')
+    )
 
     role = Column(
         ChoiceType(EPIC_ROLES, impl=String(length=1)),
@@ -42,13 +46,14 @@ class EpicUser(Base):
     username = Column(String(100), unique=True, nullable=False, index=True)
     password = Column(String(250), nullable=False)
     email = Column(String(254), unique=True, nullable=False)
+    state = Column(ChoiceType(USER_STATES, impl=String(length=1)), default='A')
 
     __mapper_args__ = {
         'polymorphic_on': role,
         'polymorphic_identity': 'USR'
     }
 
-    # Define relationships
+    # Relation entre les classes
     customers = relationship('Customer', back_populates='commercial')
     events = relationship('Event', back_populates='support', primaryjoin="EpicUser.epicuser_id==Event.support_id")
 
@@ -174,6 +179,10 @@ class Gestion(EpicUser):
 class Customer(Base):
     __tablename__ = 'customers'
 
+    CUSTOMER_STATES = (
+        ('A', 'Actif'),
+        ('I', 'Inactif')
+    )
     customer_id = Column(Integer, primary_key=True)
     first_name = Column(String(50), nullable=False)
     last_name = Column(String(50), nullable=False, index=True)
@@ -183,6 +192,7 @@ class Customer(Base):
     creation_time = Column(TIMESTAMP, nullable=False, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now(), nullable=False)
     commercial_id = Column(Integer, ForeignKey('epic_users.epicuser_id'))
+    state = Column(ChoiceType(CUSTOMER_STATES, impl=String(length=1)), default='A')
 
     commercial = relationship('EpicUser', back_populates='customers')
     events = relationship('Event', back_populates='customer')
@@ -241,6 +251,10 @@ class Contract(Base):
         ('C', 'Créé'),
         ('S', 'Signé'),
     )
+    PAIEMENT_STATES = (
+        ('S', 'Soldé'),
+        ('N', 'Non_Soldé'),
+    )
 
     contract_id = Column(Integer, Sequence('contract_id_seq'), primary_key=True)
     description = Column(String(500), nullable=False)
@@ -248,6 +262,7 @@ class Contract(Base):
     remaining_amount = Column(Float, nullable=True)
     state = Column(ChoiceType(CONTRACT_STATES, impl=String(length=1)), default='C')
     customer_id = Column(Integer, ForeignKey('customers.customer_id'), nullable=False, index=True)
+    paiement_state = Column(ChoiceType(CONTRACT_STATES, impl=String(length=1)), default='N')
 
     customer = relationship('Customer', back_populates='contracts')
     events = relationship('Event', back_populates='contract')
