@@ -147,7 +147,7 @@ def test_add_user_invalid_role(session, unique_username, unique_email):
 def test_get_user(session, unique_username, unique_email):
     epic_user_base = EpicUserBase(session)
 
-    users = epic_user_base.get_employees()
+    users = epic_user_base.get_all_users()
     init_len = len(users)
 
     username1 = unique_username("Mickaël", "Courté")
@@ -174,7 +174,7 @@ def test_get_user(session, unique_username, unique_email):
     epic_user_base.create_user(data1)
     epic_user_base.create_user(data2)
 
-    users = epic_user_base.get_employees()
+    users = epic_user_base.get_all_users()
     assert len(users) == init_len + 2
     assert users[-2].username in [username1, username2]
     assert users[-1].username in [username1, username2]
