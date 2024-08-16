@@ -25,6 +25,7 @@ db_name = os.getenv('DB_NAME', 'app_db')
 DATABASE_URL = f'postgresql+psycopg2://{db_user}:{db_password}@{db_host}/{db_name}'
 
 SECRET_KEY = os.getenv('SECRET_KEY')
+TOKEN_DELTA = os.getenv('TOKEN_DELTA')
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
