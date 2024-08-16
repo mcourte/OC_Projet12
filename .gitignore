@@ -8,3 +8,4 @@ alembic.ini
 alembic/
 /sqlite3
 .vscode/
+.cli_env
