@@ -1,18 +1,24 @@
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker, scoped_session, declarative_base
 import jwt
 from datetime import datetime, timedelta
-from config import SECRET_KEY, Base
+import os
+
+
+SECRET_KEY = os.getenv('SECRET_KEY')
+TOKEN_DELTA = os.getenv('TOKEN_DELTA')
+
+
+Base = declarative_base()
 
 
 @pytest.fixture(scope='session')
 def engine():
     engine = create_engine('sqlite:///:memory:')
-    Base.metadata.drop_all(engine)  # Supprimer toutes les tables existantes
-    Base.metadata.create_all(engine)  # Recréer toutes les tables
+    Base.metadata.create_all(engine)
     yield engine
-    Base.metadata.drop_all(engine)  # Nettoyer après les tests
+    Base.metadata.drop_all(engine)
 
 
 @pytest.fixture(scope='function')

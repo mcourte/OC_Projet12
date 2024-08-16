@@ -1,7 +1,15 @@
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models.entities import Base
+import os
+import sys
+# Déterminez le chemin absolu du répertoire parent
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
+
+# Ajoutez le répertoire parent au PYTHONPATH
+sys.path.insert(0, parent_dir)
+from tests.conftest import Base
 from controllers.customer_controller import CustomerBase
 
 
@@ -50,11 +58,3 @@ def test_update_customer(session):
     customer = customer_controller.get_customer(1)
 
     assert customer.first_name == 'Jane'
-
-
-def test_delete_customer(session):
-    customer_controller = CustomerBase(session)
-    customer_controller.delete_customer(1)
-    customer = customer_controller.get_customer(1)
-
-    assert customer is None

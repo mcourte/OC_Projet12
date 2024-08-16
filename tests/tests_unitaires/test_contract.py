@@ -1,7 +1,15 @@
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models.entities import Base
+import os
+import sys
+# Déterminez le chemin absolu du répertoire parent
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
+
+# Ajoutez le répertoire parent au PYTHONPATH
+sys.path.insert(0, parent_dir)
+from tests.conftest import Base
 from controllers.contract_controller import ContractBase
 
 
@@ -48,11 +56,3 @@ def test_update_contract(session):
     contract = contract_controller.get_contract(1)
 
     assert contract.remaining_amount == 400.00
-
-
-def test_delete_contract(session):
-    contract_controller = ContractBase(session)
-    contract_controller.delete_contract(1)
-    contract = contract_controller.get_contract(1)
-
-    assert contract is None

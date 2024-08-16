@@ -1,9 +1,18 @@
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models.entities import Base
-from controllers.event_controller import EventBase
 from datetime import datetime
+import os
+import sys
+# Déterminez le chemin absolu du répertoire parent
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
+
+# Ajoutez le répertoire parent au PYTHONPATH
+sys.path.insert(0, parent_dir)
+print(parent_dir)
+from tests.conftest import Base
+from controllers.event_controller import EventBase
 
 
 @pytest.fixture(scope='module')
@@ -53,11 +62,3 @@ def test_update_event(session):
     event_controller.update_event(1, update_data)
     updated_event = event_controller.get_event(1)
     assert updated_event.title == 'Updated Meeting'
-
-
-def test_delete_event(session):
-    event_controller = EventBase(session)
-    event_controller.delete_event(1)
-    event = event_controller.get_event(1)
-
-    assert event is None

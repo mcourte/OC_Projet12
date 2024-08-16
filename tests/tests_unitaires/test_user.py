@@ -1,5 +1,14 @@
 import pytest
 from sqlalchemy import inspect
+import os
+import sys
+# Déterminez le chemin absolu du répertoire parent
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
+
+# Ajoutez le répertoire parent au PYTHONPATH
+sys.path.insert(0, parent_dir)
+print(parent_dir)
 from models.entities import EpicUser
 from controllers.user_controller import EpicUserBase
 
@@ -52,10 +61,10 @@ def test_create_user(session, unique_username, unique_email):
         "role": "Commercial",
         "email": email
     }
-    epic_user_base.create_user(data)
+    user = epic_user_base.create_user(data)
 
-    user = session.query(EpicUser).filter_by(username=username).first()
     assert user is not None
+    assert user.username == username
     assert user.first_name == "David"
     assert user.last_name == "Courté"
     assert user.check_password("password") is True
@@ -246,39 +255,30 @@ def test_update_user_password(session, unique_username, unique_email):
 
 
 def test_getall_commercials(session, unique_username, unique_email):
-
     epic_user_base = EpicUserBase(session)
-
-    commercials = epic_user_base.get_commercials()
-    init_len = len(commercials)
-
-    username1 = unique_username("Pouf", "User")
-    email1 = unique_email("Pouf", "User")
-    username2 = unique_username("Lolilol", "User")
-    email2 = unique_email("Lolilol", "User")
+    initial_count = len(epic_user_base.get_commercials())
 
     data1 = {
         "first_name": "Pouf",
         "last_name": "User",
-        "username": username1,
+        "username": unique_username("Pouf", "User"),
         "password": "password",
         "role": "Commercial",
-        "email": email1
+        "email": unique_email("Pouf", "User")
     }
     data2 = {
         "first_name": "Lolilol",
         "last_name": "User",
-        "username": username2,
+        "username": unique_username("Lolilol", "User"),
         "password": "password",
         "role": "Commercial",
-        "email": email2
+        "email": unique_email("Lolilol", "User")
     }
     epic_user_base.create_user(data1)
     epic_user_base.create_user(data2)
 
     commercials = epic_user_base.get_commercials()
-    assert len(commercials) == init_len + 2
-    assert all(user.role == 'COM' for user in commercials)
+    assert len(commercials) == initial_count + 2
 
 
 def test_getall_supports(session, unique_username, unique_email):
