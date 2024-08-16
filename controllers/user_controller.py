@@ -1,5 +1,5 @@
 from models.entities import EpicUser
-from .decorator import is_authenticated, is_admin, is_gestion
+from controllers.decorator import is_authenticated, is_admin, is_gestion
 
 
 class EpicUserBase:
@@ -31,13 +31,13 @@ class EpicUserBase:
             first_name=data['first_name'],
             last_name=data['last_name'],
             username=data['username'],
-            email=data['email']
+            email=data['email'],
+            role=role_code
         )
         user.set_password(data['password'])
-        user.role = role_code
         self.session.add(user)
         self.session.commit()
-        return user
+        return user  # Assurez-vous que ceci retourne bien un objet EpicUser
 
     @is_authenticated
     @is_admin
@@ -54,16 +54,23 @@ class EpicUserBase:
     @is_authenticated
     @is_admin
     @is_gestion
-    def update_user(self, name, password=None, role=None):
-        """Permet de mettre à jour un utilisateur"""
+    def update_user(self, name, password=None, role=None, state=None):
+        """Permet de mettre à jour un utilisateur, y compris pour le marquer comme inactif."""
         user = self.session.query(EpicUser).filter_by(username=name).first()
         if not user:
             raise ValueError("Utilisateur non trouvé")
+
         if password:
             user.set_password(password)
         if role:
             role_code = self.get_rolecode(role)
             user.role = role_code
+        if state:
+            if state == 'I' and user.state != 'I':
+                user.set_inactive()
+            else:
+                user.state = state
+
         self.session.commit()
 
     def get_roles(self):

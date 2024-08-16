@@ -1,6 +1,6 @@
 from models.entities import Customer, Contract
 from datetime import datetime
-from .decorator import is_authenticated, is_admin, is_commercial
+from controllers.decorator import is_authenticated, is_admin, is_commercial
 
 
 class CustomerBase:

@@ -1,5 +1,5 @@
 from models.entities import Contract
-from .decorator import is_authenticated, is_admin, is_commercial, is_gestion
+from controllers.decorator import is_authenticated, is_admin, is_commercial, is_gestion
 
 
 class ContractBase:
@@ -37,6 +37,7 @@ class ContractBase:
     @is_authenticated
     @is_admin
     @is_gestion
+    @is_commercial
     def update_contract(self, contract_id, data):
         """Permet de mettre à jour un contrat"""
         contract = self.session.query(Contract).filter_by(contract_id=contract_id).first()

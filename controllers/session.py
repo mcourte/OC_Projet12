@@ -2,7 +2,7 @@ import os
 import json
 import jwt
 from datetime import datetime, timedelta, timezone
-from config import Base
+from config import SECRET_KEY
 
 
 def create_session(e, delta, secret):
@@ -48,17 +48,13 @@ def stop_session():
 
 
 def read_role():
-    """ read role code from the session token
-    return None if can't read data
-    """
+    token = load_session()
     try:
-        token = load_session()
-        if token:
-            env = Base()
-            user_info = jwt.decode(
-                            token, env.SECRET_KEY, algorithms=['HS256'])
-            return user_info['role']
-        else:
-            return None
-    except Exception:
+        decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        role = decoded.get('role')  # Assurez-vous que le rôle est stocké dans le token
+        print(f"Rôle de l'utilisateur: {role}")  # Ajoutez cette ligne pour déboguer
+        return role
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
         return None

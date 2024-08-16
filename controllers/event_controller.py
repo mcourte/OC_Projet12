@@ -1,5 +1,5 @@
 from models.entities import Event
-from .decorator import is_authenticated, is_admin, is_commercial, is_gestion
+from controllers.decorator import is_authenticated, is_admin, is_commercial, is_gestion
 
 
 class EventBase:
