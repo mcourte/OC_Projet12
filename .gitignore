@@ -9,3 +9,4 @@ alembic/
 /sqlite3
 .vscode/
 .cli_env
+.coveragerc
