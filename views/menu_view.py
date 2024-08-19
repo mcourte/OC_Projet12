@@ -19,7 +19,8 @@ from views.console_view import console, error_console
 
 class MenuView:
 
-    def thinking(self):
+    @classmethod
+    def thinking(cls):
         time.sleep(30)
 
     @classmethod
@@ -71,12 +72,14 @@ class MenuView:
     @classmethod
     def menu_role(cls, role) -> Panel:
         match role:
-            case "M":
+            case "G":
                 menu = cls.menu_gestion()
             case "C":
                 menu = cls.menu_commercial()
             case "S":
                 menu = cls.menu_support()
+            case _:
+                menu = Panel("Menu not found")
         return menu
 
     @classmethod
