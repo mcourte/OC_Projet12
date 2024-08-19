@@ -42,17 +42,10 @@ class EpicDatabase:
         )
 
         print(f'checking {self.url} ...')
-        try:
-            if database_exists(self.url):
-                AuthenticationView.display_database_connection(database)
-            else:
-                data_manager = AuthenticationView.prompt_manager()
-                AuthenticationView.display_waiting_databasecreation(
-                    self.database_creation, data_manager)
-        except Exception:
-            data_manager = AuthenticationView.prompt_manager()
-            AuthenticationView.display_waiting_databasecreation(
-                self.database_creation, data_manager)
+        if database_exists(self.url):
+            AuthenticationView.display_database_connection(database)
+        else:
+            print('erreur')
 
         self.name = database
         self.engine = create_engine(self.url)

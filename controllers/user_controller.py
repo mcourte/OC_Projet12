@@ -12,9 +12,10 @@ class EpicUserBase:
     def create_user(self, data):
         """Permet de créer un Utilisateur
         Informations à fournir : Nom, Prénom, Mot de passe"""
-        if data['role'] not in ['Commercial', 'Support', 'Gestion', 'Admin']:
+        role = data.get('role')  # Use .get() to avoid KeyError
+        if role not in ['Commercial', 'Support', 'Gestion', 'Admin']:
             raise ValueError("Invalid role")
-        role_code = self.get_rolecode(data['role'])
+        role_code = self.get_rolecode(role)
 
         # Générer un nom d'utilisateur unique
         if 'username' not in data or not data['username']:
@@ -37,7 +38,8 @@ class EpicUserBase:
         user.set_password(data['password'])
         self.session.add(user)
         self.session.commit()
-        return user  # Assurez-vous que ceci retourne bien un objet EpicUser
+
+        return user  # Ensure this is an EpicUser object
 
     @is_authenticated
     @is_admin

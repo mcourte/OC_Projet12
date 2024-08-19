@@ -1,7 +1,7 @@
 import jwt
 from views.authentication_view import AuthenticationView
 from .config import Config, Environ, create_config
-from .database_controller import EpicDatabase, EpicDatabaseWithData
+from .database_controller import EpicDatabase
 from .session import load_session, stop_session, create_session
 from .decorator import is_authenticated
 
@@ -14,7 +14,7 @@ class EpicBase:
 
         # create database
         db_config = self.get_config()
-        self.epic = EpicDatabase(**db_config)  # Utiliser la config de la BDD
+        self.epic = EpicDatabase(**db_config)
 
         # lit la session courante
         self.user = self.check_session()
@@ -70,9 +70,12 @@ class EpicBase:
         if token:
             user_info = jwt.decode(
                             token, self.env.SECRET_KEY, algorithms=['HS256'])
-            e = self.epic.check_user(user_info['username'])
-            if e:
-                return e
+            print("User info from token:", user_info)  # For debugging
+            username = user_info.get('username')  # Use .get() to avoid KeyError
+            if username:
+                e = self.epic.check_user(username)
+                if e:
+                    return e
 
     def refresh_session(self):
         create_session(self.user, self.env.TOKEN_DELTA, self.env.SECRET_KEY)
@@ -84,9 +87,5 @@ class EpicBase:
 
         file = create_config(*values)
         db = Config(file)
-        result = AuthenticationView.prompt_confirm_testdata()
-        if result:
-            EpicDatabaseWithData(**db.db_config)
-        else:
-            EpicDatabase(**db.db_config)
+        EpicDatabase(**db.db_config)
         AuthenticationView.display_database_connection(values[0])

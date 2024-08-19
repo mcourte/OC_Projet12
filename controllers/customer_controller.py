@@ -12,15 +12,16 @@ class CustomerBase:
     @is_commercial
     def create_customer(self, customer_data):
         """Permet de créer un Client"""
+        # Use .get() to handle missing keys
         customer = Customer(
-            first_name=customer_data['first_name'],
-            last_name=customer_data['last_name'],
-            email=customer_data['email'],
-            phone=customer_data['phone'],
-            company_name=customer_data['company_name'],
+            first_name=customer_data.get('first_name'),
+            last_name=customer_data.get('last_name'),
+            email=customer_data.get('email'),
+            phone=customer_data.get('phone'),
+            company_name=customer_data.get('company_name'),
             creation_time=datetime.utcnow(),
             update_time=datetime.utcnow(),
-            commercial_id=customer_data.get('commercial_id')
+            commercial_id=customer_data.get('commercial_id')  # Handle missing commercial_id
         )
         self.session.add(customer)
         self.session.commit()
@@ -35,7 +36,7 @@ class CustomerBase:
 
     @is_authenticated
     def get_all_customers(self):
-        """Permet de retourner la liste de tous les CLients"""
+        """Permet de retourner la liste de tous les Clients"""
         return self.session.query(Customer).all()
 
     @is_authenticated
@@ -56,5 +57,5 @@ class CustomerBase:
     @is_admin
     @is_commercial
     def find_without_contract(self):
-        """Permet de lister tous les clients qui n'ont pas de contract associé"""
+        """Permet de lister tous les clients qui n'ont pas de contrat associé"""
         return self.session.query(Customer).outerjoin(Customer.contracts).filter(Contract.customer_id.is_(None)).all()

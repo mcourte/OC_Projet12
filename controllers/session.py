@@ -17,29 +17,34 @@ def create_session(e, delta, secret):
 
 def save_session(token):
     """
-    takes a dictionary user as an argument and serializes it
-    in a file called 'session.json'
+    Save the JWT token to 'session.json'.
     """
     with open('session.json', 'w') as f:
-        json.dump(token, f, indent=4)
+        json.dump({'token': token}, f, indent=4)
 
 
 def load_session():
     """
-    Open file 'session.json' and read data.
-    :raise if no file found return None
+    Load the JWT token from 'session.json'.
+    :return: JWT token as a string or None if file not found or invalid.
     """
     try:
         with open('session.json', 'r') as f:
-            session_data = json.load(f)
-            return session_data
+            data = json.load(f)
+            token = data.get('token')
+            print(f"Loaded Token: {token}")  # Debugging line
+            return token
     except FileNotFoundError:
+        print("File not found.")
+        return None
+    except json.JSONDecodeError:
+        print("Error decoding JSON.")
         return None
 
 
 def stop_session():
     """
-    delete file 'session.json'
+    Delete 'session.json' file to stop the session.
     """
     try:
         os.remove('session.json')
@@ -49,10 +54,12 @@ def stop_session():
 
 def read_role():
     token = load_session()
+    if not token:
+        return None
     try:
         decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
-        role = decoded.get('role')  # Assurez-vous que le rôle est stocké dans le token
-        print(f"Rôle de l'utilisateur: {role}")  # Ajoutez cette ligne pour déboguer
+        role = decoded.get('role')
+        print(f"Rôle de l'utilisateur: {role}")  # Pour le débogage
         return role
     except jwt.ExpiredSignatureError:
         return None
