@@ -20,6 +20,7 @@ class AuthenticationView:
 
     @classmethod
     def display_waiting_databasecreation(cls, f, data):
+        print("Création de la base de données ...")
         with console.status("Création de la base de données ...",
                             spinner="circleQuarters"):
             f(*data)
@@ -46,9 +47,7 @@ class AuthenticationView:
     def prompt_baseinit(cls, **kwargs):
         basename = questionary.text(
                 "Nom de votre base de données:",
-                validate=lambda text: True
-                if re.match(r"^[a-zA-Z]+$", text)
-                else "Seul des caractères alpha sont autorisés",
+                validate=lambda text: True,
                 **kwargs).ask()
         if basename is None:
             raise KeyboardInterrupt
