@@ -1,0 +1,80 @@
+from controllers.config import Config
+
+
+class MockFunction:
+    @classmethod
+    def mock_base(cls, *args, **kwargs):
+        return Config('tests/functionnal/database_userstories.ini')
+
+    @classmethod
+    def mock_login_magali(cls):
+        return ("mcourte", "password")
+
+    @classmethod
+    def mock_login_postgres(cls):
+        return ("postgres", "password")
+
+    @classmethod
+    def mock_prompt_confirm_no(cls):
+        return False
+
+    @classmethod
+    def mock_prompt_confirm_yes(cls):
+        return True
+
+    @classmethod
+    def mock_prompt_commercial(cls, *args, **kwargs):
+        return 'Yuka'
+
+    @classmethod
+    def mock_prompt_data_user(cls, *args, **kwargs):
+        return {
+            'username': 'nuser', 'password': 'password',
+            'email': 'nuser@epic.co', 'role': 'Commercial'}
+
+    @classmethod
+    def mock_prompt_baseinit(cls, *args, **kwargs):
+        return ('epicStories', 'postgres', 'password', '5432')
+
+    @classmethod
+    def mock_role_commercial(cls, *args, **kwargs):
+        return 'Commercial'
+
+    @classmethod
+    def mock_client0(cls, *args, **kwargs):
+        return "Client n°0"
+
+    @classmethod
+    def mock_prompt_data_contract(cls, *args, **kwargs):
+        return {'description': 'contrat0',
+                'total_amount': '10000'}
+
+    @classmethod
+    def mock_contract0(cls, *args, **kwargs):
+        return 'contrat0'
+
+    @classmethod
+    def mock_contract1(cls, *args, **kwargs):
+        return 'contrat1'
+
+    @classmethod
+    def mock_clientlegendre(cls, *args, **kwargs):
+        return 'Legendre'
+
+    @classmethod
+    def mock_choice1(cls, *args, **kwargs):
+        return 1
+
+    @classmethod
+    def mock_choice3(cls, *args, **kwargs):
+        return 3
+
+    @classmethod
+    def mock_event_contract1(cls, *args, **kwargs):
+        return 'contrat1 event'
+
+    @classmethod
+    def mock_data_customer(cls, *args, **kwargs):
+        return {'first_name': 'New', 'last_name': 'Clien', 'email': 'nclient@legendre.com',
+                'phone': '1112-1222-2154',
+                'company_name': 'company_name'}

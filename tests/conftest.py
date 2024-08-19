@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker, scoped_session, declarative_base
 import jwt
 from datetime import datetime, timedelta
 import os
+import tempfile
 
 
 SECRET_KEY = os.getenv('SECRET_KEY')
@@ -39,8 +40,19 @@ def valid_token():
     payload = {
         'exp': datetime.utcnow() + timedelta(hours=1),
         'iat': datetime.utcnow(),
-        'sub': 'test_user',
+        'sub': 'auser',
         'role': 'ADM'
     }
     token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
     return token
+
+
+@pytest.fixture
+def temp_file():
+    # Création d'un fichier temporaire
+    fd, path = tempfile.mkstemp()
+    os.close(fd)
+    yield path
+    # Nettoyage du fichier temporaire après le test
+    if os.path.exists(path):
+        os.remove(path)
