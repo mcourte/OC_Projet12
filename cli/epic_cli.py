@@ -11,13 +11,14 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 sys.path.insert(0, parent_dir)
 
 from controllers.epic_controller import EpicBase
+from controllers.epic_dashboard import EpicDashboard
 
 
 @click.command()
-@click.option('--username')
-@click.option('--password')
+@click.option('--username', prompt='Username', help='The username for login.')
+@click.option('--password', prompt=True, hide_input=True, help='The password for login.')
 def login(username, password):
-    """ login to the database """
+    """ Login to the database """
     app = EpicBase()
     result = app.login(username=username, password=password)
     if result:
@@ -25,6 +26,7 @@ def login(username, password):
     else:
         print("Échec de la connexion")
     app.epic.database_disconnect()
+
 
 
 @click.command()
@@ -36,14 +38,13 @@ def logout():
 
 
 @click.command()
+def dashboard():
+    """ access to menu """
+    controller = EpicDashboard()
+    controller.run()
+
+
+@click.command()
 def initbase():
     """ init the database """
     EpicBase.initbase()
-
-
-cli = click.Group()
-cli.add_command(login)
-cli.add_command(initbase)
-cli.add_command(logout)
-if __name__ == '__main__':
-    cli()

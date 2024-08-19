@@ -1,8 +1,7 @@
+import click
 import os
 import sys
-import click
 from sqlalchemy.orm import Session
-
 
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
@@ -11,9 +10,9 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-from config import SessionLocal
-from controllers.user_controller import EpicUserBase
 from controllers.epic_controller import EpicBase
+from controllers.customer_controller import CustomerBase
+from config import SessionLocal
 
 
 @click.command()
@@ -33,21 +32,25 @@ def login(username, password):
 @click.command()
 @click.argument('first_name')
 @click.argument('last_name')
-@click.argument('role')
-@click.argument('password')
-def add_user(first_name, last_name, role, password):
-    session: Session = SessionLocal()
-    user_controller = EpicUserBase(session)
+@click.argument('email')
+@click.argument('phone')
+@click.argument('company_name')
+@click.argument('commercial_id')
+def add_customer(first_name, last_name, email, phone, company_name, commercial_id):
+    """Create a customer"""
+    session = SessionLocal()
+    customer_controller = CustomerBase(session)
     try:
-        # Construire le dictionnaire avec les données de l'utilisateur
-        user_data = {
+        customer_data = {
             'first_name': first_name,
             'last_name': last_name,
-            'role': role,
-            'password': password,
+            'email': email,
+            'phone': phone,
+            'company_name': company_name,
+            'commercial_id': commercial_id,
         }
-        user = user_controller.create_user(user_data)
-        click.echo(f"Utilisateur {user.username} ajouté avec succès")
+        customer = customer_controller.create_customer(customer_data)
+        click.echo(f"Client {customer.customer_id} ajouté avec succès")
     except ValueError as e:
         click.echo(str(e))
     finally:
@@ -55,10 +58,10 @@ def add_user(first_name, last_name, role, password):
 
 
 @click.command()
-def list_users():
+def list_customers():
     session: Session = SessionLocal()
-    user_controller = EpicUserBase(session)
-    users = user_controller.get_all_users()
-    for user in users:
-        click.echo(f"{user.first_name} {user.last_name} ({user.username}) - {user.email}")
+    customer_controller = CustomerBase(session)
+    customers = customer_controller.get_all_customers()
+    for customer in customers:
+        click.echo(f"{customer.first_name} {customer.last_name}")
     session.close()
