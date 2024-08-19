@@ -28,10 +28,9 @@ def login(username, password):
     app.epic.database_disconnect()
 
 
-
 @click.command()
 def logout():
-    """ logout from database """
+    """ Logout from database """
     app = EpicBase()
     app.check_logout()
     app.epic.database_disconnect()
@@ -39,12 +38,12 @@ def logout():
 
 @click.command()
 def dashboard():
-    """ access to menu """
+    """ Access to menu """
     controller = EpicDashboard()
     controller.run()
 
 
 @click.command()
 def initbase():
-    """ init the database """
+    """ Init the database """
     EpicBase.initbase()
