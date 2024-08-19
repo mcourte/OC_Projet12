@@ -25,10 +25,10 @@ def generate_token(payload):
 
 @pytest.fixture(scope='session')
 def engine():
-    engine = create_engine('sqlite:///:memory:')  # Use an in-memory SQLite database for tests
-    Base.metadata.create_all(engine)  # Create all tables
+    engine = create_engine('sqlite:///:memory:')
+    Base.metadata.create_all(engine)
     yield engine
-    Base.metadata.drop_all(engine)  # Clean up after tests
+    Base.metadata.drop_all(engine)
 
 
 @pytest.fixture(scope='function')
@@ -45,7 +45,6 @@ def session(engine):
 
 @pytest.fixture
 def login_user(session):
-    """Fixture to login a user for authentication-dependent tests"""
     admin_user = EpicUser(
         first_name="Admin",
         last_name="Test",
@@ -68,8 +67,7 @@ def valid_token():
 
 @pytest.fixture
 def expired_token():
-    return generate_token({"epicuser_id": 18, "role": "ADM", "exp": 0})  # Expired token
-
+    return generate_token({"epicuser_id": 18, "role": "ADM", "exp": 0})
 
 @pytest.fixture
 def invalid_token():
@@ -78,20 +76,17 @@ def invalid_token():
 
 @pytest.fixture(scope='session')
 def create_session_file():
-    # Generate a token
     token = jwt.encode(
         {"epicuser_id": 15, "role": "ADM", "exp": datetime.utcnow() + timedelta(hours=1)},
         SECRET_KEY,
         algorithm='HS256'
     )
 
-    # Write token to session.json
     with open('session.json', 'w') as f:
         json.dump({'token': token}, f)
 
     yield token
 
-    # Cleanup
     import os
     if os.path.exists('session.json'):
         os.remove('session.json')
@@ -99,11 +94,9 @@ def create_session_file():
 
 @pytest.fixture(scope='function')
 def session_with_token(create_session_file, session):
-    # Ensure that the session file is created before each test
     return session
 
 
-# Example of a test using these fixtures
 def test_database_structure(session):
     inspector = inspect(session.bind)
     tables = inspector.get_table_names()
@@ -132,20 +125,19 @@ def test_create_event(session):
         'description': 'Annual meeting',
         'location': 'Conference Room',
         'attendees': 10,
-        'report': 'Summary Report',  # Ensure report is not required
+        'report': 'Summary Report',
         'customer_id': None,
         'support_id': None,
         'contract_id': None
     }
     event = event_controller.create_event(create_data)
     assert event.title == 'Company Meeting'
-    assert event.event_id is not None  # Ensure the event was created with an ID
+    assert event.event_id is not None
 
 
 def test_get_event(session):
     event_controller = EventBase(session)
 
-    # Create an event first
     create_data = {
         'title': 'Company Meeting',
         'date_started': datetime(2023, 1, 1, 10, 0, 0),
@@ -160,7 +152,6 @@ def test_get_event(session):
     }
     created_event = event_controller.create_event(create_data)
 
-    # Retrieve the event
     event = event_controller.get_event(created_event.event_id)
 
     assert event is not None
@@ -170,7 +161,6 @@ def test_get_event(session):
 def test_update_event(session):
     event_controller = EventBase(session)
 
-    # Create an event first
     create_data = {
         'title': 'Company Meeting',
         'date_started': datetime(2023, 1, 1, 10, 0, 0),
@@ -185,7 +175,6 @@ def test_update_event(session):
     }
     created_event = event_controller.create_event(create_data)
 
-    # Update the event
     update_data = {
         'title': 'Updated Meeting',
         'date_started': datetime(2023, 1, 1, 10, 0, 0),
@@ -193,7 +182,6 @@ def test_update_event(session):
     }
     event_controller.update_event(created_event.event_id, update_data)
 
-    # Retrieve the updated event
     updated_event = event_controller.get_event(created_event.event_id)
 
     assert updated_event.title == 'Updated Meeting'

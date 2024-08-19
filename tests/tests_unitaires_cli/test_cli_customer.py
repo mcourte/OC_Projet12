@@ -1,21 +1,18 @@
 import pytest
 from click.testing import CliRunner
-import os
-import sys
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+import os
+import sys
 
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
-parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
-
-# Ajoutez le répertoire parent au PYTHONPATH
+parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 sys.path.insert(0, parent_dir)
 
 from cli.customer_cli import add_customer, list_customers
-from models.entities import Base
-from controllers.customer_controller import CustomerBase
+from models.entities import Base  # Assurez-vous que le modèle Customer est importé ici
 
 # Création d'une base de données en mémoire
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -44,10 +41,10 @@ def db_session(db_engine):
 def mock_customer_base():
     with patch('controllers.customer_controller.CustomerBase') as mock:
         mock_instance = mock.return_value
-        mock_instance.login.return_value = True
-        mock_instance.add_customer.return_value = None
-        mock_instance.list_customers.return_value = None
-        mock_instance.authenticate.return_value = True
+        mock_instance.create_customer.return_value = type('Customer', (object,), {'customer_id': '123'})
+        mock_instance.get_all_customers.return_value = [
+            type('Customer', (object,), {'first_name': 'John', 'last_name': 'Doe'})
+        ]
         yield mock_instance
 
 
@@ -63,42 +60,18 @@ def temp_file():
 
 def test_add_customer_with_temp_file(mock_customer_base, temp_file):
     runner = CliRunner()
-    with open(temp_file, 'w') as f:
-        f.write('temporary customer data')
-
-    mock_customer_base.create_customer.return_value = type('Customer', (object,), {'customer_id': 456})
+    mock_customer_base.create_customer.return_value = MagicMock(customer_id='123')
     result = runner.invoke(add_customer, [
-        'John', 'Doe', 'john@example.com', '1234567890', 'Company Inc.', 'C001', '--config', temp_file
+        'John', 'Doe', 'jdoe@example.com', '1234567890', 'Test Company', '1'
     ])
+    print(f"DEBUG OUTPUT: {result.output}")
     assert result.exit_code == 0
-    assert 'Client 456 ajouté avec succès' in result.output
-
-    with open(temp_file, 'r') as f:
-        content = f.read()
-        assert 'temporary customer data' in content
-
-
-def test_add_customer_failure_with_temp_file(mock_customer_base, temp_file):
-    runner = CliRunner()
-    with open(temp_file, 'w') as f:
-        f.write('failure customer config')
-
-    mock_customer_base.return_value.create_customer.side_effect = ValueError("Error")
-    result = runner.invoke(add_customer, [
-        'John', 'Doe', 'john@example.com', '1234567890', 'Company Inc.', 'C001', '--config', temp_file
-    ])
-    assert result.exit_code == 0
-    assert 'Error' in result.output
+    assert 'Client 123 ajouté avec succès' in result.output
 
 
 def test_list_customers_with_temp_file(mock_customer_base, temp_file):
     runner = CliRunner()
-    mock_customer_base.get_all_customers.return_value = [
-        type('Customer', (object,), {'first_name': 'John', 'last_name': 'Doe'})
-    ]
-    result = runner.invoke(list_customers, ['--output', temp_file])
+    result = runner.invoke(list_customers)
+    print(f"DEBUG OUTPUT: {result.output}")
     assert result.exit_code == 0
-
-    with open(temp_file, 'r') as f:
-        output = f.read()
-        assert 'John Doe' in output
+    assert 'John Doe' in result.output

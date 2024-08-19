@@ -25,10 +25,10 @@ def generate_token(payload):
 
 @pytest.fixture(scope='session')
 def engine():
-    engine = create_engine('sqlite:///:memory:')  # Use an in-memory SQLite database for tests
-    Base.metadata.create_all(engine)  # Create all tables
+    engine = create_engine('sqlite:///:memory:')
+    Base.metadata.create_all(engine)
     yield engine
-    Base.metadata.drop_all(engine)  # Clean up after tests
+    Base.metadata.drop_all(engine)
 
 
 @pytest.fixture(scope='function')
@@ -45,7 +45,6 @@ def session(engine):
 
 @pytest.fixture
 def login_user(session):
-    """Fixture to login a user for authentication-dependent tests"""
     admin_user = EpicUser(
         first_name="Admin",
         last_name="Test",
@@ -68,7 +67,7 @@ def valid_token():
 
 @pytest.fixture
 def expired_token():
-    return generate_token({"epicuser_id": 18, "role": "ADM", "exp": 0})  # Expired token
+    return generate_token({"epicuser_id": 18, "role": "ADM", "exp": 0})
 
 
 @pytest.fixture
@@ -82,7 +81,6 @@ def create_session_file():
     with open('session.json', 'w') as f:
         json.dump({'token': token}, f)
     yield
-    # Optionally, clean up the file after tests
     import os
     if os.path.exists('session.json'):
         os.remove('session.json')
@@ -90,11 +88,9 @@ def create_session_file():
 
 @pytest.fixture(scope='function')
 def session_with_token(create_session_file, session):
-    # Ensure that the session file is created before each test
     return session
 
 
-# Example of a test using these fixtures
 def test_database_structure(session):
     inspector = inspect(session.bind)
     tables = inspector.get_table_names()
@@ -163,10 +159,10 @@ def test_get_all_contracts(contract_base, session, sample_contract):
 def test_update_contract_success(contract_base, session, sample_contract):
     session.add(sample_contract)
     session.commit()
-    data = {'description': 'Updated Description'}
+    data = {'description': 'Nouvelle Description'}
     contract_base.update_contract(sample_contract.contract_id, data)
     updated_contract = session.query(Contract).get(sample_contract.contract_id)
-    assert updated_contract.description == 'Updated Description'
+    assert updated_contract.description == 'Nouvelle Description'
 
 
 def test_update_contract_not_found(contract_base, session):

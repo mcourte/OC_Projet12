@@ -10,7 +10,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-from views.prompt_view import PromptView  # Remplacez `your_module` par le nom de votre module
+from views.prompt_view import PromptView
 
 
 # Test de `prompt_confirm_statut`

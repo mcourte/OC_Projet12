@@ -23,10 +23,10 @@ def generate_token(payload):
 
 @pytest.fixture(scope='session')
 def engine():
-    engine = create_engine('sqlite:///:memory:')  # Use an in-memory SQLite database for tests
-    Base.metadata.create_all(engine)  # Create all tables
+    engine = create_engine('sqlite:///:memory:')
+    Base.metadata.create_all(engine)
     yield engine
-    Base.metadata.drop_all(engine)  # Clean up after tests
+    Base.metadata.drop_all(engine)
 
 
 @pytest.fixture(scope='function')
@@ -43,7 +43,6 @@ def session(engine):
 
 @pytest.fixture
 def login_user(session):
-    """Fixture to login a user for authentication-dependent tests"""
     admin_user = EpicUser(
         first_name="Admin",
         last_name="Test",
@@ -66,7 +65,7 @@ def valid_token():
 
 @pytest.fixture
 def expired_token():
-    return generate_token({"epicuser_id": 18, "role": "ADM", "exp": 0})  # Expired token
+    return generate_token({"epicuser_id": 18, "role": "ADM", "exp": 0})
 
 
 @pytest.fixture
@@ -80,7 +79,6 @@ def create_session_file():
     with open('session.json', 'w') as f:
         json.dump({'token': token}, f)
     yield
-    # Optionally, clean up the file after tests
     import os
     if os.path.exists('session.json'):
         os.remove('session.json')
@@ -88,11 +86,9 @@ def create_session_file():
 
 @pytest.fixture(scope='function')
 def session_with_token(create_session_file, session):
-    # Ensure that the session file is created before each test
     return session
 
 
-# Example of a test using these fixtures
 def test_database_structure(session):
     inspector = inspect(session.bind)
     tables = inspector.get_table_names()
@@ -119,7 +115,7 @@ def test_create_customer(session, login_user):
         'email': 'johndoe@example.com',
         'phone': '1234567890',
         'company_name': 'Doe Inc.',
-        'commercial_id': login_user.epicuser_id  # Example usage of the logged-in user's ID
+        'commercial_id': login_user.epicuser_id
     }
     customer_controller = CustomerBase(session)
     customer = customer_controller.create_customer(customer_data)
@@ -129,7 +125,6 @@ def test_create_customer(session, login_user):
 
 
 def test_get_customer(session, login_user):
-    # Create a customer to ensure there is data to retrieve
     customer_data = {
         'first_name': 'John',
         'last_name': 'Doe',
@@ -141,7 +136,6 @@ def test_get_customer(session, login_user):
     customer_controller = CustomerBase(session)
     created_customer = customer_controller.create_customer(customer_data)
 
-    # Retrieve the customer
     customer = customer_controller.get_customer(created_customer.customer_id)
 
     assert customer is not None
@@ -149,7 +143,7 @@ def test_get_customer(session, login_user):
 
 
 def test_update_customer(session, login_user):
-    # Create a customer to ensure there is data to update
+
     customer_data = {
         'first_name': 'John',
         'last_name': 'Doe',
@@ -161,21 +155,18 @@ def test_update_customer(session, login_user):
     customer_controller = CustomerBase(session)
     created_customer = customer_controller.create_customer(customer_data)
 
-    # Update the customer
     update_data = {
         'first_name': 'Jane',
         'last_name': 'Doe'
     }
     customer_controller.update_customer(created_customer.customer_id, update_data)
 
-    # Retrieve the updated customer
     updated_customer = customer_controller.get_customer(created_customer.customer_id)
 
     assert updated_customer.first_name == 'Jane'
 
 
 def test_find_without_contract(session, login_user):
-    # Create a customer with no contracts
     customer_data = {
         'first_name': 'John',
         'last_name': 'Doe',
@@ -187,6 +178,5 @@ def test_find_without_contract(session, login_user):
     customer_controller = CustomerBase(session)
     customer_controller.create_customer(customer_data)
 
-    # Ensure no contracts are associated with this customer
     customers_without_contract = customer_controller.find_without_contract()
     assert len(customers_without_contract) > 0

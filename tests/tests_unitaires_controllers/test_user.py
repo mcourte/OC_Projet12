@@ -23,10 +23,10 @@ def generate_token(payload):
 
 @pytest.fixture(scope='session')
 def engine():
-    engine = create_engine('sqlite:///:memory:')  # Use an in-memory SQLite database for tests
-    Base.metadata.create_all(engine)  # Create all tables
+    engine = create_engine('sqlite:///:memory:')
+    Base.metadata.create_all(engine)
     yield engine
-    Base.metadata.drop_all(engine)  # Clean up after tests
+    Base.metadata.drop_all(engine)
 
 
 @pytest.fixture(scope='function')
@@ -43,7 +43,6 @@ def session(engine):
 
 @pytest.fixture
 def login_user(session):
-    """Fixture to login a user for authentication-dependent tests"""
     admin_user = EpicUser(
         first_name="Admin",
         last_name="Test",
@@ -66,7 +65,7 @@ def valid_token():
 
 @pytest.fixture
 def expired_token():
-    return generate_token({"epicuser_id": 18, "role": "ADM", "exp": 0})  # Expired token
+    return generate_token({"epicuser_id": 18, "role": "ADM", "exp": 0})
 
 
 @pytest.fixture
@@ -80,7 +79,6 @@ def create_session_file():
     with open('session.json', 'w') as f:
         json.dump({'token': token}, f)
     yield
-    # Optionally, clean up the file after tests
     import os
     if os.path.exists('session.json'):
         os.remove('session.json')
@@ -88,11 +86,9 @@ def create_session_file():
 
 @pytest.fixture(scope='function')
 def session_with_token(create_session_file, session):
-    # Ensure that the session file is created before each test
     return session
 
 
-# Example of a test using these fixtures
 def test_database_structure(session):
     inspector = inspect(session.bind)
     tables = inspector.get_table_names()
@@ -161,7 +157,7 @@ def test_create_user_duplicate_username(login_user, session, unique_username, un
     epic_user_base.create_user(data)
 
     with pytest.raises(ValueError):
-        epic_user_base.create_user(data)  # Essayer de créer un utilisateur avec le même nom d'utilisateur
+        epic_user_base.create_user(data)
 
     users = session.query(EpicUser).filter_by(username=username).all()
     assert len(users) == 1

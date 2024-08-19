@@ -10,7 +10,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 sys.path.insert(0, parent_dir)
 
 
-from views.data_view import DataView  # Remplacez `your_module` par le nom de votre module
+from views.data_view import DataView
 
 
 # Test de `display_workflow`

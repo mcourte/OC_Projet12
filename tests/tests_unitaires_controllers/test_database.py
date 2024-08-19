@@ -13,11 +13,9 @@ os.environ['DATABASE_URL'] = 'postgresql+psycopg2://postgres:password@localhost:
 @pytest.fixture(scope='module', autouse=True)
 def restore_database_url():
     yield
-    # Restaurer l'URL d'origine après les tests
     if original_database_url:
         os.environ['DATABASE_URL'] = original_database_url
     else:
-        # Supprimer la variable si elle n'existait pas initialement
         del os.environ['DATABASE_URL']
 
 
@@ -27,11 +25,9 @@ def test_database_connection():
         SessionLocal = sessionmaker(bind=engine)
         session = SessionLocal()
 
-        # Exécuter une simple requête SQL
         result = session.execute(text('SELECT 1'))
         assert result.fetchone() is not None
 
-        # Fermer la session et l'engine
         session.close()
         engine.dispose()
 

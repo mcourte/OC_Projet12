@@ -11,7 +11,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-from views.authentication_view import AuthenticationView  # Ajustez le chemin d'importation
+from views.authentication_view import AuthenticationView
 
 
 # Test de `display_welcome`
@@ -29,25 +29,20 @@ def test_display_waiting_databasecreation():
     mock_function = MagicMock()
 
     with patch('views.authentication_view.console.status') as mock_status:
-        # Configurer le mock pour __enter__ et __exit__
         mock_status_instance = MagicMock()
         mock_status.return_value.__enter__.return_value = mock_status_instance
 
         original_stdout = sys.stdout
         sys.stdout = io.StringIO()
 
-        # Appeler la méthode
         AuthenticationView.display_waiting_databasecreation(mock_function, ('arg1', 'arg2'))
         output = sys.stdout.getvalue().strip()
         sys.stdout = original_stdout
 
-        # Assurez-vous que la méthode a été appelée correctement
         mock_function.assert_called_once_with('arg1', 'arg2')
 
-        # Assurez-vous que le message de status a été "imprimé"
-        print(f"DEBUG OUTPUT: {output}")  # Ajoutez cette ligne pour vérifier ce qui est réellement capturé
+        print(f"DEBUG OUTPUT: {output}")
 
-        # Assurez-vous que la sortie contient le texte attendu
         assert "Création de la base de données ..." in output
 
 
@@ -84,13 +79,11 @@ def test_display_database_connection():
 @patch('views.authentication_view.questionary.text')
 @patch('views.authentication_view.questionary.password')
 def test_prompt_baseinit(mock_password, mock_text):
-    # Configurez les mocks pour retourner les valeurs attendues
     mock_text.return_value.ask.side_effect = ['testdb', 'admin', '5432']
     mock_password.return_value.ask.side_effect = ['password']
 
     result = AuthenticationView.prompt_baseinit()
 
-    # Vérifiez que le résultat est exactement ce que vous attendez
     assert result == ('testdb', 'admin', 'password', '5432')
 
 
@@ -98,7 +91,6 @@ def test_prompt_baseinit(mock_password, mock_text):
 @patch('views.authentication_view.questionary.text')
 @patch('views.authentication_view.questionary.password')
 def test_prompt_manager(mock_password, mock_text):
-    # Configurez les mocks pour retourner les objets avec `ask()`
     mock_text.return_value.ask.side_effect = ['manager']
     mock_password.return_value.ask.side_effect = ['password', 'password']
 
@@ -110,7 +102,6 @@ def test_prompt_manager(mock_password, mock_text):
 # Test de `prompt_confirm_testdata`
 @patch('views.authentication_view.questionary.confirm')
 def test_prompt_confirm_testdata(mock_confirm):
-    # Configurez le mock pour retourner True
     mock_confirm.return_value.ask.return_value = True
 
     result = AuthenticationView.prompt_confirm_testdata()

@@ -16,7 +16,6 @@ from views.error_view import ErrorView
 
 @patch('views.error_view.error_console')
 def test_display_error_login(mock_console):
-    # Redirection de sys.stdout vers un StringIO pour capturer la sortie
     original_stdout = sys.stdout
     sys.stdout = io.StringIO()
 
