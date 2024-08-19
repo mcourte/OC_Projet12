@@ -61,17 +61,15 @@ class EpicUser(Base):
 
     @classmethod
     def generate_unique_username(cls, session, first_name, last_name):
-        # Normaliser les noms en supprimant les accents
         first_name_normalized = unidecode(first_name)
         last_name_normalized = unidecode(last_name)
 
-        # Créer un nom d'utilisateur de base
-        username = f"{first_name_normalized[0].lower()}{last_name_normalized.lower()}"
+        base_username = f"{first_name_normalized[0].lower()}{last_name_normalized.lower()}"
+        username = base_username
         counter = 1
 
-        # Vérifier l'unicité du nom d'utilisateur
         while session.query(cls).filter_by(username=username).first():
-            username = f"{username}{counter}"
+            username = f"{base_username}{counter}"
             counter += 1
         return username
 
@@ -333,7 +331,7 @@ class Contract(Base):
         ('S', 'Signé'),
     )
     PAIEMENT_STATES = (
-        ('S', 'Soldé'),
+        ('P', 'Soldé'),
         ('N', 'Non_Soldé'),
     )
 
@@ -343,10 +341,11 @@ class Contract(Base):
     remaining_amount = Column(Float, nullable=True)
     state = Column(ChoiceType(CONTRACT_STATES, impl=String(length=1)), default='C')
     customer_id = Column(Integer, ForeignKey('customers.customer_id'), nullable=False, index=True)
-    paiement_state = Column(ChoiceType(CONTRACT_STATES, impl=String(length=1)), default='N')
+    paiement_state = Column(ChoiceType(PAIEMENT_STATES, impl=String(length=1)), default='N')
 
     customer = relationship('Customer', back_populates='contracts')
     events = relationship('Event', back_populates='contract')
+    paiements = relationship('Paiement', back_populates='contract')
 
     def __repr__(self):
         return f'{self.description}'
@@ -384,6 +383,25 @@ class Contract(Base):
             query = query.join(EpicUser, EpicUser.epicuser_id == Customer.commercial_id).filter(
                 EpicUser.username == commercial)
         return query.order_by(cls.contract_id).all()
+
+
+class Paiement(Base):
+    __tablename__ = 'paiements'
+
+    id = Column(Integer, primary_key=True)
+    ref = Column(String, nullable=False, unique=True)
+    date_amount = Column(TIMESTAMP, nullable=False, default=datetime.now())
+    amount = Column(Integer)
+    contract_id = Column(Integer, ForeignKey('contracts.contract_id'), nullable=False, index=True)
+
+    contract = relationship('Contract', back_populates='paiements')
+
+    def __repr__(self):
+        return f'{self.date_amount}: {self.ref}/{self.amount}'
+
+    @classmethod
+    def find_by_ref(cls, session, ref):
+        return session.query(cls).filter_by(ref=ref).one()
 
 
 configure_mappers()
