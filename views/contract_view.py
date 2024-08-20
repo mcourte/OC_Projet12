@@ -28,18 +28,17 @@ class ContractView:
             pager (bool, optional): If pager is used. Defaults to True.
         """
         table = Table(title="Liste des contracts", box=box.SQUARE)
-        table.add_column("Référence")
+        table.add_column("Description")
         table.add_column("Client")
         table.add_column("Montant")
         table.add_column("Reste dû")
         table.add_column("Statut")
-        table.add_column("Nb évènements")
         table.add_column("Commercial")
         for c in all_contracts:
             table.add_row(
-                c.ref, c.customer.first_name, c.customer.last_name,
-                c.total_amount, c.remaining_amount,
-                c.state.value, str(len(c.events)),
+                c.description, c.customer.first_name, c.customer.last_name,
+                str(c.total_amount), str(c.remaining_amount),
+                c.state.value,
                 c.customer.commercial.username
             )
         if pager:

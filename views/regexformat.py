@@ -3,8 +3,8 @@ regex_email += "@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$"
 
 regex_phone = "^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}$"
 
-regex_password = r"(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[0-9])"
-regex_password += "(?=.*?[#?!@$%^&*-]).{8,}"
+regex_password = r".*"
+
 
 regexformat = {
     '3cn': (

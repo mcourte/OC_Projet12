@@ -51,7 +51,7 @@ class DataView:
         console.print('Vos modifications ont été enregistrées')
 
     @classmethod
-    def display_profil(cls, e, nb):
+    def display_profil(cls, e):
         text = f'Email: {e.email}\n' if e.email else 'Email: \n'
         text += f'Role: {e.role.value}\n'
         text += f'Etat: {e.state.value}\n'
