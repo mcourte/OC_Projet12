@@ -14,21 +14,16 @@ from controllers.epic_dashboard import EpicDashboard
 
 
 @click.command()
-@click.option('--username', prompt='Username', help='The username for login.')
-@click.option('--password', prompt=True, hide_input=True, help='The password for login.')
-def login(username, password):
-    """ Login to the database """
+def login(**kwargs):
+    """ login to the database """
     app = EpicBase()
-    result = app.login(username=username, password=password)
-    if result:
-        click.echo("Connexion réussie")
-    else:
-        click.echo("Échec de la connexion")
+    app.login(**kwargs)
+    app.epic.database_disconnect()
 
 
 @click.command()
 def logout():
-    """ Logout from database """
+    """ logout from database """
     app = EpicBase()
     app.check_logout()
     app.epic.database_disconnect()
@@ -36,13 +31,12 @@ def logout():
 
 @click.command()
 def dashboard():
-    """ Access to menu """
+    """ access to menu """
     controller = EpicDashboard()
     controller.run()
 
 
 @click.command()
 def initbase():
-    """ Init the database """
-    app = EpicBase()
-    app.initbase()
+    """ init the database """
+    EpicBase.initbase()
