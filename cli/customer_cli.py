@@ -15,6 +15,12 @@ from controllers.customer_controller import CustomerBase
 from config import SessionLocal
 
 
+@click.group()
+def customer_cli():
+    """Groupe de commandes evenèment"""
+    pass
+
+
 @click.command()
 @click.option('--username')
 @click.option('--password')
@@ -65,3 +71,8 @@ def list_customers():
     for customer in customers:
         click.echo(f"{customer.first_name} {customer.last_name}")
     session.close()
+
+
+customer_cli.add_command(login)
+customer_cli.add_command(add_customer)
+customer_cli.add_command(list_customers)

@@ -3,7 +3,6 @@ import sys
 import click
 from sqlalchemy.orm import Session
 
-
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
@@ -16,6 +15,12 @@ from controllers.user_controller import EpicUserBase
 from controllers.epic_controller import EpicBase
 
 
+@click.group()
+def user_cli():
+    """Groupe de commandes utilisateur"""
+    pass
+
+
 @click.command()
 @click.option('--username')
 @click.option('--password')
@@ -24,9 +29,9 @@ def login(username, password):
     app = EpicBase()
     result = app.login(username=username, password=password)
     if result:
-        print("Connexion réussie")
+        click.echo("Connexion réussie")
     else:
-        print("Échec de la connexion")
+        click.echo("Échec de la connexion")
     app.epic.database_disconnect()
 
 
@@ -62,3 +67,9 @@ def list_users():
     for user in users:
         click.echo(f"{user.first_name} {user.last_name} ({user.username}) - {user.email}")
     session.close()
+
+
+# Ajoutez les commandes au groupe
+user_cli.add_command(login)
+user_cli.add_command(add_user)
+user_cli.add_command(list_users)

@@ -2,12 +2,11 @@ import click
 import sys
 import os
 
-
-# Déterminez le chemin absolu du répertoire parent
+# Determine the absolute path of the parent directory
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 
-# Ajoutez le répertoire parent au PYTHONPATH
+# Add the parent directory to PYTHONPATH
 sys.path.insert(0, parent_dir)
 
 from controllers.epic_controller import EpicBase
@@ -22,10 +21,9 @@ def login(username, password):
     app = EpicBase()
     result = app.login(username=username, password=password)
     if result:
-        print("Connexion réussie")
+        click.echo("Connexion réussie")
     else:
-        print("Échec de la connexion")
-    app.epic.database_disconnect()
+        click.echo("Échec de la connexion")
 
 
 @click.command()
@@ -46,4 +44,5 @@ def dashboard():
 @click.command()
 def initbase():
     """ Init the database """
-    EpicBase.initbase()
+    app = EpicBase()
+    app.initbase()

@@ -15,6 +15,12 @@ from controllers.event_controller import EventBase
 from config import SessionLocal
 
 
+@click.group()
+def event_cli():
+    """Groupe de commandes evenèment"""
+    pass
+
+
 @click.command()
 @click.option('--username')
 @click.option('--password')
@@ -66,3 +72,9 @@ def list_events():
     for event in events:
         click.echo(f"{event.title} {event.location} ({event.attendees})")
     session.close()
+
+
+# Ajoutez les commandes au groupe
+event_cli.add_command(login)
+event_cli.add_command(add_event)
+event_cli.add_command(list_events)

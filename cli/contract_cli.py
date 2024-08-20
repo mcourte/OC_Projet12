@@ -15,6 +15,12 @@ from controllers.contract_controller import ContractBase
 from config import SessionLocal
 
 
+@click.group()
+def contract_cli():
+    """Groupe de commandes evenèment"""
+    pass
+
+
 @click.command()
 @click.option('--username')
 @click.option('--password')
@@ -50,7 +56,7 @@ def add_contract(description, total_amount, remaining_amount, state, customer_id
             'paiement_state': paiement_state,
         }
         contract = contract_controller.create_contract(contract_data)
-        click.echo(f"Contract {contract.contract_id} added successfully")
+        click.echo(f"Contrat {contract.description} ajouté ")
     except ValueError as e:
         click.echo(str(e))
     finally:
@@ -63,5 +69,10 @@ def list_contracts():
     contract_controller = ContractBase(session)
     contracts = contract_controller.get_all_contracts()
     for contract in contracts:
-        click.echo(f"{contract.title} {contract.location} ({contract.attendees})")
+        click.echo(f"{contract.description} {contract.state} ({contract.customer_id})")
     session.close()
+
+
+contract_cli.add_command(login)
+contract_cli.add_command(add_contract)
+contract_cli.add_command(list_contracts)
