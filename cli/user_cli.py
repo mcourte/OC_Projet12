@@ -73,3 +73,6 @@ def list_users():
 user_cli.add_command(login)
 user_cli.add_command(add_user)
 user_cli.add_command(list_users)
+
+if __name__ == '__main__':
+    user_cli()

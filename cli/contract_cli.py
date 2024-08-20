@@ -13,7 +13,7 @@ sys.path.insert(0, parent_dir)
 from controllers.epic_controller import EpicBase
 from controllers.contract_controller import ContractBase
 from config import SessionLocal
-
+from terminal.terminal_contract import EpicTerminalContract
 
 @click.group()
 def contract_cli():
@@ -65,14 +65,47 @@ def add_contract(description, total_amount, remaining_amount, state, customer_id
 
 @click.command()
 def list_contracts():
-    session = SessionLocal()
-    contract_controller = ContractBase(session)
-    contracts = contract_controller.get_all_contracts()
-    for contract in contracts:
-        click.echo(f"{contract.description} {contract.state} ({contract.customer_id})")
-    session.close()
+    """ list the contracts """
+    app = EpicBase()
+
+    if app.user:
+        controle_contract = EpicTerminalContract(app.user, app.epic)
+        contracts = controle_contract.list_of_contracts()
+        for contract in contracts:
+            click.echo(f"{contract.description} {contract.state} ({contract.customer_id})")
+        app.refresh_session()
+    app.epic.database_disconnect()
+
+
+@click.command()
+def create():
+    """ create a contract """
+    app = EpicBase()
+
+    if app.user:
+        controle_contract = EpicTerminalContract(app.user, app.epic)
+        controle_contract.create_contract()
+        app.refresh_session()
+    app.epic.database_disconnect()
+
+
+@click.command()
+def update():
+    """ modify a contract """
+    app = EpicBase()
+
+    if app.user:
+        controle_contract = EpicTerminalContract(app.user, app.epic)
+        controle_contract.update_contract()
+        app.refresh_session()
+    app.epic.database_disconnect()
 
 
 contract_cli.add_command(login)
 contract_cli.add_command(add_contract)
 contract_cli.add_command(list_contracts)
+contract_cli.add_command(create)
+contract_cli.add_command(update)
+
+if __name__ == '__main__':
+    contract_cli()
