@@ -52,28 +52,10 @@ class EpicTerminalEvent():
             DataView.display_interupt()
 
     @is_authenticated
-    @is_support
-    def cancel_event(self):
-        try:
-            events = self.epic.db_events.get_events(
-                support_name=self.user.username, state_code='U')
-            events = [f'{e.contract.ref}|{e.title}' for e in events]
-            if events:
-                try:
-                    event = EventView.prompt_select_event(events)
-                    self.epic.db_events.cancel(event)
-                except KeyboardInterrupt:
-                    DataView.display_interupt()
-            else:
-                EventView.display_no_event()
-        except KeyboardInterrupt:
-            DataView.display_interupt()
-
-    @is_authenticated
     @is_commercial
     @is_admin
     def create_event(self):
-        contracts = self.epic.db_contracts.get_contracts(
+        contracts = self.epic.db_contracts.get_contract(
             commercial_name=self.user.username, state_value='S')
         if contracts:
             contracts = [c.ref for c in contracts]
@@ -83,7 +65,7 @@ class EpicTerminalEvent():
                 self.epic.db_events.create(contract, data)
                 # workflow creation
                 DataView.display_workflow()
-                gestions = self.epic.db_users.get_gestion()
+                gestions = self.epic.db_users.get_gestions()
                 gestion = random.choice(gestions)
             except KeyboardInterrupt:
                 DataView.display_interupt()
@@ -111,6 +93,6 @@ class EpicTerminalEvent():
             supports_name.append(EventView.no_support())
             sname = UserView.prompt_select_support(supports_name)
         # display list
-        events = self.epic.db_events.get_events(
+        events = self.epic.db_events.get_event(
             cname, client, contract_ref, sname)
         EventView.display_list_events(events)

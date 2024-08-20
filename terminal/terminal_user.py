@@ -58,18 +58,18 @@ class EpicTerminalUser():
         if result:
             DataView.display_profil(self.user)
             profil = UserView.prompt_data_profil(False, False, False)
-            self.epic.db_users.update_profil(self.user, profil)
+            self.epic.db_users.update_user(self.user, profil)
             DataView.display_profil(self.user)
             DataView.display_data_update()
 
     @is_authenticated
     @is_gestion
     @is_admin
-    def list_of_employees(self) -> None:
+    def list_of_users(self) -> None:
         """
         read database of employees and display it
         """
-        users = self.epic.db_users.get_users()
+        users = self.epic.db_users.get_all_users()
         UserView.display_list_users(users)
 
     @is_authenticated
@@ -83,7 +83,7 @@ class EpicTerminalUser():
         roles = self.epic.db_users.get_roles()
         try:
             data = UserView.prompt_data_user(roles)
-            self.epic.epic_users.create_user(data)
+            self.epic.db_users.create_user(data)
         except KeyboardInterrupt:
             DataView.display_interupt()
 
@@ -96,7 +96,7 @@ class EpicTerminalUser():
             - ask the new password
             - update database
         """
-        users = self.epic.db_users.get_users()
+        users = self.epic.db_users.get_all_users()
         users_usernames = [e.username for e in users]
         username = UserView.prompt_user(users_usernames)
         password = UserView.prompt_password()
@@ -110,7 +110,16 @@ class EpicTerminalUser():
             - ask to select an employee
             - update database
         """
-        users = self.epic.db_users.get_users()
+        users = self.epic.db_users.get_all_users()
         user_usernames = [e.username for e in users]
         username = UserView.prompt_user(user_usernames)
         self.epic.db_users.inactivate(username, self.user)
+
+    @is_authenticated
+    @is_gestion
+    @is_admin
+    def find_by_username(self):
+        users = self.epic.db_users.get_all_users()
+        user_usernames = [e.username for e in users]
+        username = UserView.prompt_user(user_usernames)
+        return username

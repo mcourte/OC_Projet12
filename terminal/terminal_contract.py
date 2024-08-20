@@ -9,7 +9,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-from controllers.decorator import (is_authenticated, is_support, is_commercial, is_gestion, is_admin)
+from controllers.decorator import (is_authenticated, is_commercial, is_gestion, is_admin)
 from terminal.terminal_customer import EpicTerminalCustomer
 from terminal.terminal_user import EpicTerminalUser
 
@@ -40,18 +40,18 @@ class EpicTerminalContract():
         """
         state = None
         cname = self.controller_user.choice_commercial()
-        client = self.controller_customer.choice_client(cname)
+        customer = self.controller_customer.choice_customer(cname)
         # select a state
         result = PromptView.prompt_confirm_statut()
         if result:
-            states = self.epic.db_contracts.find_by_state()
+            states = self.epic.db_contracts.get_all_contracts()
             try:
                 state = ContractView.prompt_select_statut(states)
             except KeyboardInterrupt:
                 state = None
         # display list
         ContractView.display_list_contracts(
-            self.epic.db_contracts.get_contracts(cname, client, state))
+            self.epic.db_contracts.get_all_contracts())
 
     @is_authenticated
     @is_gestion
@@ -95,7 +95,8 @@ class EpicTerminalContract():
         contracts = self.epic.db_contracts.get_active_contracts()
         refs = [c.ref for c in contracts]
         ref = ContractView.prompt_select_contract(refs)
-        state = self.epic.db_contracts.find_by_state(ref)
+        print(ref)
+        state = self.epic.db_contracts.state_signed(ref)
         try:
             choice = MenuView.menu_update_contract(state)
             match choice:
