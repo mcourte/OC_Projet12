@@ -2,8 +2,9 @@ import jwt
 from views.authentication_view import AuthenticationView
 from .config import Config, Environ, create_config
 from .database_controller import EpicDatabase
-from .session import load_session, stop_session, create_session
+from .session import load_session, stop_session, create_session, save_session
 from .decorator import is_authenticated
+from utils.jwt_utils import create_token, decode_token
 
 
 class EpicBase:
@@ -51,33 +52,59 @@ class EpicBase:
         return True
 
     def login(self, **kwargs) -> bool:
-        """ stop session and create a new one after prompt login
+        """Stop session and create a new one after prompt login
 
         Returns:
             bool: True if login is ok
         """
         stop_session()
-        username, password = kwargs.get('username'), kwargs.get('password')
+
+        username = kwargs.get('username')
+        password = kwargs.get('password')
+
+        # Créez un jeton et affichez-le pour le débogage
+        token = create_token({'username': username})
+        print(f"Token créé: {token}")
+
+        # Décodez le jeton et affichez les données décodées
+        decoded_data = decode_token(token)
+        print(f"Data décodée: {decoded_data}")
+
+        # Vérifiez la connexion de l'utilisateur
         e = self.epic.check_connection(username, password)
         if e:
             create_session(e, self.env.TOKEN_DELTA, self.env.SECRET_KEY)
             return True
         else:
+            print("Échec de la connexion")
             return False
 
     def check_session(self):
         token = load_session()
         if token:
-            user_info = jwt.decode(
-                            token, self.env.SECRET_KEY, algorithms=['HS256'])
-            username = user_info.get('username')
-            if username:
-                e = self.epic.check_user(username)
-                if e:
-                    return e
+            try:
+                user_info = jwt.decode(token, self.env.SECRET_KEY, algorithms=['HS256'])
+                username = user_info.get('username')
+                if username:
+                    e = self.epic.check_user(username)
+                    if e:
+                        return e
+            except jwt.ExpiredSignatureError:
+                print("Le jeton a expiré.")
+                # Gérer le cas de jeton expiré, par exemple en redirigeant vers la page de connexion
+                return None
+            except jwt.InvalidTokenError:
+                print("Jeton invalide.")
+                # Gérer le cas de jeton invalide
+                return None
+        return None
 
     def refresh_session(self):
-        create_session(self.user, self.env.TOKEN_DELTA, self.env.SECRET_KEY)
+        if self.user:
+            # Créez un nouveau jeton pour l'utilisateur
+            new_token = create_token({'username': self.user.username})
+            # Stockez le nouveau jeton
+            save_session(new_token)
 
     @classmethod
     def initbase(cls):

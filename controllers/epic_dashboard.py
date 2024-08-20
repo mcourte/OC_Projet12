@@ -42,7 +42,7 @@ class EpicDashboard:
             case '05':
                 self.gestion_event.get_all_events()
             case '06':
-                match self.manager.user.role.code:
+                match self.gestion.user.role.code:
                     case 'G':
                         self.gestion_user.get_all_users()
                     case 'C':
