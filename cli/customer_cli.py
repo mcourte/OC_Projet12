@@ -1,7 +1,6 @@
 import click
 import os
 import sys
-from sqlalchemy.orm import Session
 
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
@@ -13,6 +12,7 @@ sys.path.insert(0, parent_dir)
 from controllers.epic_controller import EpicBase
 from controllers.customer_controller import CustomerBase
 from config import SessionLocal
+from terminal.terminal_customer import EpicTerminalCustomer
 
 
 @click.group()
@@ -22,57 +22,55 @@ def customer_cli():
 
 
 @click.command()
-@click.option('--username')
-@click.option('--password')
-def login(username, password):
-    """ login to the database """
+def list_customers():
+    """ list all the clients """
     app = EpicBase()
-    result = app.login(username=username, password=password)
-    if result:
-        print("Connexion réussie")
-    else:
-        print("Échec de la connexion")
+
+    if app.user:
+        controle_customer = EpicTerminalCustomer(app.user, app.epic)
+        controle_customer.list_of_customers()
+        app.refresh_session()
     app.epic.database_disconnect()
 
 
 @click.command()
-@click.argument('first_name')
-@click.argument('last_name')
-@click.argument('email')
-@click.argument('phone')
-@click.argument('company_name')
-@click.argument('commercial_id')
-def add_customer(first_name, last_name, email, phone, company_name, commercial_id):
-    """Create a customer"""
-    session = SessionLocal()
-    customer_controller = CustomerBase(session)
-    try:
-        customer_data = {
-            'first_name': first_name,
-            'last_name': last_name,
-            'email': email,
-            'phone': phone,
-            'company_name': company_name,
-            'commercial_id': commercial_id,
-        }
-        customer = customer_controller.create_customer(customer_data)
-        click.echo(f"Client {customer.customer_id} ajouté avec succès")
-    except ValueError as e:
-        click.echo(str(e))
-    finally:
-        session.close()
+def update_customer():
+    """ modify the commercial of a client """
+    app = EpicBase()
+
+    if app.user:
+        controle_customer = EpicTerminalCustomer(app.user, app.epic)
+        controle_customer.update_customer()
+        app.refresh_session()
+    app.epic.database_disconnect()
 
 
 @click.command()
-def list_customers():
-    session: Session = SessionLocal()
-    customer_controller = CustomerBase(session)
-    customers = customer_controller.get_all_customers()
-    for customer in customers:
-        click.echo(f"{customer.first_name} {customer.last_name}")
-    session.close()
+def create_customer():
+    """ create a new client """
+    app = EpicBase()
+
+    if app.user:
+        controle_customer = EpicTerminalCustomer(app.user, app.epic)
+        controle_customer.create_customer()
+        app.refresh_session()
+    app.epic.database_disconnect()
 
 
-customer_cli.add_command(login)
-customer_cli.add_command(add_customer)
+@click.command()
+def update():
+    """ modify data of a client """
+    app = EpicBase()
+
+    if app.user:
+        controle_client = EpicTerminalCustomer(app.user, app.epic)
+        controle_client.update_customer()
+        app.refresh_session()
+    app.epic.database_disconnect()
+
+
 customer_cli.add_command(list_customers)
+customer_cli.add_command(create_customer)
+customer_cli.add_command(update_customer)
+if __name__ == '__main__':
+    customer_cli()

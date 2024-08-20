@@ -1,8 +1,6 @@
 import click
 import os
 import sys
-from sqlalchemy.orm import Session
-
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
@@ -11,8 +9,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 sys.path.insert(0, parent_dir)
 
 from controllers.epic_controller import EpicBase
-from controllers.event_controller import EventBase
-from config import SessionLocal
+from terminal.terminal_event import EpicTerminalEvent
 
 
 @click.group()
@@ -22,59 +19,43 @@ def event_cli():
 
 
 @click.command()
-@click.option('--username')
-@click.option('--password')
-def login(username, password):
-    """ login to the database """
+def list_events():
+    """ list of events """
     app = EpicBase()
-    result = app.login(username=username, password=password)
-    if result:
-        print("Connexion réussie")
-    else:
-        print("Échec de la connexion")
+
+    if app.user:
+        controle_event = EpicTerminalEvent(app.user, app.epic)
+        controle_event.list_of_events()
+        app.refresh_session()
     app.epic.database_disconnect()
 
 
 @click.command()
-@click.argument('title')
-@click.argument('description')
-@click.argument('location')
-@click.argument('attendees')
-@click.argument('date_started')
-@click.argument('date_ended')
-def add_event(title, description, location, attendees, date_started, date_ended):
-    """ create an event """
-    session: Session = SessionLocal()
-    event_controller = EventBase(session)
-    try:
-        # Construire le dictionnaire avec les données de l'utilisateur
-        event_data = {
-            'title': title,
-            'description': description,
-            'location': location,
-            'attendees': attendees,
-            'date_started': date_started,
-            'date_ended': date_ended,
-        }
-        event = event_controller.create_event(event_data)
-        click.echo(f"Evènement {event.title} ajouté avec succès")
-    except ValueError as e:
-        click.echo(str(e))
-    finally:
-        session.close()
+def update_event():
+    """ modify an event """
+    app = EpicBase()
+
+    if app.user:
+        controle_event = EpicTerminalEvent(app.user, app.epic)
+        controle_event.update_event()
+        app.refresh_session()
+    app.epic.database_disconnect()
 
 
 @click.command()
-def list_events():
-    session: Session = SessionLocal()
-    event_controller = EventBase(session)
-    events = event_controller.get_all_events()
-    for event in events:
-        click.echo(f"{event.title} {event.location} ({event.attendees})")
-    session.close()
+def create_event():
+    """ create an event """
+    app = EpicBase()
+
+    if app.user:
+        controle_event = EpicTerminalEvent(app.user, app.epic)
+        controle_event.create_event()
+        app.refresh_session()
+    app.epic.database_disconnect()
 
 
-# Ajoutez les commandes au groupe
-event_cli.add_command(login)
-event_cli.add_command(add_event)
+event_cli.add_command(create_event)
+event_cli.add_command(update_event)
 event_cli.add_command(list_events)
+if __name__ == '__main__':
+    event_cli()
