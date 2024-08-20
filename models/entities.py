@@ -367,6 +367,10 @@ class Contract(Base):
         return session.query(cls).filter_by(state=state).order_by(cls.contract_id).all()
 
     @classmethod
+    def state_signed(cls, session):
+        return session.query(cls).filter_by(state="S").order_by(cls.contract_id).all()
+
+    @classmethod
     def find_by_paiement_state(cls, session, paiement_state):
         return session.query(cls).filter_by(paiement_state=paiement_state).order_by(cls.contract_id).all()
 
