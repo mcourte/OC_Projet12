@@ -20,18 +20,15 @@ from views.authentication_view import AuthenticationView
 from views.menu_view import MenuView
 
 
-class EpicDashboard():
+class EpicDashboard:
 
-    def __init__(self) -> None:
-        self.gestion = EpicDatabase()
-        self.gestion_user = EpicUserBase(
-            self.gestion.user, self.gestion.epic)
-        self.gestion_customer = CustomerBase(
-            self.gestion.user, self.gestion.epic)
-        self.gestion_contract = ContractBase(
-            self.gestion.user, self.gestion.epic)
-        self.gestion_event = EventBase(
-            self.gestion.user, self.gestion.epic)
+    def __init__(self, database, host, user, password) -> None:
+        # Passez les arguments nécessaires à EpicDatabase
+        self.gestion = EpicDatabase(database, host, user, password)
+        self.gestion_user = EpicUserBase(self.gestion.session)
+        self.gestion_customer = CustomerBase(self.gestion.session)
+        self.gestion_contract = ContractBase(self.gestion.session)
+        self.gestion_event = EventBase(self.gestion.session)
 
     def call_function(self, choice) -> bool:
         match choice:
@@ -50,7 +47,6 @@ class EpicDashboard():
                         self.gestion_user.get_all_users()
                     case 'C':
                         self.gestion_customer.create_customer()
-
             case '07':
                 match self.gestion.user.role.code:
                     case 'M':
@@ -84,7 +80,6 @@ class EpicDashboard():
         return True
 
     def run(self) -> None:
-
         if self.gestion.user:
             running = True
             AuthenticationView.display_welcome(self.gestion.user.username)
@@ -92,6 +87,5 @@ class EpicDashboard():
                 while running:
                     result = MenuView.menu_choice(self.gestion.user.role.code)
                     running = self.call_function(result)
-
             except KeyboardInterrupt:
                 pass

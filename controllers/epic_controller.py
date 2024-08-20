@@ -57,7 +57,7 @@ class EpicBase:
             bool: True if login is ok
         """
         stop_session()
-        username, password = AuthenticationView.prompt_login(**kwargs)
+        username, password = kwargs.get('username'), kwargs.get('password')
         e = self.epic.check_connection(username, password)
         if e:
             create_session(e, self.env.TOKEN_DELTA, self.env.SECRET_KEY)
@@ -70,8 +70,7 @@ class EpicBase:
         if token:
             user_info = jwt.decode(
                             token, self.env.SECRET_KEY, algorithms=['HS256'])
-            print("User info from token:", user_info)  # For debugging
-            username = user_info.get('username')  # Use .get() to avoid KeyError
+            username = user_info.get('username')
             if username:
                 e = self.epic.check_user(username)
                 if e:

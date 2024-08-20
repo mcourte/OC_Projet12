@@ -32,7 +32,6 @@ def load_session():
         with open('session.json', 'r') as f:
             data = json.load(f)
             token = data.get('token')
-            print(f"Loaded Token: {token}")  # Debugging line
             return token
     except FileNotFoundError:
         print("File not found.")
@@ -59,7 +58,6 @@ def read_role():
     try:
         decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
         role = decoded.get('role')
-        print(f"Rôle de l'utilisateur: {role}")  # Pour le débogage
         return role
     except jwt.ExpiredSignatureError:
         return None
