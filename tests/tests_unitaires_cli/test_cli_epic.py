@@ -38,11 +38,7 @@ def test_login_with_temp_file(mock_epic_base, temp_file):
         f.write('temporary login data')
 
     result = runner.invoke(login, ['--username', 'auser', '--password', 'password', '--config', temp_file])
-
-    # Add debug prints
-    print(f"CLI Output: {result.output}")
-    print(f"Exit Code: {result.exit_code}")
-
+    print(f"DEBUG OUTPUT: {result.output}")
     assert result.exit_code == 0
     assert 'Connexion réussie' in result.output
 
@@ -50,6 +46,7 @@ def test_login_with_temp_file(mock_epic_base, temp_file):
 def test_logout_with_temp_file(mock_epic_base, temp_file):
     runner = CliRunner()
     result = runner.invoke(logout, ['--config', temp_file])
+    print(f"DEBUG OUTPUT: {result.output}")
     assert result.exit_code == 0
     assert 'Déconnexion réussie' in result.output
 
@@ -57,6 +54,7 @@ def test_logout_with_temp_file(mock_epic_base, temp_file):
 def test_dashboard_with_temp_file(mock_epic_dashboard, temp_file):
     runner = CliRunner()
     result = runner.invoke(dashboard, ['--output', temp_file])
+    print(f"DEBUG OUTPUT: {result.output}")
     assert result.exit_code == 0
     assert 'Dashboard Content' in result.output
 
@@ -64,5 +62,7 @@ def test_dashboard_with_temp_file(mock_epic_dashboard, temp_file):
 def test_initbase_with_temp_file(mock_epic_base, temp_file):
     runner = CliRunner()
     result = runner.invoke(initbase, ['--config', temp_file])
+    print(f"DEBUG OUTPUT: {result.output}")
     assert result.exit_code == 0
     assert 'Base de données initialisée' in result.output
+

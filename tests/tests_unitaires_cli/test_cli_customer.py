@@ -60,9 +60,9 @@ def temp_file():
 
 def test_add_customer_with_temp_file(mock_customer_base, temp_file):
     runner = CliRunner()
-    mock_customer_base.create_customer.return_value = MagicMock(customer_id='123')
+    mock_customer_base.create_customer.return_value = MagicMock(customer_id='115')
     result = runner.invoke(add_customer, [
-        'John', 'Doe', 'jdoe@example.com', '1234567890', 'Test Company', '1'
+        'Vincent', 'Legendre', 'vlegendre@gmail.com', '110011001100', '110011001100' , '104'
     ])
     print(f"DEBUG OUTPUT: {result.output}")
     assert result.exit_code == 0
@@ -74,4 +74,4 @@ def test_list_customers_with_temp_file(mock_customer_base, temp_file):
     result = runner.invoke(list_customers)
     print(f"DEBUG OUTPUT: {result.output}")
     assert result.exit_code == 0
-    assert 'John Doe' in result.output
+    assert 'Vincent Legendre' in result.output

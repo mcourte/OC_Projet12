@@ -38,7 +38,7 @@ def test_add_contract_with_temp_file(mock_contract_base, temp_file):
     mock_contract_base.create_contract.return_value = type('Contract', (object,), {'description': 'Test_add'})
 
     result = runner.invoke(add_contract, [
-        'Test_add', '1000', '500', 'C', '1', 'N'
+        'Test_add', '1000', '500', 'C', '115', 'N'
     ])
 
     print(f"DEBUG OUTPUT: {result.output}")
@@ -50,9 +50,9 @@ def test_list_contracts(mock_contract_base):
     runner = CliRunner()
     mock_contract_base.get_all_contracts.return_value = [
         MagicMock(description="Test_add", total_amount="1000", remaining_amount="1000",
-                  customer_id="1", state="C", paiement_state="N")
+                  customer_id="115", state="C", paiement_state="N")
     ]
     result = runner.invoke(list_contracts)
     print(f"DEBUG OUTPUT: {result.output}")
     assert result.exit_code == 0
-    assert 'Test_add Créé (1)' in result.output
+    assert 'Test_add Créé (115)' in result.output

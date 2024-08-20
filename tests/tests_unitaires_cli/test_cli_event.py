@@ -38,8 +38,8 @@ def test_add_event(mock_event_base):
 def test_list_events(mock_event_base):
     runner = CliRunner()
     mock_event_base.get_all_events.return_value = [
-        MagicMock(title='Test Event', location='Test Location', attendees='123')
+        MagicMock(title='Test Event', location='Test Location', attendees='140')
     ]
     result = runner.invoke(list_events)
     assert result.exit_code == 0
-    assert 'Test Event Test Location (123)' in result.output
+    assert 'Test Event Test Location (140)' in result.output
