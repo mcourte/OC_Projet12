@@ -1,8 +1,6 @@
 import pytest
 from click.testing import CliRunner
 from unittest.mock import patch, MagicMock
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 import os
 import sys
 # Déterminez le chemin absolu du répertoire parent
@@ -14,33 +12,13 @@ sys.path.insert(0, parent_dir)
 
 from models.entities import Base
 from cli.contract_cli import add_contract, list_contracts
-
+import tempfile
 # Configuration de la base de données en mémoire
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
 
-@pytest.fixture(scope="module")
-def db_engine():
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, echo=True)
-    Base.metadata.create_all(bind=engine)  # Crée toutes les tables
-    yield engine
-    Base.metadata.drop_all(bind=engine)  # Nettoie après les tests
-
-
-@pytest.fixture(scope="function")
-def db_session(db_engine):
-    connection = db_engine.connect()
-    transaction = connection.begin()
-    session = sessionmaker(bind=db_engine)()
-    yield session
-    session.close()
-    transaction.rollback()
-    connection.close()
-
-
 @pytest.fixture
 def temp_file():
-    import tempfile
     fd, path = tempfile.mkstemp()
     os.close(fd)
     yield path
@@ -52,28 +30,29 @@ def temp_file():
 def mock_contract_base():
     with patch('controllers.contract_controller.ContractBase') as mock:
         mock_instance = mock.return_value
-        mock_instance.create_contract.return_value = MagicMock(contract_id='123')
-        mock_instance.get_all_contracts.return_value = [
-            MagicMock(title='Test Contract', location='Test Location', attendees='Test Attendees')
-        ]
         yield mock_instance
 
 
 def test_add_contract_with_temp_file(mock_contract_base, temp_file):
     runner = CliRunner()
-    mock_contract_base.create_contract.return_value = MagicMock(contract_id='123')
+    mock_contract_base.create_contract.return_value = type('Contract', (object,), {'description': 'Test_add'})
+
     result = runner.invoke(add_contract, [
-        'Contract Description', '1000', '500', 'C', '1', 'N'
+        'Test_add', '1000', '500', 'C', '1', 'N'
     ])
+
+    print(f"DEBUG OUTPUT: {result.output}")
     assert result.exit_code == 0
-    assert 'Contract ID 123 ajouté' in result.output
+    assert 'Contrat Test_add ajouté' in result.output
 
 
-def test_list_contract_with_temp_file(mock_contract_base, temp_file):
+def test_list_contracts(mock_contract_base):
     runner = CliRunner()
     mock_contract_base.get_all_contracts.return_value = [
-        MagicMock(title='Test Contract', location='Test Location', attendees='Test Attendees')
+        MagicMock(description="Test_add", total_amount="1000", remaining_amount="1000",
+                  customer_id="1", state="C", paiement_state="N")
     ]
     result = runner.invoke(list_contracts)
+    print(f"DEBUG OUTPUT: {result.output}")
     assert result.exit_code == 0
-    assert 'Test Contract Test Location (Test Attendees)' in result.output
+    assert 'Test_add Créé (1)' in result.output

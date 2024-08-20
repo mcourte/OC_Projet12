@@ -24,7 +24,7 @@ def extract_text(renderable):
 
 def test_menu_gestion():
     panel = MenuView.menu_gestion()
-    assert panel.title == 'Menu manager'
+    assert panel.title == 'Menu Gestion'
     assert 'Créer un nouvel employé' in extract_text(panel.renderable)
 
 

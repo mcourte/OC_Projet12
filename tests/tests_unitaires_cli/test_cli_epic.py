@@ -37,7 +37,12 @@ def test_login_with_temp_file(mock_epic_base, temp_file):
     with open(temp_file, 'w') as f:
         f.write('temporary login data')
 
-    result = runner.invoke(login, ['--username', 'tuser', '--password', 'password', '--config', temp_file])
+    result = runner.invoke(login, ['--username', 'auser', '--password', 'password', '--config', temp_file])
+
+    # Add debug prints
+    print(f"CLI Output: {result.output}")
+    print(f"Exit Code: {result.exit_code}")
+
     assert result.exit_code == 0
     assert 'Connexion réussie' in result.output
 

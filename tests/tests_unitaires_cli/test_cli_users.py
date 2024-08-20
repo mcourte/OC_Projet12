@@ -81,7 +81,7 @@ def test_add_user_failure_with_temp_file(mock_user_base, temp_file):
     result = runner.invoke(add_user, ['John', 'Doe', 'Admin', 'password', '--config', temp_file])
 
     print(f"DEBUG OUTPUT: {result.output}")
-    assert result.exit_code == 2  # Note: exit_code is 2 for system errors, not 0 in case of error
+    assert result.exit_code == 2
     assert 'Error' in result.output
 
 
