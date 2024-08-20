@@ -3,9 +3,6 @@ import sys
 import json
 import jwt
 from datetime import datetime, timedelta, timezone
-from config import SECRET_KEY
-from sqlalchemy_utils import ChoiceType
-from utils.jwt_utils import create_token
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 
@@ -31,32 +28,45 @@ def create_token(user, secret=SECRET_KEY):
     """
     Crée un jeton JWT pour un utilisateur avec son rôle.
     """
+    # Vérifiez si le rôle de l'utilisateur est défini et non nul
+    if not hasattr(user, 'role') or not user.role:
+        raise ValueError("Le rôle de l'utilisateur ne peut pas être None")
+
+    # Récupérer le code ou la valeur du rôle
+    role_value = user.role.code if hasattr(user.role, 'code') else str(user.role)
+
+    # Utilisation de timezone.utc pour avoir une datetime aware
     payload = {
         'username': user.username,
-        'role': user.role,  # Inclure le rôle de l'utilisateur
-        'exp': datetime.utcnow() + timedelta(hours=4)  # Jeton valide pour 4 heures
+        'role': role_value,  # Utiliser le code ou la valeur du rôle ici
+        'exp': datetime.now(timezone.utc) + timedelta(hours=4)  # Jeton valide pour 4 heures
     }
+    print(f"Payload pour le jeton: {payload}")  # Ligne de débogage pour vérifier le payload
     token = jwt.encode(payload, secret, algorithm='HS256')
     return token
 
 
 def decode_token(token):
     """ Décode un jeton et renvoie les données """
+    print(f"Token before decode: {token}")
+    decoded_token = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+    print(f"Decoded token: {decoded_token}")
+
     return jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
 
 
-def create_session(e, delta, secret=SECRET_KEY):
+def create_session(user, delta, secret=SECRET_KEY):
     """
     Crée une session pour un utilisateur avec un jeton JWT.
     """
-    # Vérification du type et de la valeur de `e.role`
-    print(f"Type de e.role: {type(e.role)}, Valeur de e.role: {e.role}")
+    # Vérification du type et de la valeur de `user.role`
+    print(f"Type de user.role: {type(user.role)}, Valeur de user.role: {user.role}")
 
     # Récupération de la valeur du rôle, en le convertissant en chaîne si nécessaire
-    role_value = e.role.code if isinstance(e.role, ChoiceType) else str(e.role)
+    role_value = user.role.code if hasattr(user.role, 'code') else str(user.role)
 
     # Création du token en utilisant la fonction create_token
-    token = create_token(e, secret)
+    token = create_token(user, secret)
 
     print(f"Creating session with role: {role_value}")
 
@@ -65,7 +75,6 @@ def create_session(e, delta, secret=SECRET_KEY):
     print(f"Token content: {decoded}")
 
     save_session(token)
-
 
 
 def renew_session(secret=SECRET_KEY):
@@ -128,6 +137,9 @@ def read_role(secret=SECRET_KEY):
         decoded = jwt.decode(token, secret, algorithms=['HS256'])
         print(f"Données décodées : {decoded}")  # Ligne de débogage
         role = decoded.get('role')
+        if not role:
+            print("Le rôle dans le jeton est None.")
+            return None
         print(f"Role récupéré du token : {role}")  # Ligne de débogage
         return role
     except jwt.ExpiredSignatureError:
@@ -169,3 +181,56 @@ def get_current_user():
     except jwt.InvalidTokenError:
         print("Jeton invalide.")
         return None
+
+
+def force_refresh_token(secret=SECRET_KEY):
+    """
+    Force le renouvellement du jeton JWT en le recréant avec les mêmes informations utilisateur.
+    """
+    # Charger le jeton actuel
+    token = load_session()
+    if not token:
+        print("Aucun jeton trouvé dans la session.")
+        return None
+
+    try:
+        # Décoder le jeton pour obtenir les informations utilisateur
+        decoded = jwt.decode(token, secret, algorithms=['HS256'])
+        username = decoded.get('username')
+
+        if not username:
+            print("Le jeton ne contient pas d'identifiant d'utilisateur.")
+            return None
+
+        # Récupérer l'utilisateur à partir de la base de données
+        user = session.query(EpicUser).filter_by(username=username).first()
+        if not user:
+            print(f"Utilisateur {username} non trouvé dans la base de données.")
+            return None
+
+        # Créer un nouveau jeton avec les mêmes informations (ou mises à jour)
+        new_token = create_token(user, secret)
+
+        # Sauvegarder le nouveau jeton dans 'session.json'
+        save_session(new_token)
+
+        print(f"Nouveau jeton généré : {new_token}")
+        return new_token
+
+    except jwt.ExpiredSignatureError:
+        print("Le jeton a expiré. Veuillez vous reconnecter.")
+        return None
+    except jwt.InvalidTokenError:
+        print("Jeton invalide.")
+        return None
+
+
+if __name__ == '__main__':
+    # Suppose que vous avez un utilisateur EpicUser pour lequel vous souhaitez créer un jeton
+    user = session.query(EpicUser).filter_by(username="mcourte").first()
+    if user:
+        new_token = create_token(user)
+        save_session(new_token)
+        print(f"Jeton enregistré : {new_token}")
+    else:
+        print("Utilisateur non trouvé.")

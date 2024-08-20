@@ -48,20 +48,31 @@ class EpicBase:
     def login(self, **kwargs) -> bool:
         stop_session()
 
-        username = kwargs.get('username')
-        password = kwargs.get('password')
+        # Obtenez les identifiants depuis l'interface utilisateur
+        username, password = AuthenticationView.prompt_login(**kwargs)
 
-        token = create_token({'username': username})
-        print(f"Token créé: {token}")
+        # Vérifiez la connexion
+        user_data = self.epic.check_connection(username, password)
 
-        decoded_data = decode_token(token)
-        print(f"Data décodée: {decoded_data}")
+        if user_data:
+            # Assurez-vous que `user_data` est un objet avec les attributs appropriés
+            if hasattr(user_data, 'username') and hasattr(user_data, 'role'):
+                username = user_data.username
+                role = user_data.role
 
-        e = self.epic.check_connection(username, password)
-        if e:
-            create_session(e, self.env.TOKEN_DELTA, self.env.SECRET_KEY)
-            self.user = e
-            return True
+                # Créez le jeton en utilisant les données extraites
+                token = create_token(user_data, self.env.SECRET_KEY)
+                print(f"Token créé: {token}")
+
+                decoded_data = decode_token(token)
+                print(f"Data décodée: {decoded_data}")
+
+                create_session(user_data, self.env.TOKEN_DELTA, self.env.SECRET_KEY)
+                self.user = user_data  # Assurez-vous que `self.user` est également un objet approprié
+                return True
+            else:
+                print("L'objet user_data ne contient pas les attributs requis.")
+                return False
         else:
             print("Échec de la connexion")
             return False
@@ -79,7 +90,7 @@ class EpicBase:
                         return e
             except jwt.ExpiredSignatureError:
                 print("Le jeton a expiré.")
-                # Refresh the session
+                # Rafraîchissez la session
                 self.refresh_session()
             except jwt.InvalidTokenError:
                 print("Jeton invalide.")
@@ -88,7 +99,7 @@ class EpicBase:
     def refresh_session(self):
         """ Refresh the session and store the new token """
         if self.user:
-            new_token = create_token({'username': self.user.username})
+            new_token = create_token(self.user)  # Pass the complete user object
             save_session(new_token)
         else:
             print("Aucun utilisateur connecté pour rafraîchir la session.")

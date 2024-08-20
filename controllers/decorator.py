@@ -2,6 +2,7 @@ import jwt
 from functools import wraps
 from .session import load_session, read_role
 from config import SECRET_KEY
+from jwt.exceptions import DecodeError
 
 
 def is_authenticated(f):
@@ -86,3 +87,32 @@ def token_required(f):
         except jwt.InvalidTokenError:
             raise ValueError("Invalid token")
     return decorator
+
+
+def decorator(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        try:
+            # Charger le jeton depuis la session
+            token = load_session()
+            if not token:
+                raise ValueError("No token found in session")
+
+            # Assurez-vous que le token est une chaîne et non pas None
+            if not isinstance(token, str):
+                raise ValueError("Token must be a string")
+
+            # Décoder le token en utilisant jwt.decode
+            decoded_token = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+
+            # Vérification des permissions ici
+            if decoded_token.get('role') not in ['ADM', 'GES', 'SUP', 'COM']:
+                raise PermissionError("Vous n'avez pas les autorisations nécessaires pour effectuer cette action")
+
+            return f(*args, **kwargs)
+
+        except DecodeError:
+            raise PermissionError("Token Invalid")
+        except Exception as e:
+            raise e
+    return wrapper
