@@ -8,7 +8,7 @@ import tempfile
 
 # Valeurs par défaut pour les variables d'environnement
 SECRET_KEY = os.getenv('SECRET_KEY', 'default_secret_key')
-TOKEN_DELTA = os.getenv('TOKEN_DELTA', '3600')  # Exemple : 1 heure par défaut
+TOKEN_DELTA = os.getenv('TOKEN_DELTA', '18000')  # Exemple : 1 heure par défaut
 
 Base = declarative_base()
 
