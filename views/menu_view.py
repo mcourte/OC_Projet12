@@ -42,7 +42,7 @@ class MenuView:
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
             title_align='left',
-            title='Menu manager')
+            title='Menu Gestion')
         return p
 
     @classmethod
