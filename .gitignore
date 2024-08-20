@@ -10,3 +10,4 @@ alembic/
 .vscode/
 .cli_env
 .coveragerc
+session.json
