@@ -22,9 +22,10 @@ def is_commercial(f):
     @wraps(f)
     def decorator(*args, **kwargs):
         role_code = read_role()
-        if role_code in {'COM', 'ADM'}:
+        if role_code in {'COM', 'ADM', 'Commercial', 'Admin'}:
             return f(*args, **kwargs)
         else:
+            print(f"PermissionError: User role is {role_code}, required 'Commercial' or 'COM'")
             raise PermissionError("Vous n'avez pas les autorisations nécessaires pour effectuer cette action")
     return decorator
 
@@ -33,9 +34,10 @@ def is_support(f):
     @wraps(f)
     def decorator(*args, **kwargs):
         role_code = read_role()
-        if role_code in {'SUP', 'ADM'}:
+        if role_code in {'SUP', 'ADM', 'Support', 'Admin'}:
             return f(*args, **kwargs)
         else:
+            print(f"PermissionError: User role is {role_code}, required 'Support' or 'SUP'")
             raise PermissionError("Vous n'avez pas les autorisations nécessaires pour effectuer cette action")
     return decorator
 
@@ -44,9 +46,10 @@ def is_gestion(f):
     @wraps(f)
     def decorator(*args, **kwargs):
         role_code = read_role()
-        if role_code in {'GES', 'ADM'}:
+        if role_code in {'GES', 'ADM', 'Gestion', 'Admin'}:
             return f(*args, **kwargs)
         else:
+            print(f"PermissionError: User role is {role_code}, required 'Gestion' or 'GES'")
             raise PermissionError("Vous n'avez pas les autorisations nécessaires pour effectuer cette action")
     return decorator
 
@@ -55,9 +58,10 @@ def is_admin(f):
     @wraps(f)
     def decorator(*args, **kwargs):
         role_code = read_role()
-        if role_code == 'ADM':
+        if role_code in {'ADM', 'Admin'}:
             return f(*args, **kwargs)
         else:
+            print(f"PermissionError: User role is {role_code}, required 'Admin' or 'ADM'")
             raise PermissionError("Vous n'avez pas les autorisations nécessaires pour effectuer cette action")
     return decorator
 

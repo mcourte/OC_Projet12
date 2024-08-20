@@ -70,6 +70,13 @@ class ContractBase:
     @is_authenticated
     @is_admin
     @is_gestion
+    def state_signed(self):
+        """Permet de lister les Contrats via leurs statuts"""
+        return self.session.query(Contract).filter_by(state="S").all()
+
+    @is_authenticated
+    @is_admin
+    @is_gestion
     @is_commercial
     def find_by_paiement_state(self, paiement_state):
         """Permet de lister les Contrats via leurs statuts de paiement"""

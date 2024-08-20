@@ -107,3 +107,9 @@ class EpicUserBase:
     def get_gestions(self):
         """Permet de lister tous les utilisateurs avec le rôle de Gestion"""
         return self.session.query(EpicUser).filter_by(role='GES').all()
+
+    @is_authenticated
+    @is_admin
+    @is_gestion
+    def find_by_username(cls, session, username):
+        return session.query(cls).filter_by(username=username).first()
