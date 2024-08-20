@@ -63,12 +63,12 @@ class EpicTerminalContract():
             - update database
             - generate a task waiting to be signed
         """
-        clients = self.epic.db_customers.get_clients()
+        clients = self.epic.db_customers.get_all_customers()
         enames = [c.first_name for c in clients]
         ename = CustomerView.prompt_client(enames)
         try:
             data = ContractView.prompt_data_contract()
-            self.epic.db_contracts.create(ename, data)
+            self.epic.db_contracts.create_contract(data)
             contract_ref = data['ref']
             text = f'Contrat {contract_ref} en attente de signature'
         except KeyboardInterrupt:
