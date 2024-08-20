@@ -1,6 +1,8 @@
 import os
 import sys
-
+from rich.panel import Panel
+from rich import box
+from rich.align import Align
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
@@ -47,3 +49,15 @@ class DataView:
     @classmethod
     def display_data_update(cls):
         console.print('Vos modifications ont été enregistrées')
+
+    @classmethod
+    def display_profil(cls, e, nb):
+        text = f'Email: {e.email}\n' if e.email else 'Email: \n'
+        text += f'Role: {e.role.value}\n'
+        text += f'Etat: {e.state.value}\n'
+        p = Panel(
+            Align.center(text, vertical='bottom'),
+            box=box.ROUNDED,
+            title_align='center',
+            title=e.username)
+        console.print(p)
