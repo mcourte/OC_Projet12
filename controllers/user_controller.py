@@ -3,25 +3,38 @@ from controllers.decorator import is_authenticated, is_admin, is_gestion
 
 
 class EpicUserBase:
+    """
+    Classe de base pour la gestion des utilisateurs EpicUser.
+    """
+
     def __init__(self, session):
+        """
+        Initialise une instance de EpicUserBase avec une session de base de données.
+
+        :param session: Session de base de données utilisée pour interagir avec les utilisateurs.
+        """
         self.session = session
 
     @is_authenticated
     @is_admin
     @is_gestion
     def create_user(self, data):
-        """Permet de créer un Utilisateur
-        Informations à fournir : Nom, Prénom, Mot de passe"""
-        role = data.get('role')  # Use .get() to avoid KeyError
+        """
+        Crée un nouvel utilisateur avec les données fournies.
+
+        :param data: Dictionnaire contenant les informations de l'utilisateur, telles que
+                     le prénom, le nom, le mot de passe, le rôle, etc.
+        :return: L'objet EpicUser créé.
+        :raises ValueError: Si le rôle n'est pas valide ou si le nom d'utilisateur existe déjà.
+        """
+        role = data.get('role')
         if role not in ['Commercial', 'Support', 'Gestion', 'Admin']:
             raise ValueError("Invalid role")
         role_code = self.get_rolecode(role)
 
-        # Générer un nom d'utilisateur unique
         if 'username' not in data or not data['username']:
             data['username'] = EpicUser.generate_unique_username(self.session, data['first_name'], data['last_name'])
 
-        # Générer un email unique
         if 'email' not in data or not data['email']:
             data['email'] = EpicUser.generate_unique_email(self.session, data['username'])
 
@@ -39,25 +52,42 @@ class EpicUserBase:
         self.session.add(user)
         self.session.commit()
 
-        return user  # Ensure this is an EpicUser object
+        return user
 
     @is_authenticated
     @is_admin
     @is_gestion
     def get_user(self, username):
-        """Permet de retrouver un Utilisateur via son username"""
+        """
+        Récupère un utilisateur à partir de son nom d'utilisateur.
+
+        :param username: Le nom d'utilisateur de l'utilisateur à récupérer.
+        :return: L'objet EpicUser correspondant, ou None si l'utilisateur n'est pas trouvé.
+        """
         return self.session.query(EpicUser).filter_by(username=username).first()
 
     @is_authenticated
     def get_all_users(self):
-        """Permet de retourner la liste de tous les utilisateurs"""
+        """
+        Récupère la liste de tous les utilisateurs.
+
+        :return: Une liste d'objets EpicUser représentant tous les utilisateurs.
+        """
         return self.session.query(EpicUser).all()
 
     @is_authenticated
     @is_admin
     @is_gestion
     def update_user(self, name, password=None, role=None, state=None):
-        """Permet de mettre à jour un utilisateur, y compris pour le marquer comme inactif."""
+        """
+        Met à jour les informations d'un utilisateur existant.
+
+        :param name: Le nom d'utilisateur de l'utilisateur à mettre à jour.
+        :param password: (Optionnel) Le nouveau mot de passe de l'utilisateur.
+        :param role: (Optionnel) Le nouveau rôle de l'utilisateur.
+        :param state: (Optionnel) Le nouvel état de l'utilisateur (par exemple, inactif).
+        :raises ValueError: Si l'utilisateur n'est pas trouvé.
+        """
         user = self.session.query(EpicUser).filter_by(username=name).first()
         if not user:
             raise ValueError("Utilisateur non trouvé")
@@ -76,9 +106,20 @@ class EpicUserBase:
         self.session.commit()
 
     def get_roles(self):
+        """
+        Récupère la liste des rôles disponibles.
+
+        :return: Une liste de chaînes de caractères représentant les rôles.
+        """
         return ["Commercial", "Support", "Gestion", "Admin"]
 
     def get_rolecode(self, role_name):
+        """
+        Récupère le code associé à un rôle donné.
+
+        :param role_name: Le nom du rôle.
+        :return: Le code du rôle correspondant, ou None si le rôle n'est pas trouvé.
+        """
         role_map = {
             "Commercial": "COM",
             "Support": "SUP",
@@ -91,25 +132,44 @@ class EpicUserBase:
     @is_admin
     @is_gestion
     def get_commercials(self):
-        """Permet de lister tous les utilisateurs avec le rôle de Commercial"""
+        """
+        Récupère la liste de tous les utilisateurs ayant le rôle de Commercial.
+
+        :return: Une liste d'objets EpicUser représentant les utilisateurs avec le rôle 'Commercial'.
+        """
         return self.session.query(EpicUser).filter_by(role='COM').all()
 
     @is_authenticated
     @is_admin
     @is_gestion
     def get_supports(self):
-        """Permet de lister tous les utilisateurs avec le rôle de Support"""
+        """
+        Récupère la liste de tous les utilisateurs ayant le rôle de Support.
+
+        :return: Une liste d'objets EpicUser représentant les utilisateurs avec le rôle 'Support'.
+        """
         return self.session.query(EpicUser).filter_by(role='SUP').all()
 
     @is_authenticated
     @is_admin
     @is_gestion
     def get_gestions(self):
-        """Permet de lister tous les utilisateurs avec le rôle de Gestion"""
+        """
+        Récupère la liste de tous les utilisateurs ayant le rôle de Gestion.
+
+        :return: Une liste d'objets EpicUser représentant les utilisateurs avec le rôle 'Gestion'.
+        """
         return self.session.query(EpicUser).filter_by(role='GES').all()
 
     @is_authenticated
     @is_admin
     @is_gestion
     def find_by_username(cls, session, username):
+        """
+        Recherche un utilisateur par son nom d'utilisateur.
+
+        :param session: Session de base de données utilisée pour interagir avec les utilisateurs.
+        :param username: Le nom d'utilisateur de l'utilisateur à rechercher.
+        :return: L'objet EpicUser correspondant, ou None si l'utilisateur n'est pas trouvé.
+        """
         return session.query(cls).filter_by(username=username).first()

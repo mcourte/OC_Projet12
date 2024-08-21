@@ -1,7 +1,6 @@
 import os
 import sys
 
-
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
@@ -22,9 +21,20 @@ from views.menu_view import MenuView
 from views.data_view import DataView
 
 
-class EpicTerminalContract():
+class EpicTerminalContract:
+    """
+    Classe pour gérer les contrats depuis l'interface terminal.
+    """
 
     def __init__(self, user, base):
+        """
+        Initialise la classe EpicTerminalContract avec l'utilisateur et la base de données.
+
+        Paramètres :
+        ------------
+        user (EpicUser) : L'utilisateur actuellement connecté.
+        base (EpicDatabase) : L'objet EpicDatabase pour accéder aux opérations de la base de données.
+        """
         self.user = user
         self.epic = base
         self.controller_user = EpicTerminalUser(self.user, self.epic)
@@ -33,15 +43,16 @@ class EpicTerminalContract():
     @is_authenticated
     def list_of_contracts(self) -> None:
         """
-            - offers to select a commercial
-            - offers to select a client
-            - offers to select a stat
-            - read database and display data
+        Affiche la liste des contrats en permettant de :
+        - Sélectionner un commercial
+        - Sélectionner un client
+        - Sélectionner un état
+        - Lire la base de données et afficher les contrats.
         """
         state = None
         cname = self.controller_user.choice_commercial()
         customer = self.controller_customer.choice_customer(cname)
-        # select a state
+        # Sélectionner un état
         result = PromptView.prompt_confirm_statut()
         if result:
             states = self.epic.db_contracts.get_all_contracts()
@@ -49,7 +60,7 @@ class EpicTerminalContract():
                 state = ContractView.prompt_select_statut(states)
             except KeyboardInterrupt:
                 state = None
-        # display list
+        # Afficher la liste des contrats
         ContractView.display_list_contracts(
             self.epic.db_contracts.get_all_contracts())
 
@@ -58,10 +69,11 @@ class EpicTerminalContract():
     @is_admin
     def create_contract(self) -> None:
         """
-            - ask to select a client
-            - ask data of contract
-            - update database
-            - generate a task waiting to be signed
+        Crée un nouveau contrat en permettant de :
+        - Sélectionner un client
+        - Saisir les données du contrat
+        - Mettre à jour la base de données
+        - Générer une tâche en attente de signature.
         """
         clients = self.epic.db_customers.get_all_customers()
         enames = [c.first_name for c in clients]
@@ -79,18 +91,13 @@ class EpicTerminalContract():
     @is_commercial
     def update_contract(self):
         """
-            - ask to select a contract in a list of active contract
-            - ask which operation todo
-                - you can add a paiement then:
-                    - ask data for paiement
-                    - create paiement in database
-                - you can modify the data then:
-                    - display the data of actuel contract
-                    - ask for new data
-                    - update database
-                    - display new data
-                - you can signed a contrat
-                - you can cancel a contract
+        Met à jour un contrat existant en permettant de :
+        - Sélectionner un contrat parmi une liste de contrats actifs
+        - Choisir une opération à effectuer :
+            - Ajouter un paiement, en demandant les données nécessaires pour le paiement
+            - Modifier les données du contrat, en affichant les informations actuelles et en demandant les nouvelles données
+            - Signer le contrat
+            - Annuler le contrat
         """
         contracts = self.epic.db_contracts.get_active_contracts()
         refs = [c.ref for c in contracts]
@@ -119,7 +126,7 @@ class EpicTerminalContract():
                         DataView.display_interupt()
                 case 3:
                     self.epic.db_contracts.signed(ref)
-                    text = f'Creer les évènements du contrat {ref}'
+                    text = f'Créez les événements du contrat {ref}'
                     contract = self.epic.db_contracts.get(ref)
                     DataView.display_workflow()
         except KeyboardInterrupt:

@@ -1,8 +1,6 @@
 import random
-
 import os
 import sys
-
 
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
@@ -17,27 +15,38 @@ from views.customer_view import CustomerView
 from terminal.terminal_user import EpicTerminalUser
 
 
-class EpicTerminalCustomer():
+class EpicTerminalCustomer:
+    """
+    Classe pour gérer les clients depuis l'interface terminal.
+    """
 
     def __init__(self, user, base):
+        """
+        Initialise la classe EpicTerminalCustomer avec l'utilisateur et la base de données.
+
+        Paramètres :
+        ------------
+        user (EpicUser) : L'utilisateur actuellement connecté.
+        base (EpicDatabase) : L'objet EpicDatabase pour accéder aux opérations de la base de données.
+        """
         self.user = user
         self.epic = base
         self.controller_user = EpicTerminalUser(self.user, self.epic)
 
     def choice_customer(self, commercial) -> str:
         """
-            - ask to confirm a client selection
-            - read database
-            - ask to select a client
+        Permet de choisir un client en confirmant la sélection.
 
-        Args:
-            commercial_name (str): commercial username
+        Arguments :
+        -----------
+        commercial (str) : Nom d'utilisateur du commercial.
 
-        Returns:
-            str: client full_name
+        Retourne :
+        -----------
+        str : Nom complet du client sélectionné.
         """
         customer = None
-        # select a client
+        # Sélectionner un client
         result = CustomerView.prompt_confirm_customer()
         if result:
             users = self.epic.db_users.get_all_commercials()
@@ -48,8 +57,9 @@ class EpicTerminalCustomer():
     @is_authenticated
     def list_of_customers(self) -> None:
         """
-            - offers to choose a commercial
-            - read database and display data
+        Affiche la liste des clients en permettant de :
+        - Choisir un commercial
+        - Lire la base de données et afficher les données.
         """
         cname = self.controller_user.choice_commercial()
         customers = self.epic.db_customers.get_customer(cname)
@@ -60,9 +70,10 @@ class EpicTerminalCustomer():
     @is_admin
     def update_customer_commercial(self) -> None:
         """
-            - ask to choose a client
-            - ask to choose a commercial
-            - update database
+        Met à jour le commercial attribué à un client en permettant de :
+        - Choisir un client
+        - Choisir un commercial
+        - Mettre à jour la base de données.
         """
         customers = self.epic.db_customers.get_all_customers()
         customers = [c.last_name for c in customers]
@@ -77,26 +88,28 @@ class EpicTerminalCustomer():
     @is_admin
     def create_customer(self) -> None:
         """
-            - ask data of client
-            - select a random manager
-            - send a task to the manager for creating the contract
+        Crée un nouveau client en permettant de :
+        - Saisir les données du client
+        - Sélectionner un gestionnaire aléatoire
+        - Envoyer une tâche au gestionnaire pour créer le contrat.
         """
         data = CustomerView.prompt_data_customer()
         self.epic.db_customers.create_customer(self.user.username, data)
         gestions = self.epic.db_users.get_all_gestions()
         username = random.choice(gestions)
-        text = 'Creer le contrat du client ' + data['first_name' + ' ' + 'last_name']
+        text = 'Créer le contrat du client ' + data['first_name'] + ' ' + data['last_name']
 
     @is_authenticated
     @is_commercial
     @is_admin
     def update_customer(self):
         """
-            - ask a select of a client in the clients of user list
-            - display client information
-            - ask for the new data
-            - update databse
-            - display new client information
+        Met à jour les informations d'un client en permettant de :
+        - Sélectionner un client parmi ceux de la liste de l'utilisateur
+        - Afficher les informations du client
+        - Saisir les nouvelles données
+        - Mettre à jour la base de données
+        - Afficher les nouvelles informations du client.
         """
         customers = self.epic.db_users.get_customer(
             commercial_name=self.user.username)
@@ -106,6 +119,6 @@ class EpicTerminalCustomer():
         CustomerView.display_customer_info(customer)
         data = CustomerView.prompt_data_customer(full_name_required=False)
         customer_name = self.epic.db_customers.update_customer(customer_name, data)
-        print(f'get {customer_name}')
+        print(f'Client mis à jour : {customer_name}')
         customer = self.epic.db_customers.get_customer(customer_name)
         CustomerView.display_customer_info(customer)

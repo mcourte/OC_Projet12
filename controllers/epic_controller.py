@@ -7,15 +7,24 @@ from .decorator import is_authenticated
 
 
 class EpicBase:
+    """
+    Classe principale pour gérer l'application CRM EPIC EVENTS.
+    Elle initialise l'environnement, la base de données, et gère la session utilisateur.
+    """
+
     def __init__(self) -> None:
-        # Load .env file
+        """
+        Initialise la classe EpicBase en chargeant l'environnement,
+        en créant la base de données et en vérifiant la session actuelle.
+        """
+        # Charger le fichier .env
         self.env = Environ()
 
-        # Create database
+        # Créer la base de données
         db_config = self.get_config()
         self.epic = EpicDatabase(**db_config)
 
-        # Load current session
+        # Charger la session actuelle
         self.user = None
         self.check_session()
 
@@ -23,6 +32,13 @@ class EpicBase:
         return "CRM EPIC EVENTS"
 
     def get_config(self):
+        """
+        Récupère la configuration de la base de données à partir de l'environnement.
+
+        Retourne :
+        ----------
+        dict : Un dictionnaire contenant les paramètres de connexion à la base de données.
+        """
         db_url = self.env.DEFAULT_DATABASE
         if db_url.startswith("postgresql"):
             from sqlalchemy.engine.url import make_url
@@ -40,12 +56,30 @@ class EpicBase:
 
     @is_authenticated
     def check_logout(self) -> bool:
-        """ Stop the current session """
+        """
+        Arrête la session actuelle et déconnecte l'utilisateur.
+
+        Retourne :
+        ----------
+        bool : True si la déconnexion est réussie.
+        """
         stop_session()
         print("Déconnecté")
         return True
 
     def login(self, **kwargs) -> bool:
+        """
+        Gère le processus de connexion de l'utilisateur.
+
+        Paramètres :
+        ------------
+        **kwargs : dict
+            Paramètres optionnels pour la connexion.
+
+        Retourne :
+        ----------
+        bool : True si la connexion est réussie, sinon False.
+        """
         stop_session()
 
         # Obtenez les identifiants depuis l'interface utilisateur
@@ -55,7 +89,7 @@ class EpicBase:
         user_data = self.epic.check_connection(username, password)
 
         if user_data:
-            # Assurez-vous que `user_data` est un objet avec les attributs appropriés
+            # Vérifie que `user_data` est un objet avec les attributs requis
             if hasattr(user_data, 'username') and hasattr(user_data, 'role'):
                 username = user_data.username
                 role = user_data.role
@@ -78,6 +112,13 @@ class EpicBase:
             return False
 
     def check_session(self):
+        """
+        Vérifie la session en cours en décodant le jeton stocké.
+
+        Retourne :
+        ----------
+        EpicUser : L'utilisateur actuel si la session est valide, sinon None.
+        """
         token = load_session()
         if token:
             try:
@@ -97,15 +138,25 @@ class EpicBase:
         return None
 
     def refresh_session(self):
-        """ Refresh the session and store the new token """
+        """
+        Rafraîchit la session en créant un nouveau jeton et en le stockant.
+
+        Si aucun utilisateur n'est connecté, une erreur est affichée.
+        """
         if self.user:
-            new_token = create_token(self.user)  # Pass the complete user object
+            new_token = create_token(self.user)  # Passez l'objet utilisateur complet
             save_session(new_token)
         else:
             print("Aucun utilisateur connecté pour rafraîchir la session.")
 
     @classmethod
     def initbase(cls):
+        """
+        Initialise la base de données et crée un fichier de configuration.
+
+        Demande à l'utilisateur de saisir les informations nécessaires pour la configuration,
+        puis crée la base de données et la configure.
+        """
         stop_session()
         values = AuthenticationView.prompt_baseinit()
         file = create_config(*values)

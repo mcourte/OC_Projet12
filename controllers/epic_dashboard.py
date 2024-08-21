@@ -15,14 +15,27 @@ from controllers.epic_controller import EpicDatabase
 
 from .session import stop_session
 
-
 from views.authentication_view import AuthenticationView
 from views.menu_view import MenuView
 
 
 class EpicDashboard:
+    """
+    Classe principale pour gérer le tableau de bord de l'application CRM EPIC EVENTS.
+    Elle gère les différentes opérations disponibles en fonction du rôle de l'utilisateur.
+    """
 
     def __init__(self, database, host, user, password) -> None:
+        """
+        Initialise la classe EpicDashboard avec les informations de connexion à la base de données.
+
+        Paramètres :
+        ------------
+        database (str) : Nom de la base de données.
+        host (str) : Hôte de la base de données.
+        user (str) : Nom d'utilisateur pour la base de données.
+        password (str) : Mot de passe pour la base de données.
+        """
         # Passez les arguments nécessaires à EpicDatabase
         self.gestion = EpicDatabase(database, host, user, password)
         self.gestion_user = EpicUserBase(self.gestion.session)
@@ -31,6 +44,17 @@ class EpicDashboard:
         self.gestion_event = EventBase(self.gestion.session)
 
     def call_function(self, choice) -> bool:
+        """
+        Exécute une fonction en fonction du choix de l'utilisateur.
+
+        Paramètres :
+        ------------
+        choice (str) : Choix de l'utilisateur pour déterminer quelle fonction appeler.
+
+        Retourne :
+        ----------
+        bool : True si l'application doit continuer à fonctionner, sinon False.
+        """
         match choice:
             case '01':
                 self.gestion_user.get_user()
@@ -49,20 +73,20 @@ class EpicDashboard:
                         self.gestion_customer.create_customer()
             case '07':
                 match self.gestion.user.role.code:
-                    case 'M':
+                    case 'G':
                         self.gestion_user.create_user()
                     case 'C':
                         self.gestion_customer.update_customer()
             case '08':
                 match self.gestion.user.role.code:
-                    case 'M':
+                    case 'G':
                         self.gestion_user.update_user()
                     case 'C':
                         self.gestion_event.create_event()
             case '09':
                 match self.gestion.user.role.code:
-                    case 'M':
-                        self.gestion_user.inactivate_()
+                    case 'G':
+                        self.gestion_user.set_inactivate()
             case '10':
                 self.gestion_contract.create_contract()
             case '11':
@@ -80,6 +104,10 @@ class EpicDashboard:
         return True
 
     def run(self) -> None:
+        """
+        Lance le tableau de bord et gère le cycle de vie de l'application en affichant le menu
+        et en appelant les fonctions appropriées en fonction des choix de l'utilisateur.
+        """
         if self.gestion.user:
             running = True
             AuthenticationView.display_welcome(self.gestion.user.username)

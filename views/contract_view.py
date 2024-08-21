@@ -18,16 +18,21 @@ from views.regexformat import regexformat
 
 
 class ContractView:
+    """
+    Classe pour gérer l'affichage et l'interaction avec les contrats.
+    """
 
     @classmethod
     def display_list_contracts(cls, all_contracts, pager=True) -> None:
-        """ Display the list of contracts
-
-        Args:
-            all_contracts (list): list of instance of Contract
-            pager (bool, optional): If pager is used. Defaults to True.
         """
-        table = Table(title="Liste des contracts", box=box.SQUARE)
+        Affiche la liste des contrats.
+
+        Paramètres :
+        ------------
+        all_contracts (list) : Liste des instances de contrat.
+        pager (bool, optionnel) : Indique si le pager est utilisé. Par défaut à True.
+        """
+        table = Table(title="Liste des contrats", box=box.SQUARE)
         table.add_column("Description")
         table.add_column("Client")
         table.add_column("Montant")
@@ -49,12 +54,14 @@ class ContractView:
 
     @classmethod
     def display_contract_info(cls, contract) -> None:
-        """ display data for a specific contract
-
-        Args:
-            client (Contract): a Contract instance
         """
-        title = f"Données du contract {contract.ref}"
+        Affiche les informations d'un contrat spécifique.
+
+        Paramètres :
+        ------------
+        contract (Contract) : Instance du contrat à afficher.
+        """
+        title = f"Données du contrat {contract.ref}"
         table = Table(title=title, box=box.SQUARE)
         table.add_column("Référence")
         table.add_column("Description")
@@ -74,46 +81,56 @@ class ContractView:
 
     @classmethod
     def prompt_confirm_contract(cls, **kwargs) -> bool:
-        """ ask if a contract have to be selected
+        """
+        Demande si un contrat doit être sélectionné.
 
-        Returns:
-            bool: True or False
+        Retourne :
+        -----------
+        bool : True si un contrat doit être sélectionné, sinon False.
         """
         return questionary.confirm(
             "Souhaitez-vous sélectionner un contrat ?", **kwargs).ask()
 
     @classmethod
     def prompt_confirm_close_contract(cls, **kwargs) -> bool:
-        """ ask if a contract have to be closed
+        """
+        Demande si un contrat doit être clôturé.
 
-        Returns:
-            bool: True or False
+        Retourne :
+        -----------
+        bool : True si le contrat doit être clôturé, sinon False.
         """
         return questionary.confirm(
-            "Demander une cloture du contrat ?", **kwargs).ask()
+            "Demander une clôture du contrat ?", **kwargs).ask()
 
     @classmethod
     def prompt_select_statut(cls, values) -> str:
-        """ propose to select a statut in the list of values
+        """
+        Propose de sélectionner un statut parmi une liste de valeurs.
 
-        Args:
-            values (list): list of states name
+        Paramètres :
+        ------------
+        values (list) : Liste des noms de statuts.
 
-        Returns:
-            str: the name of state selected
+        Retourne :
+        -----------
+        str : Le nom du statut sélectionné.
         """
         return PromptView.prompt_select(
                     "Choix du statut:", values)
 
     @classmethod
     def prompt_select_contract(cls, values):
-        """ propose to select a contract in the list of values
+        """
+        Propose de sélectionner un contrat parmi une liste de références.
 
-        Args:
-            values (list): list of Contract.ref
+        Paramètres :
+        ------------
+        values (list) : Liste des références de contrats.
 
-        Returns:
-            str: the Contract.ref selected
+        Retourne :
+        -----------
+        str : La référence du contrat sélectionné.
         """
         return PromptView.prompt_select(
                 "Choix du contrat:", values)
@@ -122,15 +139,18 @@ class ContractView:
     def prompt_data_contract(cls,
                              ref_required=True,
                              mt_required=True, **kwargs) -> dict:
-        """ ask all data of a contract
+        """
+        Demande toutes les données nécessaires pour créer un contrat.
 
-        Raises:
-            KeyboardInterrupt: if ctrl+C is enter
+        Paramètres :
+        ------------
+        ref_required (bool, optionnel) : Indique si la référence est requise. Par défaut à True.
+        mt_required (bool, optionnel) : Indique si le montant est requis. Par défaut à True.
+        **kwargs : Arguments supplémentaires pour la fonction questionary.text.
 
-        Returns:
-            dict: example:
-            {'ref': ref, 'description': description,
-                'total_amount': total_amount}
+        Retourne :
+        -----------
+        dict : Un dictionnaire contenant les données du contrat.
         """
         error_text = regexformat['3cn'][1]
         ref = questionary.text(
@@ -161,14 +181,16 @@ class ContractView:
 
     @classmethod
     def prompt_data_paiement(cls, **kwargs) -> dict:
-        """ ask for data of a paiement
+        """
+        Demande les données nécessaires pour un paiement.
 
-        Raises:
-            KeyboardInterrupt: if ctrl+C is enter
+        Paramètres :
+        ------------
+        **kwargs : Arguments supplémentaires pour la fonction questionary.text.
 
-        Returns:
-            dict: example
-            {'ref': ref, 'amount': amount}
+        Retourne :
+        -----------
+        dict : Un dictionnaire contenant la référence et le montant du paiement.
         """
         ref = questionary.text(
             "Référence:",
@@ -186,15 +208,3 @@ class ContractView:
         if amount is None:
             raise KeyboardInterrupt
         return {'ref': ref, 'amount': amount}
-
-    @classmethod
-    def workflow_contract_is_over(cls, contract_ref) -> str:
-        """ return format string to say a contract need to be sold
-
-        Args:
-            contract_ref (str): ref of the Contract
-
-        Returns:
-            str: the format string
-        """
-        return f"Evénements terminés, solder le contrat {contract_ref}"

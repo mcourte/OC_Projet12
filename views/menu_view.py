@@ -18,21 +18,39 @@ from views.console_view import console, error_console
 
 
 class MenuView:
+    """
+    Classe pour gérer l'affichage des menus et les interactions avec l'utilisateur.
+    """
 
     @classmethod
     def thinking(cls):
+        """
+        Simule un traitement en attente pendant 30 secondes.
+        """
         time.sleep(30)
 
     @classmethod
     def show_waiting(cls, f):
+        """
+        Affiche un indicateur de chargement pendant l'exécution de la fonction passée en argument.
+
+        Args:
+            f (function): Fonction à exécuter pendant l'affichage de l'indicateur de chargement.
+        """
         with console.status("Working...", spinner="circleQuarters"):
             f()
 
     @classmethod
     def menu_gestion(cls) -> Panel:
+        """
+        Crée et retourne le menu de gestion.
+
+        Returns:
+            Panel: Menu de gestion formaté.
+        """
         menu_text = "    05-Liste des employés\n"
         menu_text += "    06-Créer un nouvel employé\n"
-        menu_text += "    07-Modifier le role d'un employé\n"
+        menu_text += "    07-Modifier le rôle d'un employé\n"
         menu_text += "    08-Changer le statut actif/inactif d'un employé\n"
         menu_text += "    09-Créer un contrat\n"
         menu_text += "    10-Modifier un contrat\n"
@@ -47,30 +65,51 @@ class MenuView:
 
     @classmethod
     def menu_commercial(cls) -> Panel:
+        """
+        Crée et retourne le menu commercial.
+
+        Returns:
+            Panel: Menu commercial formaté.
+        """
         menu_text = "    05-Créer un nouveau client\n"
         menu_text += "    06-Modifier les données d'un client\n"
-        menu_text += "    07-Creer un évènement\n"
+        menu_text += "    07-Créer un évènement\n"
         menu_text += "    08-Effectuer une demande de création de contrat\n"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
             title_align='left',
-            title='Menu commercial')
+            title='Menu Commercial')
         return p
 
     @classmethod
     def menu_support(cls) -> Panel:
+        """
+        Crée et retourne le menu support.
+
+        Returns:
+            Panel: Menu support formaté.
+        """
         menu_text = "    05-Liste des évènements qui me sont attribués\n"
         menu_text += "    06-Modifier les données d'un évènement\n"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
             title_align='left',
-            title='Menu support')
+            title='Menu Support')
         return p
 
     @classmethod
     def menu_role(cls, role) -> Panel:
+        """
+        Retourne le menu correspondant au rôle spécifié.
+
+        Args:
+            role (str): Le rôle de l'utilisateur ('G', 'C', 'S').
+
+        Returns:
+            Panel: Menu correspondant au rôle.
+        """
         match role:
             case "G":
                 menu = cls.menu_gestion()
@@ -79,11 +118,17 @@ class MenuView:
             case "S":
                 menu = cls.menu_support()
             case _:
-                menu = Panel("Menu not found")
+                menu = Panel("Menu non trouvé")
         return menu
 
     @classmethod
     def menu_accueil(cls) -> Panel:
+        """
+        Crée et retourne le menu d'accueil.
+
+        Returns:
+            Panel: Menu d'accueil formaté.
+        """
         menu_text = "    01-Voir mes données\n"
         menu_text += "    02-Liste des clients\n"
         menu_text += "    03-Liste des contrats\n"
@@ -97,6 +142,12 @@ class MenuView:
 
     @classmethod
     def menu_quit(cls) -> Panel:
+        """
+        Crée et retourne le menu de déconnexion et de quitter.
+
+        Returns:
+            Panel: Menu de déconnexion et de quitter formaté.
+        """
         menu_text = "    D-Me déconnecter\n"
         menu_text += "    Q-Quitter l'application"
         p = Panel(
@@ -108,14 +159,37 @@ class MenuView:
 
     @classmethod
     def menu_choice(cls, role):
+        """
+        Affiche les menus disponibles en fonction du rôle de l'utilisateur et demande une sélection.
 
+        Args:
+            role (str): Le rôle de l'utilisateur ('G', 'C', 'S').
+
+        Returns:
+            str: Le choix de l'utilisateur.
+        """
         def ask_prompt():
+            """
+            Demande à l'utilisateur ce qu'il souhaite faire et valide l'entrée.
+
+            Returns:
+                str: Réponse de l'utilisateur.
+            """
             return questionary.text(
                 "Que voulez-vous faire ?",
                 validate=lambda text: True if re.match(r"[0-1][0-9]|D|Q", text)
                 else "Votre choix est invalide").ask()
 
         def check_prompt(result):
+            """
+            Vérifie si le choix de l'utilisateur est valide.
+
+            Args:
+                result (str): Choix de l'utilisateur.
+
+            Returns:
+                bool: True si le choix est valide, sinon False.
+            """
             match role:
                 case 'G': max_menu_idx = 13
                 case 'C': max_menu_idx = 9
@@ -140,11 +214,21 @@ class MenuView:
 
     @classmethod
     def menu_update_contract(cls, state):
+        """
+        Affiche le menu pour la mise à jour d'un contrat en fonction de son état et demande une sélection.
+
+        Args:
+            state (str): L'état actuel du contrat.
+
+        Returns:
+            int: L'index du choix sélectionné (1 pour "Enregistrer un paiement",
+            2 pour "Modifier les données du contrat", etc.).
+        """
         menu_text = [
             'Enregistrer un paiement']
         if state == 'C':
             menu_text.append('Modifier les données du contrat')
-            menu_text.append('signé le contrat')
+            menu_text.append('Signer le contrat')
             menu_text.append('Annuler le contrat')
         choice = questionary.select(
                 "Que voulez-vous faire ?",

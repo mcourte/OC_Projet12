@@ -1,7 +1,6 @@
 import os
 import sys
 
-
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
@@ -14,22 +13,35 @@ from views.user_view import UserView
 from views.data_view import DataView
 
 
-class EpicTerminalUser():
+class EpicTerminalUser:
+    """
+    Classe pour gérer les utilisateurs depuis l'interface terminal.
+    """
 
     def __init__(self, user, base):
+        """
+        Initialise la classe EpicTerminalUser avec l'utilisateur et la base de données.
+
+        Paramètres :
+        ------------
+        user (EpicUser) : L'utilisateur actuellement connecté.
+        base (EpicDatabase) : L'objet EpicDatabase pour accéder aux opérations de la base de données.
+        """
         self.user = user
         self.epic = base
 
     def choice_commercial(self) -> str:
         """
-            - ask to confirm a selection
-            - read the list in database
-            - ask to choose a commercial
+        Permet de choisir un commercial parmi ceux disponibles.
 
-        Returns:
-            str: commercial username
+        - Demande de confirmer une sélection.
+        - Lit la liste des commerciaux dans la base de données.
+        - Demande de choisir un commercial.
+
+        Retourne :
+        -----------
+        str : Le nom d'utilisateur du commercial sélectionné.
         """
-        # select a commercial
         cname = None
         result = UserView.prompt_confirm_commercial()
         if result:
@@ -41,18 +53,20 @@ class EpicTerminalUser():
     @is_authenticated
     def show_profil(self) -> None:
         """
-        read data of the current user and display it
+        Affiche le profil de l'utilisateur actuellement connecté.
         """
         DataView.display_profil(self.user)
 
     @is_authenticated
     def update_profil(self):
         """
-            - ask confirm to update data
-            - show profil data
-            - ask new data
-            - update database
-            - display new data
+        Permet de mettre à jour le profil de l'utilisateur.
+
+        - Demande une confirmation pour mettre à jour les données.
+        - Affiche les données du profil actuel.
+        - Demande les nouvelles données.
+        - Met à jour la base de données avec les nouvelles données.
+        - Affiche les nouvelles données mises à jour.
         """
         result = UserView.prompt_confirm_profil()
         if result:
@@ -67,7 +81,10 @@ class EpicTerminalUser():
     @is_admin
     def list_of_users(self) -> None:
         """
-        read database of employees and display it
+        Affiche la liste de tous les utilisateurs de la base de données.
+
+        - Lit les données des utilisateurs dans la base de données.
+        - Affiche la liste des utilisateurs.
         """
         users = self.epic.db_users.get_all_users()
         UserView.display_list_users(users)
@@ -77,8 +94,10 @@ class EpicTerminalUser():
     @is_admin
     def create_new_user(self) -> None:
         """
-            - prompt data of employee
-            - update database
+        Crée un nouvel utilisateur.
+
+        - Demande les données de l'employé.
+        - Met à jour la base de données avec les nouvelles données d'utilisateur.
         """
         roles = self.epic.db_users.get_roles()
         try:
@@ -92,9 +111,11 @@ class EpicTerminalUser():
     @is_admin
     def update_user_password(self) -> None:
         """
-            - ask to select an employee
-            - ask the new password
-            - update database
+        Met à jour le mot de passe d'un utilisateur.
+
+        - Demande de sélectionner un utilisateur.
+        - Demande le nouveau mot de passe.
+        - Met à jour la base de données avec le nouveau mot de passe.
         """
         users = self.epic.db_users.get_all_users()
         users_usernames = [e.username for e in users]
@@ -107,8 +128,10 @@ class EpicTerminalUser():
     @is_admin
     def inactivate_user(self) -> None:
         """
-            - ask to select an employee
-            - update database
+        Désactive un utilisateur.
+
+        - Demande de sélectionner un utilisateur.
+        - Met à jour la base de données pour désactiver l'utilisateur sélectionné.
         """
         users = self.epic.db_users.get_all_users()
         user_usernames = [e.username for e in users]
@@ -119,6 +142,16 @@ class EpicTerminalUser():
     @is_gestion
     @is_admin
     def find_by_username(self):
+        """
+        Trouve un utilisateur par son nom d'utilisateur.
+
+        - Lit la liste des utilisateurs de la base de données.
+        - Demande de sélectionner un utilisateur.
+
+        Retourne :
+        -----------
+        str : Le nom d'utilisateur sélectionné.
+        """
         users = self.epic.db_users.get_all_users()
         user_usernames = [e.username for e in users]
         username = UserView.prompt_user(user_usernames)

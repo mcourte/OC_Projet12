@@ -12,7 +12,6 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-
 from views.console_view import console
 from views.prompt_view import PromptView
 from views.regexformat import regexformat
@@ -22,23 +21,28 @@ class UserView:
 
     @classmethod
     def prompt_confirm_commercial(cls, **kwargs) -> bool:
-        """ ask to confirm a selection of a commercial
+        """
+        Demande une confirmation pour sélectionner un commercial.
+
+        Args:
+            **kwargs: Arguments supplémentaires pour la fonction `questionary.confirm`.
 
         Returns:
-            bool: True or False
+            bool: `True` si l'utilisateur confirme la sélection, sinon `False`.
         """
         return questionary.confirm(
             "Souhaitez-vous sélectionner un commercial ?", **kwargs).ask()
 
     @classmethod
     def prompt_commercial(cls, all_commercials) -> str:
-        """ ask to select a commercial in a list
+        """
+        Demande à l'utilisateur de sélectionner un commercial dans une liste.
 
         Args:
-            all_commercials (list): list of username
+            all_commercials (list): Liste des noms d'utilisateur des commerciaux.
 
         Returns:
-            str: return the username selected
+            str: Nom d'utilisateur du commercial sélectionné.
         """
         return questionary.select(
             "Choix du commercial:",
@@ -47,23 +51,28 @@ class UserView:
 
     @classmethod
     def prompt_confirm_support(cls, **kwargs) -> bool:
-        """ ask to confirm a support selection
+        """
+        Demande une confirmation pour sélectionner un support.
+
+        Args:
+            **kwargs: Arguments supplémentaires pour la fonction `questionary.confirm`.
 
         Returns:
-            bool: True or False
+            bool: `True` si l'utilisateur confirme la sélection, sinon `False`.
         """
         return questionary.confirm(
             "Souhaitez-vous sélectionner un support ?", **kwargs).ask()
 
     @classmethod
     def prompt_gestion(cls, alls) -> str:
-        """ ask to select a manager in the
+        """
+        Demande à l'utilisateur de sélectionner un gestionnaire dans une liste.
 
         Args:
-            alls (list): list of manager username
+            alls (list): Liste des noms d'utilisateur des gestionnaires.
 
         Returns:
-            str: the manager username selected
+            str: Nom d'utilisateur du gestionnaire sélectionné.
         """
         return questionary.select(
             "Choix du gestionnaire:",
@@ -72,13 +81,14 @@ class UserView:
 
     @classmethod
     def prompt_user(cls, all_users) -> str:
-        """ ask to select an employee in a list
+        """
+        Demande à l'utilisateur de sélectionner un employé dans une liste.
 
         Args:
-            all_employees (list): list of employee name
+            all_users (list): Liste des noms d'employés.
 
         Returns:
-            str: return the employee name selected
+            str: Nom de l'employé sélectionné.
         """
         return questionary.select(
             "Sélectionnez un employé:",
@@ -87,23 +97,28 @@ class UserView:
 
     @classmethod
     def prompt_select_support(cls, values) -> str:
-        """ ask to select a support in a list
+        """
+        Demande à l'utilisateur de sélectionner un support dans une liste.
 
         Args:
-            values (list): list of support username
+            values (list): Liste des noms d'utilisateur des supports.
 
         Returns:
-            str: the support username selected
+            str: Nom d'utilisateur du support sélectionné.
         """
         return PromptView.prompt_select(
             "Choix du support:", values)
 
     @classmethod
     def prompt_confirm_profil(cls, **kwargs) -> bool:
-        """ ask to confirm an update of data
+        """
+        Demande une confirmation pour modifier les données de l'utilisateur.
+
+        Args:
+            **kwargs: Arguments supplémentaires pour la fonction `questionary.confirm`.
 
         Returns:
-            bool: True or False
+            bool: `True` si l'utilisateur confirme la modification, sinon `False`.
         """
         return questionary.confirm(
             "Souhaitez-vous modifier vos données ?", **kwargs).ask()
@@ -112,13 +127,19 @@ class UserView:
     def prompt_data_profil(
             cls, user_raquired=True, password_required=True,
             email_required=True) -> dict:
-        """ ask the data for an employee
+        """
+        Demande les données pour un employé.
+
+        Args:
+            user_raquired (bool, optional): Si le nom d'utilisateur est requis. Defaults to True.
+            password_required (bool, optional): Si le mot de passe est requis. Defaults to True.
+            email_required (bool, optional): Si l'email est requis. Defaults to True.
 
         Raises:
-            KeyboardInterrupt: ctrl+C is enter
+            KeyboardInterrupt: Si l'utilisateur interrompt la saisie avec Ctrl+C.
 
         Returns:
-            dict: example:
+            dict: Dictionnaire avec les données saisies, par exemple :
             {'username': username, 'password': password, 'email': email}
         """
         username = questionary.text(
@@ -149,15 +170,18 @@ class UserView:
 
     @classmethod
     def prompt_password(cls, **kwargs) -> str:
-        """ ask for a new password with confirm
+        """
+        Demande un nouveau mot de passe et sa confirmation.
+
+        Args:
+            **kwargs: Arguments supplémentaires pour la fonction `questionary.password`.
 
         Raises:
-            KeyboardInterrupt: ctr+C enter
+            KeyboardInterrupt: Si l'utilisateur interrompt la saisie avec Ctrl+C.
 
         Returns:
-            str: the new password
+            str: Le nouveau mot de passe saisi.
         """
-
         password = questionary.password(
             "Mot de passe:",
             validate=lambda text: True
@@ -179,13 +203,14 @@ class UserView:
 
     @classmethod
     def prompt_role(cls, all_roles) -> str:
-        """ask for a role in a list
+        """
+        Demande à l'utilisateur de sélectionner un rôle dans une liste.
 
         Args:
-            all_roles (str): list of role name
+            all_roles (list): Liste des noms de rôles.
 
         Returns:
-            str: the name of the role selected
+            str: Nom du rôle sélectionné.
         """
         role = questionary.select(
             "Role:",
@@ -195,16 +220,16 @@ class UserView:
 
     @classmethod
     def prompt_data_user(cls, all_roles) -> dict:
-        """ ask the data for a new employee
-        and ask his role
+        """
+        Demande les données pour un nouvel employé et son rôle.
 
         Args:
-            all_roles (list): list of role name
+            all_roles (list): Liste des noms de rôles disponibles.
 
         Returns:
-            dict: example
+            dict: Dictionnaire avec les données saisies, par exemple :
             {'username': username, 'password': password,
-            'email': email 'role": "Manager"}
+            'email': email, 'role': "Manager"}
         """
         data = cls.prompt_data_profil()
         data['role'] = cls.prompt_role(all_roles)
@@ -213,11 +238,12 @@ class UserView:
     @classmethod
     def display_list_users(
             cls, all_users, pager=True) -> None:
-        """ Display a list of employees
+        """
+        Affiche une liste des employés.
 
         Args:
-            all_employees (list): list of Employee instance
-            pager (bool, optional): if pager is needed. Defaults to True.
+            all_users (list): Liste des instances d'employés.
+            pager (bool, optional): Si la pagination est nécessaire. Defaults to True.
         """
         table = Table(title="Liste des employés", box=box.SQUARE)
         table.add_column("Département")
