@@ -14,7 +14,6 @@ from argon2.exceptions import VerifyMismatchError
 from datetime import datetime
 from sqlalchemy.orm import object_session
 from unidecode import unidecode
-
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
@@ -22,7 +21,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-from config import Base
+from config_init import Base
 
 
 class EpicUser(Base):
@@ -900,12 +899,17 @@ class Paiement(Base):
     __tablename__ = 'paiements'
 
     paiement_id = Column(Integer, primary_key=True)
-    ref = Column(String, nullable=False, unique=True)
     date_amount = Column(TIMESTAMP, nullable=False, default=datetime.now())
     amount = Column(Integer)
     contract_id = Column(Integer, ForeignKey('contracts.contract_id'), nullable=False, index=True)
 
     contract = relationship('Contract', back_populates='paiements')
+
+    def __init__(self, paiement_id, amount, contract_id):
+        self.paiement_id = paiement_id
+        self.amount = amount
+        self.contract_id = contract_id
+        self.date_amount = datetime.now()
 
     def __repr__(self):
         """
