@@ -16,6 +16,7 @@ sys.path.insert(0, parent_dir)
 from views.console_view import console
 from views.prompt_view import PromptView
 from views.regexformat import regexformat
+from controllers.contract_controller import Contract
 
 
 class EventView:
@@ -33,34 +34,31 @@ class EventView:
             pager (bool, optional): Si la pagination est utilisée. Par défaut à True.
         """
         table = Table(title="Liste des évènements", box=box.SQUARE)
-        table.add_column("Client")
         table.add_column("Ref. Contrat")
-        table.add_column("Type")
         table.add_column("Titre")
         table.add_column("Lieu")
         table.add_column("Nb. participants")
         table.add_column("Dates")
-        table.add_column("Statut")
         table.add_column("Commercial")
         table.add_column("Support")
 
         for e in all_events:
             if e.support:
-                str_support = e.support.username
+                str_support = e.support_id
             else:
                 str_support = ''
-            fmt_date = '%d/%m/%Y-%Hh%M'
+            fmt_date = '%d/%m/%Y'
             str_dates = f'du {e.date_started.strftime(fmt_date)}'
             str_dates += f'\nau {e.date_ended.strftime(fmt_date)}'
             table.add_row(
-                e.contract.client.full_name,
-                e.contract.ref,
-                e.type.title, e.title,
-                e.location, str(e.attendees),
-                str_dates, e.state.value,
-                e.contract.client.commercial.username,
-                str_support
-                )
+                str(e.event_id),
+                e.title,
+                e.location,
+                str(e.attendees),
+                str_dates,
+                e.customer_id,
+                str_support)
+
         if pager:
             with console.pager():
                 console.print(table)
@@ -111,8 +109,7 @@ class EventView:
         nb = questionary.text(
             "Nb participants:",
             validate=lambda text: True
-            if re.match(r"^[0-9]+$", text)
-            and int(text) > 0 and int(text) <= 5000
+            if re.match(r"^[0-9]+$", text) and int(text) > 0 and int(text) <= 5000
             else "Nombre compris entre 0 et 5000",
             **kwargs).ask()
 
@@ -127,8 +124,7 @@ class EventView:
             end = questionary.text(
                 "Date de fin:",
                 validate=lambda text: True
-                if re.match(regexformat['date'][0], text)
-                and datetime.strptime(
+                if re.match(regexformat['date'][0], text) and datetime.strptime(
                     text, fmt_date) >= datetime.strptime(start, fmt_date)
                 else regexformat['date'][1] + " et >= date de début",
                 **kwargs).ask()
@@ -248,3 +244,48 @@ class EventView:
             if re.match(regexformat['alpha'][0], text)
             else regexformat['alpha'][1], **kwargs).ask()
         return rapport
+
+    @classmethod
+    def prompt_select_contract(cls, all_contracts) -> Contract:
+        """
+        Demande à l'utilisateur de sélectionner un contrat dans une liste.
+
+        Args:
+            all_contracts (list): Liste des instances de contrats.
+
+        Returns:
+            Contract: Instance du contrat sélectionné ou None si aucun contrat n'est sélectionné.
+        """
+        print(f"Contrats disponibles: {all_contracts}")
+        choices = [f"{contract.contract_id} {contract.description}" for contract in all_contracts]
+
+        selected_choice = questionary.select(
+            "Choix du contrat:",
+            choices=choices,
+        ).ask()
+
+        if selected_choice:
+            for contract in all_contracts:
+                if f"{contract.contract_id} {contract.description}" == selected_choice:
+                    return contract
+        return None
+
+    def prompt_select_statut(cls) -> str:
+        """
+        Demande à l'utilisateur de sélectionner un statut parmi les états définis.
+
+        Returns:
+            str: État sélectionné ou None si aucun état n'est sélectionné.
+        """
+        statuts = cls.CONTRACT_STATES
+        choices = [f"{code} {description}" for code, description in statuts]
+
+        selected_choice = questionary.select(
+            "Choix du statut:",
+            choices=choices,
+        ).ask()
+
+        if selected_choice:
+            code = selected_choice.split()[0]
+            return code
+        return None

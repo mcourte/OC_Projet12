@@ -90,7 +90,9 @@ class DataView:
         ------------
         e (User) : Instance de l'utilisateur dont les informations doivent être affichées.
         """
-        text = f'Email: {e.email}\n' if e.email else 'Email: \n'
+        text = f'Prénom: {e.first_name}\n'
+        text += f'Nom: {e.last_name}\n'
+        text += f'Email: {e.email}\n' if e.email else 'Email: \n'
         text += f'Rôle: {e.role.value}\n'
         text += f'État: {e.state.value}\n'
         p = Panel(

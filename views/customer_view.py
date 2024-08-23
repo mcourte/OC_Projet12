@@ -48,8 +48,7 @@ class CustomerView:
         -----------
         str : Le nom complet du client sélectionné.
         """
-        return PromptView.prompt_select(
-                "Choix du client:", all_customers, **kwargs)
+        return PromptView.prompt_select("Choix du client:", all_customers, **kwargs)
 
     @classmethod
     def prompt_full_name(cls) -> str:
@@ -122,27 +121,26 @@ class CustomerView:
 
         Paramètres :
         ------------
-        all_customers (list) : Liste des instances de clients.
+        all_customers (list) : Liste des instances de client.
         pager (bool, optionnel) : Indique si le pager est utilisé. Par défaut à True.
         """
         table = Table(title="Liste des clients", box=box.SQUARE)
-        table.add_column("Nom")
-        table.add_column("Prénom")
-        table.add_column("Email")
-        table.add_column("Téléphone")
-        table.add_column("Entreprise")
+        table.add_column("Nom complet")
         table.add_column("Commercial")
-        table.add_column("Nb contrats")
         for c in all_customers:
             table.add_row(
-                c.first_name, c.last_name, c.email, c.phone, c.company_name,
-                str(c.commercial), str(len(c.contracts)))
+                f"{c.first_name} {c.last_name}",  # Nom complet du client
+                str(c.commercial.username) if c.commercial else 'Aucun commercial'  # Nom d'utilisateur du commercial
+            )
 
         if pager:
             with console.pager():
                 console.print(table)
         else:
             console.print(table)
+        # Après l'affichage de la liste, demander à l'utilisateur de continuer
+        print("\nAppuyez sur Entrée pour continuer...")
+        input()
 
     @classmethod
     def display_customer_info(cls, customer) -> None:
@@ -153,7 +151,7 @@ class CustomerView:
         ------------
         customer (Client) : Instance du client à afficher.
         """
-        title = f"Données du client {customer.first_name} {customer.last_name}"
+        title = "Données du client"
         table = Table(title=title, box=box.SQUARE)
         table.add_column("Nom")
         table.add_column("Prénom")
@@ -161,12 +159,37 @@ class CustomerView:
         table.add_column("Téléphone")
         table.add_column("Entreprise")
         table.add_column("Commercial")
-        table.add_column("Nb contrats actifs")
         table.add_column("Nb contrats")
         table.add_row(
                 customer.first_name, customer.last_name, customer.email,
                 customer.phone, customer.company_name,
-                str(customer.commercial), str(len(customer.actif_contracts)),
+                str(customer.commercial),
                 str(len(customer.contracts)),
-                )
+                    )
         console.print(table)
+        print("\nAppuyez sur Entrée pour continuer...")
+        input()
+
+    @classmethod
+    def prompt_customers(cls, all_customers) -> str:
+        """
+        Demande à l'utilisateur de sélectionner un client dans une liste.
+
+        Args:
+            all_customers (list): Liste des instances de clients.
+
+        Returns:
+            str: Nom complet du client sélectionné ou None si aucun client n'est sélectionné.
+        """
+        choices = [f"{c.first_name} {c.last_name}" for c in all_customers]
+        selected_name = questionary.select(
+            "Choix du client:",
+            choices=choices,
+        ).ask()
+
+        if selected_name:
+            # Trouver l'instance de client correspondante
+            for customer in all_customers:
+                if f"{customer.first_name} {customer.last_name}" == selected_name:
+                    return customer
+        return None

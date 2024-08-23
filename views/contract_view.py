@@ -13,8 +13,8 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 sys.path.insert(0, parent_dir)
 
 from views.console_view import console
-from views.prompt_view import PromptView
 from views.regexformat import regexformat
+from controllers.contract_controller import Contract
 
 
 class ContractView:
@@ -40,9 +40,10 @@ class ContractView:
         table.add_column("Statut")
         table.add_column("Commercial")
         for c in all_contracts:
+            client_name = f"{c.customer.first_name} {c.customer.last_name}".strip()
             table.add_row(
-                c.description, c.customer.first_name, c.customer.last_name,
-                str(c.total_amount), str(c.remaining_amount),
+                c.description, client_name,
+                str(c.total_amount), str(c.remaining_amount or "0"),
                 c.state.value,
                 c.customer.commercial.username
             )
@@ -72,11 +73,11 @@ class ContractView:
         table.add_column("Nb évènements")
         table.add_column("Commercial")
         table.add_row(
-                contract.ref, contract.description, contract.customer.first_name, contract.customer.last_name,
-                str(contract.total_amount), str(contract.remaining_amount),
-                contract.state.value, str(len(contract.events)),
-                contract.customer.commercial.username
-                )
+            contract.ref, contract.description, contract.customer.first_name, contract.customer.last_name,
+            str(contract.total_amount), str(contract.remaining_amount),
+            contract.state.value, str(len(contract.events)),
+            contract.customer.commercial.username
+        )
         console.print(table)
 
     @classmethod
@@ -103,37 +104,27 @@ class ContractView:
         return questionary.confirm(
             "Demander une clôture du contrat ?", **kwargs).ask()
 
-    @classmethod
-    def prompt_select_statut(cls, values) -> str:
+    @staticmethod
+    def prompt_select_statut() -> str:
         """
-        Propose de sélectionner un statut parmi une liste de valeurs.
+        Demande à l'utilisateur de sélectionner un statut parmi les états définis dans Contract.
 
-        Paramètres :
-        ------------
-        values (list) : Liste des noms de statuts.
-
-        Retourne :
-        -----------
-        str : Le nom du statut sélectionné.
+        Returns:
+            str: État sélectionné ou None si aucun état n'est sélectionné.
         """
-        return PromptView.prompt_select(
-                    "Choix du statut:", values)
+        # Accéder directement aux états définis dans la classe Contract
+        statuts = Contract.CONTRACT_STATES
+        choices = [f"{code} {description}" for code, description in statuts]
 
-    @classmethod
-    def prompt_select_contract(cls, values):
-        """
-        Propose de sélectionner un contrat parmi une liste de références.
+        selected_choice = questionary.select(
+            "Choix du statut:",
+            choices=choices,
+        ).ask()
 
-        Paramètres :
-        ------------
-        values (list) : Liste des références de contrats.
-
-        Retourne :
-        -----------
-        str : La référence du contrat sélectionné.
-        """
-        return PromptView.prompt_select(
-                "Choix du contrat:", values)
+        if selected_choice:
+            code = selected_choice.split()[0]
+            return code
+        return None
 
     @classmethod
     def prompt_data_contract(cls,
@@ -207,4 +198,4 @@ class ContractView:
             **kwargs).ask()
         if amount is None:
             raise KeyboardInterrupt
-        return {'ref': ref, 'amount': amount}
+        return {'paiement_id': ref, 'amount': amount}

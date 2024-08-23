@@ -125,13 +125,11 @@ class UserView:
 
     @classmethod
     def prompt_data_profil(
-            cls, user_raquired=True, password_required=True,
-            email_required=True) -> dict:
+            cls, first_name=True, last_name=True) -> dict:
         """
         Demande les données pour un employé.
 
         Args:
-            user_raquired (bool, optional): Si le nom d'utilisateur est requis. Defaults to True.
             password_required (bool, optional): Si le mot de passe est requis. Defaults to True.
             email_required (bool, optional): Si l'email est requis. Defaults to True.
 
@@ -140,33 +138,30 @@ class UserView:
 
         Returns:
             dict: Dictionnaire avec les données saisies, par exemple :
-            {'username': username, 'password': password, 'email': email}
+            {'first_name': first_name, 'last_name': last_name, 'password': password, 'role': role, 'state': state}
         """
-        username = questionary.text(
-            "Identifiant:",
+        # Validate regex formats (assuming these are defined somewhere)
+
+        first_name = questionary.text(
+            "Prénom:",
             validate=lambda text: True
             if re.match(regexformat['alpha_nospace'][0], text)
             else regexformat['alpha_nospace'][1]).ask()
-        if user_raquired and username is None:
+        if first_name is None:
             raise KeyboardInterrupt
 
-        try:
-            password = cls.prompt_password()
-        except KeyboardInterrupt:
-            if password_required:
-                raise KeyboardInterrupt
-            else:
-                password = None
-
-        email = questionary.text(
-            "Email:",
+        last_name = questionary.text(
+            "Nom:",
             validate=lambda text: True
-            if re.match(regexformat['email'][0], text)
-            else regexformat['email'][1]).ask()
-        if email_required and email is None:
+            if re.match(regexformat['alpha_nospace'][0], text)
+            else regexformat['alpha_nospace'][1]).ask()
+        if last_name is None:
             raise KeyboardInterrupt
 
-        return {'username': username, 'password': password, 'email': email}
+        return {
+            'first_name': first_name,
+            'last_name': last_name,
+        }
 
     @classmethod
     def prompt_password(cls, **kwargs) -> str:
@@ -199,10 +194,10 @@ class UserView:
 
         if result is None:
             raise KeyboardInterrupt
-        return password
+        return {'password': password}
 
     @classmethod
-    def prompt_role(cls, all_roles) -> str:
+    def prompt_role(cls) -> str:
         """
         Demande à l'utilisateur de sélectionner un rôle dans une liste.
 
@@ -212,6 +207,7 @@ class UserView:
         Returns:
             str: Nom du rôle sélectionné.
         """
+        all_roles = ['Admin', 'Commercial', 'Gestion', 'Support']
         role = questionary.select(
             "Role:",
             choices=all_roles,
@@ -219,7 +215,7 @@ class UserView:
         return role
 
     @classmethod
-    def prompt_data_user(cls, all_roles) -> dict:
+    def prompt_data_user(cls) -> dict:
         """
         Demande les données pour un nouvel employé et son rôle.
 
@@ -232,8 +228,23 @@ class UserView:
             'email': email, 'role': "Manager"}
         """
         data = cls.prompt_data_profil()
-        data['role'] = cls.prompt_role(all_roles)
         return data
+
+    @classmethod
+    def prompt_data_role(cls) -> dict:
+        """
+        Demande les données pour un nouvel employé et son rôle.
+
+        Args:
+            all_roles (list): Liste des noms de rôles disponibles.
+
+        Returns:
+            dict: Dictionnaire avec les données saisies, par exemple :
+            {'username': username, 'password': password,
+            'email': email, 'role': "Manager"}
+        """
+        data_role = cls.prompt_role()
+        return {'role': data_role}
 
     @classmethod
     def display_list_users(
@@ -263,3 +274,40 @@ class UserView:
                 console.print(table)
         else:
             console.print(table)
+
+    @classmethod
+    def prompt_update_user(cls, user):
+        """
+        Affiche une vue de mise à jour pour les informations de l'utilisateur.
+
+        :param user: Instance de l'utilisateur à mettre à jour.
+        """
+
+        # Demande des informations à mettre à jour
+        new_password = questionary.text(
+            "Nouveau mot de passe (laisser vide pour ne pas changer):"
+        ).ask()
+
+        new_first_name = questionary.text(
+            "Nouveau Prénom (laisser vide pour ne pas changer):"
+        ).ask()
+
+        new_last_name = questionary.text(
+            "Nouveau Nom (laisser vide pour ne pas changer):"
+        ).ask()
+        return new_first_name, new_last_name, new_password
+
+    @classmethod
+    def prompt_commercial(cls, all_commercials) -> str:
+        """ ask to select a commercial in a list
+
+        Args:
+            all_commercials (list): list of username
+
+        Returns:
+            str: return the username selected
+        """
+        return questionary.select(
+            "Choix du commercial:",
+            choices=all_commercials,
+        ).ask()

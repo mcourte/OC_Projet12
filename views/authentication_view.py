@@ -102,12 +102,6 @@ class AuthenticationView:
         tuple : Un tuple contenant le nom de la base de données, l'identifiant administrateur,
         le mot de passe administrateur et le port.
         """
-        basename = questionary.text(
-            "Nom de votre base de données:",
-            validate=lambda text: True,
-            **kwargs).ask()
-        if basename is None:
-            raise KeyboardInterrupt
 
         username = questionary.text(
             "Identifiant administrateur:",
@@ -123,15 +117,7 @@ class AuthenticationView:
         if password is None:
             raise KeyboardInterrupt
 
-        port = questionary.text(
-            "Port:",
-            validate=lambda text: True
-            if re.match(r"^[0-9]+$", text)
-            else "Seul des chiffres sont autorisés",
-            **kwargs).ask()
-        if port is None:
-            raise KeyboardInterrupt
-        return (basename, username, password, port)
+        return (username, password)
 
     @classmethod
     def prompt_manager(cls, **kwargs):

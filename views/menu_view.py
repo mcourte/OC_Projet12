@@ -48,19 +48,46 @@ class MenuView:
         Returns:
             Panel: Menu de gestion formaté.
         """
-        menu_text = "    05-Liste des employés\n"
-        menu_text += "    06-Créer un nouvel employé\n"
-        menu_text += "    07-Modifier le rôle d'un employé\n"
-        menu_text += "    08-Changer le statut actif/inactif d'un employé\n"
-        menu_text += "    09-Créer un contrat\n"
-        menu_text += "    10-Modifier un contrat\n"
-        menu_text += "    11-Affecter un commercial à un client\n"
-        menu_text += "    12-Affecter un support à un évènement"
+        menu_text = "    06-Liste des employés\n"
+        menu_text += "    07-Créer un nouvel employé\n"
+        menu_text += "    08-Modifier le rôle d'un employé\n"
+        menu_text += "    09-Changer le statut actif/inactif d'un employé\n"
+        menu_text += "    10-Créer un contrat\n"
+        menu_text += "    11-Modifier un contrat\n"
+        menu_text += "    12-Affecter un commercial à un client\n"
+        menu_text += "    13-Affecter un support à un évènement"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
             title_align='left',
             title='Menu Gestion')
+        return p
+
+    @classmethod
+    def menu_admin(cls) -> Panel:
+        """
+        Crée et retourne le menu de admin.
+
+        Returns:
+            Panel: Menu de gestion formaté.
+        """
+        menu_text = "    06-Liste des employés\n"
+        menu_text += "    07-Créer un nouvel employé\n"
+        menu_text += "    08-Modifier le rôle d'un employé\n"
+        menu_text += "    09-Changer le statut actif/inactif d'un employé\n"
+        menu_text += "    10-Créer un contrat\n"
+        menu_text += "    11-Modifier un contrat\n"
+        menu_text += "    12-Affecter un commercial à un client\n"
+        menu_text += "    13-Affecter un support à un évènement\n"
+        menu_text += "    14-Créer un nouveau client\n"
+        menu_text += "    15-Modifier les données d'un client\n"
+        menu_text += "    16-Créer un évènement\n"
+        menu_text += "    17-Modifier un évènement\n"
+        p = Panel(
+            Align.left(menu_text, vertical='top'),
+            box=box.ROUNDED,
+            title_align='left',
+            title='Menu Admin')
         return p
 
     @classmethod
@@ -71,10 +98,10 @@ class MenuView:
         Returns:
             Panel: Menu commercial formaté.
         """
-        menu_text = "    05-Créer un nouveau client\n"
-        menu_text += "    06-Modifier les données d'un client\n"
-        menu_text += "    07-Créer un évènement\n"
-        menu_text += "    08-Effectuer une demande de création de contrat\n"
+        menu_text = "    06-Créer un nouveau client\n"
+        menu_text += "    07-Modifier les données d'un client\n"
+        menu_text += "    08-Créer un évènement\n"
+        menu_text += "    09-Effectuer une demande de création de contrat\n"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
@@ -90,8 +117,8 @@ class MenuView:
         Returns:
             Panel: Menu support formaté.
         """
-        menu_text = "    05-Liste des évènements qui me sont attribués\n"
-        menu_text += "    06-Modifier les données d'un évènement\n"
+        menu_text = "    06-Liste des évènements qui me sont attribués\n"
+        menu_text += "    07-Modifier les données d'un évènement\n"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
@@ -111,12 +138,14 @@ class MenuView:
             Panel: Menu correspondant au rôle.
         """
         match role:
-            case "G":
+            case "GES":
                 menu = cls.menu_gestion()
-            case "C":
+            case "COM":
                 menu = cls.menu_commercial()
-            case "S":
+            case "SUP":
                 menu = cls.menu_support()
+            case "ADM":
+                menu = cls.menu_admin()
             case _:
                 menu = Panel("Menu non trouvé")
         return menu
@@ -130,9 +159,10 @@ class MenuView:
             Panel: Menu d'accueil formaté.
         """
         menu_text = "    01-Voir mes données\n"
-        menu_text += "    02-Liste des clients\n"
-        menu_text += "    03-Liste des contrats\n"
-        menu_text += "    04-Liste des évènements"
+        menu_text += "    02-Mettre à jour mes données\n"
+        menu_text += "    03-Liste des clients\n"
+        menu_text += "    04-Liste des contrats\n"
+        menu_text += "    05-Liste des évènements"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
@@ -148,8 +178,7 @@ class MenuView:
         Returns:
             Panel: Menu de déconnexion et de quitter formaté.
         """
-        menu_text = "    D-Me déconnecter\n"
-        menu_text += "    Q-Quitter l'application"
+        menu_text = "    Q-Quitter l'application"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
@@ -191,10 +220,11 @@ class MenuView:
                 bool: True si le choix est valide, sinon False.
             """
             match role:
-                case 'G': max_menu_idx = 13
-                case 'C': max_menu_idx = 9
-                case 'S': max_menu_idx = 7
-            if result in ['D', 'Q']:
+                case 'GES': max_menu_idx = 13
+                case 'ADM': max_menu_idx = 17
+                case 'COM': max_menu_idx = 9
+                case 'SUP': max_menu_idx = 7
+            if result == 'Q':
                 return True
             elif int(result) <= max_menu_idx:
                 return True
@@ -229,11 +259,8 @@ class MenuView:
         if state == 'C':
             menu_text.append('Modifier les données du contrat')
             menu_text.append('Signer le contrat')
-            menu_text.append('Annuler le contrat')
-        choice = questionary.select(
-                "Que voulez-vous faire ?",
-                choices=menu_text,
-            ).ask()
+        choice = questionary.select("Que voulez-vous faire ?",
+                                    choices=menu_text).ask()
         if choice is None:
             raise KeyboardInterrupt
         return menu_text.index(choice) + 1
