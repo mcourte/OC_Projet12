@@ -11,3 +11,4 @@ alembic/
 .cli_env
 .coveragerc
 session.json
+.flake8
