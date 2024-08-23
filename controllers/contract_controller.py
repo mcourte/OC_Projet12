@@ -20,7 +20,7 @@ class ContractBase:
     mettre à jour et gérer les paiements associés à un contrat.
     """
 
-    def __init__(self, session):
+    def __init__(self, session, current_user):
         """
         Initialise la classe ContractBase avec une session SQLAlchemy.
 
@@ -28,13 +28,16 @@ class ContractBase:
         ------------
         session : Session
             La session SQLAlchemy pour interagir avec la base de données.
+        current_user : EpicUser
+            L'utilisateur actuellement connecté.
         """
         self.session = session
+        self.current_user = current_user
 
     @is_authenticated
     @is_admin
     @is_gestion
-    def create_contract(session, data):
+    def create_contract(self, data):
         """
         Permet de créer un contrat.
 
@@ -54,13 +57,13 @@ class ContractBase:
             remaining_amount=data.get('remaining_amount'),
             state=data.get('state', 'C'),
             customer_id=data['customer_id'],
-            paiement_state=data.get('paiement_state', 'N')
+            paiement_state=data.get('paiement_state', 'N'),
         )
         print(contract)
 
         # Utilisation de self.session pour ajouter et valider
-        session.add(contract)
-        session.commit()
+        self.session.add(contract)
+        self.session.commit()
         return contract
 
     @is_authenticated
@@ -251,3 +254,33 @@ class ContractBase:
         self.session.add(contract)
         self.session.commit()
         DataView.display_data_update()
+
+    @classmethod
+    def update_gestion_contract(cls, current_user, session, contract_id, gestion_id):
+        """
+        Met à jour le commercial attribué à un client.
+
+        Paramètres :
+        ------------
+        current_user : EpicUser
+            L'utilisateur actuel effectuant la mise à jour.
+        session : SQLAlchemy Session
+            La session utilisée pour effectuer les opérations de base de données.
+        customer_id : int
+            L'ID du client à mettre à jour.
+        commercial_id : int
+            L'ID du nouveau commercial à attribuer au client.
+
+        Exceptions :
+        ------------
+        ValueError :
+            Levée si aucun client n'est trouvé avec l'ID spécifié.
+        """
+        contract = session.query(Contract).filter_by(contract_id=contract_id).first()
+        if not contract:
+            raise ValueError("Aucun contrat trouvé avec l'ID spécifié.")
+
+        # Mise à jour du commercial
+        contract.gestion_id = gestion_id
+        session.commit()
+        print(f"Gestionnaire ID {gestion_id} attribué au contrat ID {contract_id}.")

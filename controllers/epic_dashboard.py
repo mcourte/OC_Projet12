@@ -73,21 +73,24 @@ class EpicDashboard:
                 if self.gestion.current_user.role.code in {'ADM', 'GES'}:
                     self.database.customers.update_customer_commercial(self.session)
             case '13':
+                if self.gestion.current_user.role.code in {'ADM', 'GES'}:
+                    self.database.contracts.update_contract_gestion(self.session)
+            case '14':
                 if self.gestion.current_user.role.code in {'ADM', 'GES', 'SUP'}:
                     self.database.events.update_event(self.session)
-            case '14':
-                match self.gestion.current_user.role.code:
-                    case 'ADM':
-                        self.database.customers.create_customer(self.session)
             case '15':
                 match self.gestion.current_user.role.code:
                     case 'ADM':
-                        self.database.customers.update_customer(self.session)
+                        self.database.customers.create_customer(self.session)
             case '16':
                 match self.gestion.current_user.role.code:
                     case 'ADM':
-                        self.database.events.create_event(self.session)
+                        self.database.customers.update_customer(self.session)
             case '17':
+                match self.gestion.current_user.role.code:
+                    case 'ADM':
+                        self.database.events.create_event(self.session)
+            case '18':
                 match self.gestion.current_user.role.code:
                     case 'ADM':
                         self.database.events.update_event(self.session)

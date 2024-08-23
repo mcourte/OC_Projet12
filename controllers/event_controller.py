@@ -104,9 +104,10 @@ class EventBase:
         """
         event = self.session.query(Event).filter_by(event_id=event_id).first()
         if not event:
-            raise ValueError("Événement non trouvé.")
-        print(f'data :{data}')
+            raise ValueError("Il n'existe pas d'évènements avec cet ID")
+
         for key, value in data.items():
             setattr(event, key, value)
 
         self.session.commit()
+        print("L'Evènement a bien été mis à jour.")

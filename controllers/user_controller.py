@@ -1,4 +1,4 @@
-from models.entities import EpicUser
+from models.entities import EpicUser, Contract
 from controllers.decorator import is_authenticated, is_admin, is_gestion
 import logging
 from sqlalchemy.orm import object_session
@@ -11,14 +11,14 @@ class EpicUserBase:
     Classe de base pour la gestion des utilisateurs EpicUser.
     """
 
-    def __init__(self, session):
+    def __init__(self, session, user=None):
         """
         Initialise une instance de EpicUserBase avec une session de base de données.
 
         :param session: Session de base de données utilisée pour interagir avec les utilisateurs.
         """
         self.session = session
-        self.epic_user_base = EpicUserBase()
+        self.user = user
 
     @staticmethod
     def create_user(session, data_profil):
@@ -80,7 +80,7 @@ class EpicUserBase:
     @is_authenticated
     @is_admin
     @is_gestion
-    def update_user(self, name, password=None, role=None, state=None):
+    def update_user(self, session, name, password=None, role=None, state=None):
         """
         Met à jour les informations d'un utilisateur existant.
 
@@ -90,14 +90,14 @@ class EpicUserBase:
         :param state: (Optionnel) Le nouvel état de l'utilisateur (par exemple, inactif).
         :raises ValueError: Si l'utilisateur n'est pas trouvé.
         """
-        user = self.session.query(EpicUser).filter_by(username=name).first()
+        user = session.query(EpicUser).filter_by(username=name).first()
         if not user:
             raise ValueError("Utilisateur non trouvé")
 
         if password:
             user.set_password(password)
         if role:
-            role_code = self.get_rolecode(role)
+            role_code = user.get('role')
             user.role = role_code
         if state:
             if state == 'I' and user.state != 'I':
@@ -105,7 +105,7 @@ class EpicUserBase:
             else:
                 user.state = state
 
-        self.session.commit()
+        session.commit()
 
     @staticmethod
     def get_roles(self):
@@ -178,25 +178,25 @@ class EpicUserBase:
         """
         return session.query(cls).filter_by(username=username).first()
 
-    def set_inactivate(self, username):
+    def set_inactivate(self, session, username):
         """
         Définit l'utilisateur comme inactif et déclenche les réaffectations ou notifications nécessaires.
         """
         user = session.query(EpicUser).filter_by(username=username).first()
-        print(user)
-        self.state = 'I'
-        session = object_session(self)
-        session.commit()
-
-        if self.role.code == 'COM':
-            self.notify_gestion_to_reassign_user()
-            self.reassign_customers()
-        elif self.role.code == 'GES':
-            self.notify_gestion_to_reassign_user()
-            self.reassign_contracts()
-        elif self.role.code == 'SUP':
-            self.notify_gestion_to_reassign_user()
-            self.reassign_events()
+        if user is not None:
+            user.state = 'I'
+            print('session va commiter')
+            session.commit()
+            print('session a commit')
+            if user.role == 'COM':
+                self.notify_gestion_to_reassign_user(user)
+                self.reassign_customers()
+            elif user.role == 'GES':
+                self.notify_gestion_to_reassign_user(user)
+                self.reassign_contracts(session)
+            elif user.role == 'SUP':
+                self.notify_gestion_to_reassign_user(user)
+                self.reassign_events()
 
     def reassign_customers(self):
         """Réaffecte les clients du commercial inactif à un autre commercial."""
@@ -209,9 +209,11 @@ class EpicUserBase:
         # Envoyer une notification au gestionnaire
         self.notify_gestion("Réaffectation des clients du commercial inactif terminée.")
 
-    def reassign_contracts(self):
+    def reassign_contracts(self, session):
         """Réaffecte les contrats d'un gestionnaire inactif à un autre gestionnaire."""
-        new_gestion = self.find_alternate_gestion()
+        new_gestion = session.query(EpicUser).filter_by(role='SUP', state='A').first()
+        print(new_gestion)
+        contracts = session.query(Contract).filter_by(role='SUP', state='A').first()
         for contract in self.contracts:
             contract.gestion_id = new_gestion.epicuser_id
         session = object_session(self)
@@ -231,10 +233,14 @@ class EpicUserBase:
         # Envoyer une notification au gestionnaire
         self.notify_gestion("Réaffectation des évènements du support inactif terminée.")
 
-    def notify_gestion_to_reassign_user(self):
+    def notify_gestion_to_reassign_user(self, user):
         """Notifier le gestionnaire pour réaffecter les événements du support inactif."""
-        message = f"L'user {self.username} est inactif. Veuillez réaffecter ses clients/contrats/évènement."
-        self.notify_gestion(message)
+        if user:  # Vérifier si l'utilisateur est passé en paramètre
+            print(user)
+            message = f"L'utilisateur {user.username} est inactif. Veuillez réaffecter ses clients/contrats/événements."
+            self.notify_gestion(message)
+        else:
+            print("Aucun utilisateur sélectionné pour la notification de réaffectation.")
 
     def find_alternate_commercial(self):
         """Trouver un autre commercial pour réaffecter les clients."""
