@@ -39,13 +39,15 @@ class ContractView:
         table.add_column("Reste dû")
         table.add_column("Statut")
         table.add_column("Commercial")
+        table.add_column("Gestionnaire")
         for c in all_contracts:
             client_name = f"{c.customer.first_name} {c.customer.last_name}".strip()
             table.add_row(
                 c.description, client_name,
                 str(c.total_amount), str(c.remaining_amount or "0"),
                 c.state.value,
-                c.customer.commercial.username
+                c.customer.commercial.username,
+                c.gestion.username
             )
         if pager:
             with console.pager():

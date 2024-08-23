@@ -110,6 +110,20 @@ class UserView:
             "Choix du support:", values)
 
     @classmethod
+    def prompt_select_gestion(cls, values) -> str:
+        """
+        Demande à l'utilisateur de sélectionner un support dans une liste.
+
+        Args:
+            values (list): Liste des noms d'utilisateur des supports.
+
+        Returns:
+            str: Nom d'utilisateur du support sélectionné.
+        """
+        return PromptView.prompt_select(
+            "Choix du gestionnaire:", values)
+
+    @classmethod
     def prompt_confirm_profil(cls, **kwargs) -> bool:
         """
         Demande une confirmation pour modifier les données de l'utilisateur.
@@ -296,3 +310,28 @@ class UserView:
             "Nouveau Nom (laisser vide pour ne pas changer):"
         ).ask()
         return new_first_name, new_last_name, new_password
+
+    @classmethod
+    def prompt_select_gestion(cls, all_gestions):
+        """
+        Demande à l'utilisateur de sélectionner un contrat dans une liste.
+
+        Args:
+            all_contracts (list): Liste des instances de contrats.
+
+        Returns:
+            Contract: Instance du contrat sélectionné ou None si aucun contrat n'est sélectionné.
+        """
+        print(f"Gestionnaires disponibles: {all_gestions}")
+        choices = [f"{gestion.first_name} {gestion.last_name}" for gestion in all_gestions]
+
+        selected_choice = questionary.select(
+            "Choix du contrat:",
+            choices=choices,
+        ).ask()
+
+        if selected_choice:
+            for gestion in all_gestions:
+                if f"{gestion.first_name} {gestion.last_name}" == selected_choice:
+                    return gestion
+        return None

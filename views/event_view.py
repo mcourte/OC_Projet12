@@ -146,7 +146,7 @@ class EventView:
         return "Choix de l'évènement:"
 
     @classmethod
-    def prompt_select_event(cls, values):
+    def prompt_select_event(cls, all_events):
         """
         Demande à l'utilisateur de sélectionner un évènement parmi une liste de valeurs.
 
@@ -156,30 +156,19 @@ class EventView:
         Returns:
             str: La référence de l'évènement sélectionné.
         """
-        return PromptView.prompt_select(cls.select_event(), values)
+        print(f"Evènements disponibles: {all_events}")
+        choices = [f"{event.event_id} {event.title}" for event in all_events]
 
-    @classmethod
-    def prompt_select_type(cls, values):
-        """
-        Demande à l'utilisateur de sélectionner un type d'évènement parmi une liste de valeurs.
+        selected_choice = questionary.select(
+            "Choix de l'évènement:",
+            choices=choices,
+        ).ask()
 
-        Args:
-            values (list): Liste des types d'évènements.
-
-        Returns:
-            str: Le type d'évènement sélectionné.
-        """
-        return PromptView.prompt_select(cls.select_type_event(), values)
-
-    @classmethod
-    def select_type_event(cls):
-        """
-        Retourne le texte pour le choix du type d'évènement.
-
-        Returns:
-            str: Texte pour le choix du type d'évènement.
-        """
-        return "Type d'évènement:"
+        if selected_choice:
+            for event in all_events:
+                if f"{event.event_id} {event.title}" == selected_choice:
+                    return event
+        return None
 
     @classmethod
     def workflow_affect(cls, event_title):

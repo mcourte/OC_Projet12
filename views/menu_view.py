@@ -55,7 +55,8 @@ class MenuView:
         menu_text += "    10-Créer un contrat\n"
         menu_text += "    11-Modifier un contrat\n"
         menu_text += "    12-Affecter un commercial à un client\n"
-        menu_text += "    13-Affecter un support à un évènement"
+        menu_text += "    13-Affecter un gestionnaire à un contrat\n"
+        menu_text += "    14-Affecter un support à un évènement"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
@@ -78,11 +79,12 @@ class MenuView:
         menu_text += "    10-Créer un contrat\n"
         menu_text += "    11-Modifier un contrat\n"
         menu_text += "    12-Affecter un commercial à un client\n"
-        menu_text += "    13-Affecter un support à un évènement\n"
-        menu_text += "    14-Créer un nouveau client\n"
-        menu_text += "    15-Modifier les données d'un client\n"
-        menu_text += "    16-Créer un évènement\n"
-        menu_text += "    17-Modifier un évènement\n"
+        menu_text += "    13-Affecter un gestionnaire à un contrat\n"
+        menu_text += "    14-Affecter un support à un évènement\n"
+        menu_text += "    15-Créer un nouveau client\n"
+        menu_text += "    16-Modifier les données d'un client\n"
+        menu_text += "    17-Créer un évènement\n"
+        menu_text += "    18-Modifier un évènement\n"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
@@ -220,8 +222,8 @@ class MenuView:
                 bool: True si le choix est valide, sinon False.
             """
             match role:
-                case 'GES': max_menu_idx = 13
-                case 'ADM': max_menu_idx = 17
+                case 'GES': max_menu_idx = 14
+                case 'ADM': max_menu_idx = 18
                 case 'COM': max_menu_idx = 9
                 case 'SUP': max_menu_idx = 7
             if result == 'Q':
