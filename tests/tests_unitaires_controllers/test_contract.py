@@ -16,7 +16,7 @@ sys.path.insert(0, parent_dir)
 
 from controllers.contract_controller import ContractBase
 from models.entities import EpicUser, Base, Contract, Paiement
-from config import SECRET_KEY
+from config_init import SECRET_KEY
 
 
 def generate_token(payload):
@@ -212,18 +212,17 @@ def test_find_by_paiement_state_not_found(contract_base, session):
 def test_add_paiement_success(contract_base, session, sample_contract):
     session.add(sample_contract)
     session.commit()
-    data = {'ref': 'PAY123', 'amount': 500}
+    data = {'paiement_id': 'PAY123', 'amount': 500}
     contract_base.add_paiement(sample_contract.contract_id, data)
-    paiements = session.query(Paiement).all()
-    assert len(paiements) == 1
-    assert paiements[0].ref == 'PAY123'
-    assert paiements[0].amount == 500
+    paiements = session.query(Paiement).first()
+    assert paiements.paiement_id == 'PAY123'
+    assert paiements.amount == 500
 
 
 def test_add_paiement_amount_exceeds_remaining(contract_base, session, sample_contract):
     session.add(sample_contract)
     session.commit()
-    data = {'ref': 'PAY123', 'amount': 600}
+    data = {'paiement_id': 'PAY123', 'amount': 600}
     with pytest.raises(ValueError, match="Le montant dépasse le restant dû"):
         contract_base.add_paiement(sample_contract.contract_id, data)
 

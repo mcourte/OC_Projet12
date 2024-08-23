@@ -1,5 +1,4 @@
 import io
-import sys
 import pytest
 from unittest.mock import patch
 from rich.panel import Panel
@@ -30,13 +29,13 @@ def test_menu_gestion():
 
 def test_menu_commercial():
     panel = MenuView.menu_commercial()
-    assert panel.title == 'Menu commercial'
+    assert panel.title == 'Menu Commercial'
     assert 'Créer un nouveau client' in extract_text(panel.renderable)
 
 
 def test_menu_support():
     panel = MenuView.menu_support()
-    assert panel.title == 'Menu support'
+    assert panel.title == 'Menu Support'
     assert 'Liste des évènements qui me sont attribués' in extract_text(panel.renderable)
 
 

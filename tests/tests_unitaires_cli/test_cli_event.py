@@ -11,7 +11,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 sys.path.insert(0, parent_dir)
 
 
-from cli.event_cli import add_event, list_events
+from cli.event_cli import create_event, list_events
 
 
 @pytest.fixture
@@ -19,7 +19,7 @@ def mock_event_base():
     with patch('controllers.event_controller.EventBase') as mock:
         mock_instance = mock.return_value
         mock_instance.login.return_value = True
-        mock_instance.add_event.return_value = None
+        mock_instance.create_event.return_value = None
         mock_instance.list_events.return_value = None
 
         yield mock_instance
@@ -28,7 +28,7 @@ def mock_event_base():
 def test_add_event(mock_event_base):
     runner = CliRunner()
     mock_event_base.create_event.return_value = MagicMock(title='Test Event')
-    result = runner.invoke(add_event, [
+    result = runner.invoke(create_event, [
         "Test Event", "Test Description", "Test Location", "140", "2024-01-01", "2024-01-02"
     ])
     assert result.exit_code == 0

@@ -16,7 +16,7 @@ print(parent_dir)
 
 from models.entities import EpicUser, Base
 from controllers.event_controller import EventBase
-from config import SECRET_KEY
+from config_init import SECRET_KEY
 
 
 def generate_token(payload):

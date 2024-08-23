@@ -14,7 +14,7 @@ sys.path.insert(0, parent_dir)
 # Import the necessary modules
 from models.entities import EpicUser, Base
 from controllers.user_controller import EpicUserBase
-from config import SECRET_KEY
+from config_init import SECRET_KEY
 
 
 def generate_token(payload):
@@ -231,11 +231,58 @@ def test_add_user_invalid_role(login_user, session, unique_username, unique_emai
         epic_user_base.create_user(data)
 
 
+def test_get_roles():
+    epic_user_base = EpicUserBase(None)
+    roles = epic_user_base.get_roles()
+
+    assert len(roles) == 4
+    assert "Commercial" in roles
+    assert "Gestion" in roles
+    assert "Support" in roles
+    assert "Admin" in roles
+
+
+def test_get_rolecode():
+    epic_user_base = EpicUserBase(None)
+
+    assert epic_user_base.get_rolecode("Commercial") == "COM"
+    assert epic_user_base.get_rolecode("Gestion") == "GES"
+    assert epic_user_base.get_rolecode("Support") == "SUP"
+    assert epic_user_base.get_rolecode("Admin") == "ADM"
+    assert epic_user_base.get_rolecode("NonExistentRole") is None
+
+
+def test_create_user_without_role(login_user, session, unique_username, unique_email):
+    epic_user_base = EpicUserBase(session)
+    token = generate_token({"epicuser_id": 15, "role": "ADM"})
+    with open('session.json', 'w') as f:
+        json.dump({'token': token}, f)
+
+    username = unique_username("Test", "User")
+    email = unique_email("Test", "User")
+
+    data = {
+        "first_name": "Test",
+        "last_name": "User",
+        "username": username,
+        "password": "password",
+        "email": email
+    }
+    with pytest.raises(ValueError, match="Invalid role"):
+        epic_user_base.create_user(data)
+
+
+def test_get_rolecode_for_nonexistent_role():
+    epic_user_base = EpicUserBase(None)
+    assert epic_user_base.get_rolecode("NonexistentRole") is None
+
+
 def test_get_user(login_user, session, unique_username, unique_email):
     epic_user_base = EpicUserBase(session)
     token = generate_token({"epicuser_id": 15, "role": "ADM"})
     with open('session.json', 'w') as f:
         json.dump({'token': token}, f)
+
     users = epic_user_base.get_all_users()
     init_len = len(users)
 
@@ -260,8 +307,8 @@ def test_get_user(login_user, session, unique_username, unique_email):
         "role": "Support",
         "email": email2
     }
-    epic_user_base.create_user(data1)
-    epic_user_base.create_user(data2)
+    epic_user_base.create_user(data1, session)
+    epic_user_base.create_user(data2, session)
 
     users = epic_user_base.get_all_users()
     assert len(users) == init_len + 2
@@ -269,32 +316,12 @@ def test_get_user(login_user, session, unique_username, unique_email):
     assert users[-1].username in [username1, username2]
 
 
-def test_get_roles():
-    epic_user_base = EpicUserBase(None)
-    roles = epic_user_base.get_roles()
-
-    assert len(roles) == 4
-    assert "Commercial" in roles
-    assert "Gestion" in roles
-    assert "Support" in roles
-    assert "Admin" in roles
-
-
-def test_get_rolecode():
-    epic_user_base = EpicUserBase(None)
-
-    assert epic_user_base.get_rolecode("Commercial") == "COM"
-    assert epic_user_base.get_rolecode("Gestion") == "GES"
-    assert epic_user_base.get_rolecode("Support") == "SUP"
-    assert epic_user_base.get_rolecode("Admin") == "ADM"
-    assert epic_user_base.get_rolecode("NonExistentRole") is None
-
-
 def test_update_user_role(login_user, session, unique_username, unique_email):
     epic_user_base = EpicUserBase(session)
     token = generate_token({"epicuser_id": 15, "role": "ADM"})
     with open('session.json', 'w') as f:
         json.dump({'token': token}, f)
+
     username = unique_username("Test", "User")
     email = unique_email("Test", "User")
 
@@ -306,13 +333,13 @@ def test_update_user_role(login_user, session, unique_username, unique_email):
         "role": "Support",
         "email": email
     }
-    epic_user_base.create_user(data)
+    epic_user_base.create_user(data, session)
 
-    epic_user_base.update_user(name=username, role="Support")
+    epic_user_base.update_user(name=username, rôle="Commercial")
 
     user = session.query(EpicUser).filter_by(username=username).first()
     assert user is not None
-    assert user.role == 'SUP'
+    assert user.role == 'COM'
 
 
 def test_update_user_password(login_user, session, unique_username, unique_email):
@@ -320,6 +347,7 @@ def test_update_user_password(login_user, session, unique_username, unique_email
     token = generate_token({"epicuser_id": 15, "role": "ADM"})
     with open('session.json', 'w') as f:
         json.dump({'token': token}, f)
+
     username = unique_username("No", "Idea")
     email = unique_email("No", "Idea")
 
@@ -331,7 +359,7 @@ def test_update_user_password(login_user, session, unique_username, unique_email
         "role": "Commercial",
         "email": email
     }
-    epic_user_base.create_user(data)
+    epic_user_base.create_user(data, session)
 
     epic_user_base.update_user(name=username, password="newpassword")
 
@@ -345,6 +373,7 @@ def test_getall_commercials(login_user, session, unique_username, unique_email):
     token = generate_token({"epicuser_id": 15, "role": "ADM"})
     with open('session.json', 'w') as f:
         json.dump({'token': token}, f)
+
     initial_count = len(epic_user_base.get_commercials())
 
     data1 = {
@@ -363,8 +392,8 @@ def test_getall_commercials(login_user, session, unique_username, unique_email):
         "role": "Commercial",
         "email": unique_email("Lolilol", "User")
     }
-    epic_user_base.create_user(data1)
-    epic_user_base.create_user(data2)
+    epic_user_base.create_user(data1, session)
+    epic_user_base.create_user(data2, session)
 
     commercials = epic_user_base.get_commercials()
     assert len(commercials) == initial_count + 2
@@ -400,8 +429,8 @@ def test_getall_supports(login_user, session, unique_username, unique_email):
         "role": "Support",
         "email": email2
     }
-    epic_user_base.create_user(data1)
-    epic_user_base.create_user(data2)
+    epic_user_base.create_user(data1, session)
+    epic_user_base.create_user(data2, session)
 
     supports = epic_user_base.get_supports()
     assert len(supports) == init_len + 2
@@ -438,33 +467,13 @@ def test_getall_gestion(login_user, session, unique_username, unique_email):
         "role": "Gestion",
         "email": email2
     }
-    epic_user_base.create_user(data1)
-    epic_user_base.create_user(data2)
+    epic_user_base.create_user(data1, session)
+    epic_user_base.create_user(data2, session)
 
     gestions = epic_user_base.get_gestions()
 
     assert len(gestions) == init_len + 2
     assert all(user.role == 'GES' for user in gestions)
-
-
-def test_create_user_without_role(login_user, session, unique_username, unique_email):
-    epic_user_base = EpicUserBase(session)
-    token = generate_token({"epicuser_id": 15, "role": "ADM"})
-    with open('session.json', 'w') as f:
-        json.dump({'token': token}, f)
-
-    username = unique_username("Test", "User")
-    email = unique_email("Test", "User")
-
-    data = {
-        "first_name": "Test",
-        "last_name": "User",
-        "username": username,
-        "password": "password",
-        "email": email
-    }
-    with pytest.raises(ValueError, match="Invalid role"):
-        epic_user_base.create_user(data)
 
 
 def test_update_nonexistent_user(login_user, session):
@@ -474,7 +483,7 @@ def test_update_nonexistent_user(login_user, session):
         json.dump({'token': token}, f)
 
     with pytest.raises(ValueError, match="Utilisateur non trouvé"):
-        epic_user_base.update_user(name="NonExistentUser", password="newpassword")
+        epic_user_base.update_user(name="NonExistentUser", password="newpassword", session=session)
 
 
 def test_get_all_commercials(login_user, session, unique_username, unique_email):
@@ -502,14 +511,9 @@ def test_get_all_commercials(login_user, session, unique_username, unique_email)
         "email": unique_email("Bob", "Builder")
     }
 
-    epic_user_base.create_user(data1)
-    epic_user_base.create_user(data2)
+    epic_user_base.create_user(data1, session)
+    epic_user_base.create_user(data2, session)
 
     commercials = epic_user_base.get_commercials()
     assert len(commercials) == initial_count + 2
     assert all(user.role == 'COM' for user in commercials)
-
-
-def test_get_rolecode_for_nonexistent_role():
-    epic_user_base = EpicUserBase(None)
-    assert epic_user_base.get_rolecode("NonexistentRole") is None

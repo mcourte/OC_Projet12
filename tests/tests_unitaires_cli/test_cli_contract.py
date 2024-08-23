@@ -11,7 +11,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 sys.path.insert(0, parent_dir)
 
 from models.entities import Base
-from cli.contract_cli import add_contract, list_contracts
+from cli.contract_cli import create_contract, list_contracts
 import tempfile
 # Configuration de la base de données en mémoire
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -37,7 +37,7 @@ def test_add_contract_with_temp_file(mock_contract_base, temp_file):
     runner = CliRunner()
     mock_contract_base.create_contract.return_value = type('Contract', (object,), {'description': 'Test_add'})
 
-    result = runner.invoke(add_contract, [
+    result = runner.invoke(create_contract, [
         'Test_add', '1000', '500', 'C', '115', 'N'
     ])
 

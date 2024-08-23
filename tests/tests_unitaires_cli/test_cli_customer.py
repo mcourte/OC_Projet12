@@ -11,7 +11,7 @@ current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 sys.path.insert(0, parent_dir)
 
-from cli.customer_cli import add_customer, list_customers
+from cli.customer_cli import create_customer, list_customers
 from models.entities import Base  # Assurez-vous que le modèle Customer est importé ici
 
 # Création d'une base de données en mémoire
@@ -61,7 +61,7 @@ def temp_file():
 def test_add_customer_with_temp_file(mock_customer_base, temp_file):
     runner = CliRunner()
     mock_customer_base.create_customer.return_value = MagicMock(customer_id='115')
-    result = runner.invoke(add_customer, [
+    result = runner.invoke(create_customer, [
         'Vincent', 'Legendre', 'vlegendre@gmail.com', '110011001100', '110011001100' , '104'
     ])
     print(f"DEBUG OUTPUT: {result.output}")

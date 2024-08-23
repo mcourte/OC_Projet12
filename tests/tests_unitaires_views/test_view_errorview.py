@@ -39,7 +39,7 @@ def test_display_token_expired(mock_console):
     output = sys.stdout.getvalue().strip()
     sys.stdout = original_stdout
 
-    assert output == 'ERROR : Token expiré ! veuillez vous reconnecter.\ncommande: python epicevent.py login'
+    assert output == 'ERROR : Token expiré ! Veuillez vous reconnecter.\nCommande : python epicevent.py login'
 
 
 @patch('views.error_view.error_console')
@@ -53,7 +53,7 @@ def test_display_token_invalid(mock_console):
     output = sys.stdout.getvalue().strip()
     sys.stdout = original_stdout
 
-    assert output == 'ERROR : Token invalide! veuillez vous reconnecter.'
+    assert output == 'ERROR : Token invalide ! Veuillez vous reconnecter.'
 
 
 @patch('views.error_view.error_console')
@@ -109,4 +109,4 @@ def test_display_error_exception(mock_console):
     output = sys.stdout.getvalue().strip().split('\n')
     sys.stdout = original_stdout
 
-    assert output == ['Une erreur est survenu dans le traitement', 'Test exception message']
+    assert output == ['Une erreur est survenue dans le traitement', 'Test exception message']

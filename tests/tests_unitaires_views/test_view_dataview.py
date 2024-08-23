@@ -40,7 +40,7 @@ def test_display_interupt():
     DataView.display_interupt()
     output = sys.stdout.getvalue().strip()
     sys.stdout = original_stdout
-    assert output == 'Opération abandonée'
+    assert output == 'Opération abandonnée'
 
 
 # Test de `display_error_contract_amount`
@@ -60,7 +60,7 @@ def test_display_commercial_with_contracts():
     DataView.display_commercial_with_contracts()
     output = sys.stdout.getvalue().strip()
     sys.stdout = original_stdout
-    assert output == 'Ce commercial gère des contracts actifs'
+    assert output == 'Ce commercial gère des contrats actifs'
 
 
 # Test de `display_need_one_manager`
@@ -90,7 +90,7 @@ def test_display_error_contract_need_c():
     DataView.display_error_contract_need_c()
     output = sys.stdout.getvalue().strip()
     sys.stdout = original_stdout
-    assert output == "Le contract doit être à l'état créé"
+    assert output == "Le contrat doit être à l'état créé"
 
 
 # Test de `display_data_update`
