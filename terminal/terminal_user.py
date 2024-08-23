@@ -158,10 +158,13 @@ class EpicTerminalUser:
             print("Erreur : La session est non initialisée.")
             return
 
-        users = self.session.query(EpicUser).all()
+        users = session.query(EpicUser).all()
         user_usernames = [e.username for e in users]
         username = UserView.prompt_user(user_usernames)
-        EpicUserBase.set_inactivate(self.current_user, username)
+
+        # Utiliser l'instance de EpicUserBase pour appeler set_inactivate
+        epic_user_base = EpicUserBase(session)
+        epic_user_base.set_inactivate(session, username)
 
     @is_authenticated
     @is_gestion

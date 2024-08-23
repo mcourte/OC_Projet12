@@ -13,10 +13,12 @@ from controllers.contract_controller import ContractBase
 from terminal.terminal_customer import EpicTerminalCustomer
 from terminal.terminal_user import EpicTerminalUser
 from models.entities import Customer, Contract
+from controllers.user_controller import EpicUser
 from views.prompt_view import PromptView
 from views.contract_view import ContractView
 from views.customer_view import CustomerView
 from views.event_view import EventView
+from views.user_view import UserView
 from views.menu_view import MenuView
 from views.data_view import DataView
 
@@ -37,6 +39,7 @@ class EpicTerminalContract:
         """
         self.epic = base
         self.session = session
+        self.current_user = None
         self.controller_user = EpicTerminalUser(self.epic, self.session)
         self.controller_customer = EpicTerminalCustomer(self.epic, self.session)
 
@@ -86,6 +89,7 @@ class EpicTerminalContract:
         - Mettre à jour la base de données
         - Générer une tâche en attente de signature.
         """
+
         clients = self.session.query(Customer).all()
 
         # Assurez-vous que 'client_data' contient des identifiants corrects
@@ -125,9 +129,8 @@ class EpicTerminalContract:
                 case 1:
                     try:
                         data = ContractView.prompt_data_paiement()
-                        print(data)
-                        contract_base_instance = ContractBase(session)  # Passer la session ici
-                        paiement = contract_base_instance.add_paiement(selected_contract.contract_id, data)
+                        contract_base_instance = ContractBase(session)
+                        contract_base_instance.add_paiement(selected_contract.contract_id, data)
                     except ValueError as e:
                         print(f"Erreur: {e}")
 
@@ -149,3 +152,55 @@ class EpicTerminalContract:
                     DataView.display_workflow()
         except KeyboardInterrupt:
             DataView.display_interupt()
+
+    @is_authenticated
+    @is_gestion
+    @is_admin
+    def update_contract_gestion(self, session) -> None:
+        """
+        Met à jour le commercial attribué à un client.
+
+        Cette fonction permet de :
+        - Sélectionner un client.
+        - Sélectionner un commercial.
+        - Attribuer le commercial sélectionné au client sélectionné.
+        - Mettre à jour la base de données.
+        """
+        # Vérifiez si la session est correctement initialisée
+        if session is None:
+            print("Erreur : La session est non initialisée.")
+            return
+        # Récupérer tous les contrat
+        contracts = session.query(Contract).all()
+        ref = EventView.prompt_select_contract(contracts)
+        selected_contract = session.query(Contract).filter_by(contract_id=ref.contract_id).first()
+        selected_contract_id = selected_contract.contract_id
+        # Récupérer tous les gestionnaires
+        users = session.query(EpicUser).filter_by(role='GES').all()
+
+        # Demander à l'utilisateur de sélectionner un gestionnaire
+        selected_customer_id = UserView.prompt_select_gestion(users)
+        if not selected_customer_id:
+            print("Erreur : Aucun contrat sélectionné.")
+            return
+
+        # Récupérer tous les commerciaux
+        gestions = session.query(EpicUser).filter_by(role='GES').all()
+        gestions_usernames = [g.username for g in gestions]
+
+        # Demander à l'utilisateur de sélectionner un commercial
+        selected_gestion_username = UserView.prompt_gestion(gestions_usernames)
+        if not selected_gestion_username:
+            print("Erreur : Aucun getionnaire sélectionné.")
+            return
+
+        # Récupérer l'ID du commercial sélectionné
+        selected_gestion = session.query(EpicUser).filter_by(username=selected_gestion_username).first()
+        if not selected_gestion:
+            print("Erreur : Le commercial sélectionné n'existe pas.")
+            return
+
+        # Mettre à jour le commercial du client
+        ContractBase.update_gestion_contract(self.current_user, session, selected_contract_id, selected_gestion.epicuser_id)
+        print(f"Le gestionnaire {selected_gestion.username} a été attribué au contrat {selected_contract_id} avec succès.")
+        ContractBase.update_contract

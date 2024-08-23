@@ -54,27 +54,20 @@ class EpicTerminalEvent:
         try:
             # Récupérer tous les supports
             supports = session.query(EpicUser).filter_by(role='SUP').all()
-            supports = [s.username for s in supports]
-            support = UserView.prompt_select_support(supports)
-            print(f"Support sélectionné: {support}")
+            supports_dict = {s.username: s.epicuser_id for s in supports}  # Obtenez un dictionnaire username -> user_id
+            support_username = UserView.prompt_select_support(list(supports_dict.keys()))
+            support_id = supports_dict[support_username]  # Obtenez l'ID du support sélectionné
+            print(f"Support sélectionné: {support_username} (ID: {support_id})")
 
-            # Récupérer tous les contrats
-            contracts = session.query(Contract).all()
-            contract = EventView.prompt_select_contract(contracts)
-            print(f"Contrat sélectionné: {contract}")
-
-            # Récupérer tous les événements associés au contrat sélectionné
-            events = session.query(Event).filter_by(contract_id=contract.contract_id).all()
+            # Récupérer tous les événements
+            events = session.query(Event).all()
             print(f"Nombre d'événements trouvés: {len(events)}")
             if events:
-                print(f"Événements associés au contrat sélectionné: {events}")
-                event_title = EventView.prompt_select_event(events)
-                print(f"Événement sélectionné: {event_title}")
+                event = EventView.prompt_select_event(events)
+                event_id = event.event_id  # Assurez-vous d'utiliser l'ID
 
                 # Mettre à jour l'événement
-                EventBase.update_event(contract, event_title, support)
-            else:
-                print('Aucun événement trouvé pour le contrat sélectionné.')
+                EventBase.update_event(self, event_id, {"support_id": support_id})
 
         except KeyboardInterrupt:
             DataView.display_interupt()
@@ -107,46 +100,67 @@ class EpicTerminalEvent:
     def list_of_events(self, session):
         """
         Affiche la liste des événements en permettant de :
-        - Choisir un commercial
-        - Choisir un client
+        - Choisir un commercial (facultatif)
+        - Choisir un client (facultatif)
         - Sélectionner un contrat (si confirmé)
         - Sélectionner un support (si confirmé)
         - Lire la base de données et afficher les événements.
         """
-        contract_ref = None
-        sname = None
-        cname = self.controller_user.choice_commercial()
-        client = self.controller_customer.choice_customer(session, cname)
-        print(f'client : {client}')
+        try:
+            # Choisir un commercial (facultatif)
+            commercial_name = self.controller_user.choice_commercial()
+            if commercial_name:
+                # Si un commercial est sélectionné, choisir un client
+                client = self.controller_customer.choice_customer(session, commercial_name)
+                print(f'Client sélectionné : {client}')
 
-        # Sélectionner un contrat
-        result = ContractView.prompt_confirm_contract()
-        print(f'contract: {result}')
-        if result:
-            contracts = self.session.query(Event).filter_by(customer_id=client.customer_id).all()
-            print(contracts)
-            contracts_data = [{"Description": f"{c.description}", "ID": c.contract_id} for c in contracts]
-            contract_ref = EventView.prompt_select_contract(contracts_data)
-
-        # Sélectionner un support
-        result = UserView.prompt_confirm_support()
-        print(f'support: {result}')
-        if result:
-            supports = self.session.query(EpicUser).filter_by(role='SUP').all()
-            supports_name = [c.username for c in supports]
-            supports_name.append(EventView.no_support())
-            sname = UserView.prompt_select_support(supports_name)
-            print(sname)
-
-        # Récupérer l'ID du support sélectionné
-        if sname:
-            support = self.session.query(EpicUser).filter_by(username=sname).first()
-            if support:
-                support_id = support.user_id  # Remplacez `user_id` par le nom correct de l'attribut de l'ID du support
-                events = self.session.query(Event).filter_by(support_id=support_id).all()
-                EventView.display_list_events(events)
+                # Initialiser les filtres
+                filter_by_client = client.customer_id
             else:
-                print('Support non trouvé.')
-        else:
-            events = self.session.query(Event).all()
+                # Si aucun commercial n'est sélectionné, afficher tous les événements
+                filter_by_client = None
+
+            filter_by_contract = None
+            filter_by_support = None
+
+            # Sélectionner un contrat si confirmé
+            if filter_by_client and ContractView.prompt_confirm_contract():
+                contracts = session.query(Contract).filter_by(customer_id=filter_by_client).all()
+                print(f'Contrats disponibles : {contracts}')
+                contracts_data = [{"Description": f"{c.description}", "ID": c.contract_id} for c in contracts]
+                contract_ref = EventView.prompt_select_contract(contracts_data)
+                filter_by_contract = contract_ref['ID'] if contract_ref else None
+
+            # Sélectionner un support si confirmé
+            if UserView.prompt_confirm_support():
+                supports = session.query(EpicUser).filter_by(role='SUP').all()
+                supports_name = [c.username for c in supports]
+                supports_name.append(EventView.no_support())
+                sname = UserView.prompt_select_support(supports_name)
+                print(f'Support sélectionné : {sname}')
+                if sname != EventView.no_support():
+                    support = session.query(EpicUser).filter_by(username=sname).first()
+                    if support:
+                        filter_by_support = support.user_id
+                    else:
+                        print('Support non trouvé.')
+
+            # Construire la requête de filtrage des événements
+            query = session.query(Event)
+            if filter_by_client:
+                query = query.filter_by(customer_id=filter_by_client)
+            if filter_by_contract:
+                query = query.filter_by(contract_id=filter_by_contract)
+            if filter_by_support:
+                query = query.filter_by(support_id=filter_by_support)
+            else:
+                query = query.all()
+
+            # Exécuter la requête et afficher les résultats
+            events = query.all()
             EventView.display_list_events(events)
+
+        except KeyboardInterrupt:
+            DataView.display_interupt()
+        except Exception as e:
+            print(f"Erreur rencontrée : {e}")
