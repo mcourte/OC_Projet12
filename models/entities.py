@@ -711,6 +711,9 @@ class Contract(Base):
     customer_id = Column(Integer, ForeignKey('customers.customer_id'), nullable=False, index=True)
     paiement_state = Column(ChoiceType(PAIEMENT_STATES, impl=String(length=1)), default='N')
 
+    commercial_id = Column(Integer, ForeignKey('epic_users.epicuser_id'))
+    gestion_id = Column(Integer, ForeignKey('epic_users.epicuser_id'))
+
     customer = relationship('Customer', back_populates='contracts')
     events = relationship('Event', back_populates='contract')
     paiements = relationship('Paiement', back_populates='contract')
