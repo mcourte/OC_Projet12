@@ -1,7 +1,6 @@
 import os
 import sys
 from decimal import Decimal
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
 # Déterminez le chemin absolu du répertoire parent
@@ -10,8 +9,6 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
-from models.entities import (
-    Base, EpicUser)
 from views.data_view import DataView
 from models.entities import Contract, Paiement
 from controllers.decorator import is_authenticated, is_admin, is_commercial, is_gestion
@@ -227,8 +224,6 @@ class ContractBase:
             self.session.rollback()
             print(f"Erreur lors de l'enregistrement du paiement : {e}")
             raise
-
-
 
     @is_authenticated
     @is_admin

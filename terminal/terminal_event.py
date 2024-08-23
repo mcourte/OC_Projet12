@@ -10,9 +10,8 @@ sys.path.insert(0, parent_dir)
 
 from controllers.decorator import (is_authenticated, is_support, is_commercial, is_gestion, is_admin)
 from controllers.event_controller import EventBase, Event
-from controllers.user_controller import EpicUserBase, EpicUser
-from controllers.contract_controller import ContractBase, Contract
-from controllers.customer_controller import Customer
+from controllers.user_controller import EpicUser
+from controllers.contract_controller import Contract
 from views.event_view import EventView
 from views.data_view import DataView
 from terminal.terminal_user import EpicTerminalUser

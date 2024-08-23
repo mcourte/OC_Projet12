@@ -296,18 +296,3 @@ class UserView:
             "Nouveau Nom (laisser vide pour ne pas changer):"
         ).ask()
         return new_first_name, new_last_name, new_password
-
-    @classmethod
-    def prompt_commercial(cls, all_commercials) -> str:
-        """ ask to select a commercial in a list
-
-        Args:
-            all_commercials (list): list of username
-
-        Returns:
-            str: return the username selected
-        """
-        return questionary.select(
-            "Choix du commercial:",
-            choices=all_commercials,
-        ).ask()

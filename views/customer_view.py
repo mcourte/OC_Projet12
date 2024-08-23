@@ -161,11 +161,11 @@ class CustomerView:
         table.add_column("Commercial")
         table.add_column("Nb contrats")
         table.add_row(
-                customer.first_name, customer.last_name, customer.email,
-                customer.phone, customer.company_name,
-                str(customer.commercial),
-                str(len(customer.contracts)),
-                    )
+                      customer.first_name, customer.last_name, customer.email,
+                      customer.phone, customer.company_name,
+                      str(customer.commercial),
+                      str(len(customer.contracts)),
+                      )
         console.print(table)
         print("\nAppuyez sur Entrée pour continuer...")
         input()

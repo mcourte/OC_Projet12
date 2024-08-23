@@ -42,4 +42,3 @@ class PromptView:
         if result is None:
             raise KeyboardInterrupt
         return result
-
