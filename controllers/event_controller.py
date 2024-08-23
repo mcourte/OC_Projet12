@@ -20,7 +20,7 @@ class EventBase:
     @is_authenticated
     @is_admin
     @is_commercial
-    def create_event(self, data):
+    def create_event(self, data, session):
         """
         Crée un nouvel événement avec les données fournies.
 
@@ -53,8 +53,8 @@ class EventBase:
             customer_id=data.get('customer_id'),
             support_id=data.get('support_id')
         )
-        self.session.add(event)
-        self.session.commit()
+        session.add(event)
+        session.commit()
         return event
 
     @is_authenticated
@@ -105,7 +105,7 @@ class EventBase:
         event = self.session.query(Event).filter_by(event_id=event_id).first()
         if not event:
             raise ValueError("Événement non trouvé.")
-
+        print(f'data :{data}')
         for key, value in data.items():
             setattr(event, key, value)
 

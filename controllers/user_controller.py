@@ -1,5 +1,9 @@
 from models.entities import EpicUser
 from controllers.decorator import is_authenticated, is_admin, is_gestion
+import logging
+from sqlalchemy.orm import object_session
+# Obtenez le logger configuré
+logger = logging.getLogger(__name__)
 
 
 class EpicUserBase:
@@ -14,43 +18,40 @@ class EpicUserBase:
         :param session: Session de base de données utilisée pour interagir avec les utilisateurs.
         """
         self.session = session
+        self.epic_user_base = EpicUserBase()
 
-    @is_authenticated
-    @is_admin
-    @is_gestion
-    def create_user(self, data):
-        """
-        Crée un nouvel utilisateur avec les données fournies.
+    @staticmethod
+    def create_user(session, data_profil):
+        role_name = data_profil.get('role')
+        if role_name == 'Gestion':
+            role_code = 'GES'
+        elif role_name == 'Commercial':
+            role_code = 'COM'
+        elif role_name == 'Support':
+            role_code = 'SUP'
+        elif role_name == 'Admin':
+            role_code = 'ADM'
+        else:
+            raise ValueError("Invalid role code")
+        username = EpicUser.generate_unique_username(session, data_profil['first_name'], data_profil['last_name'])
+        username_dict = {'username': username}
+        data_profil.update(username_dict)
+        print(data_profil)
+        email = EpicUser.generate_unique_email(session, data_profil['username'])
 
-        :param data: Dictionnaire contenant les informations de l'utilisateur, telles que
-                     le prénom, le nom, le mot de passe, le rôle, etc.
-        :return: L'objet EpicUser créé.
-        :raises ValueError: Si le rôle n'est pas valide ou si le nom d'utilisateur existe déjà.
-        """
-        role = data.get('role')
-        if role not in ['Commercial', 'Support', 'Gestion', 'Admin']:
-            raise ValueError("Invalid role")
-        role_code = self.get_rolecode(role)
-
-        if 'username' not in data or not data['username']:
-            data['username'] = EpicUser.generate_unique_username(self.session, data['first_name'], data['last_name'])
-
-        if 'email' not in data or not data['email']:
-            data['email'] = EpicUser.generate_unique_email(self.session, data['username'])
-
-        if self.session.query(EpicUser).filter_by(username=data['username']).first():
+        if session.query(EpicUser).filter_by(username=username).first():
             raise ValueError("L'username existe déjà")
 
         user = EpicUser(
-            first_name=data['first_name'],
-            last_name=data['last_name'],
-            username=data['username'],
-            email=data['email'],
+            first_name=data_profil['first_name'],
+            last_name=data_profil['last_name'],
+            username=username,
+            email=email,
             role=role_code
         )
-        user.set_password(data['password'])
-        self.session.add(user)
-        self.session.commit()
+        user.set_password(data_profil['password'])
+        session.add(user)
+        session.commit()
 
         return user
 
@@ -64,7 +65,8 @@ class EpicUserBase:
         :param username: Le nom d'utilisateur de l'utilisateur à récupérer.
         :return: L'objet EpicUser correspondant, ou None si l'utilisateur n'est pas trouvé.
         """
-        return self.session.query(EpicUser).filter_by(username=username).first()
+        profil = self.session.query(EpicUser).filter_by(username=username).first()
+        return profil
 
     @is_authenticated
     def get_all_users(self):
@@ -105,6 +107,7 @@ class EpicUserBase:
 
         self.session.commit()
 
+    @staticmethod
     def get_roles(self):
         """
         Récupère la liste des rôles disponibles.
@@ -113,6 +116,7 @@ class EpicUserBase:
         """
         return ["Commercial", "Support", "Gestion", "Admin"]
 
+    @staticmethod
     def get_rolecode(self, role_name):
         """
         Récupère le code associé à un rôle donné.
@@ -173,3 +177,81 @@ class EpicUserBase:
         :return: L'objet EpicUser correspondant, ou None si l'utilisateur n'est pas trouvé.
         """
         return session.query(cls).filter_by(username=username).first()
+
+    def set_inactivate(self, username):
+        """
+        Définit l'utilisateur comme inactif et déclenche les réaffectations ou notifications nécessaires.
+        """
+        user = session.query(EpicUser).filter_by(username=username).first()
+        print(user)
+        self.state = 'I'
+        session = object_session(self)
+        session.commit()
+
+        if self.role.code == 'COM':
+            self.notify_gestion_to_reassign_user()
+            self.reassign_customers()
+        elif self.role.code == 'GES':
+            self.notify_gestion_to_reassign_user()
+            self.reassign_contracts()
+        elif self.role.code == 'SUP':
+            self.notify_gestion_to_reassign_user()
+            self.reassign_events()
+
+    def reassign_customers(self):
+        """Réaffecte les clients du commercial inactif à un autre commercial."""
+        new_commercial = self.find_alternate_commercial()
+        for customer in self.customers:
+            customer.commercial_id = new_commercial.epicuser_id
+        session = object_session(self)
+        session.commit()
+
+        # Envoyer une notification au gestionnaire
+        self.notify_gestion("Réaffectation des clients du commercial inactif terminée.")
+
+    def reassign_contracts(self):
+        """Réaffecte les contrats d'un gestionnaire inactif à un autre gestionnaire."""
+        new_gestion = self.find_alternate_gestion()
+        for contract in self.contracts:
+            contract.gestion_id = new_gestion.epicuser_id
+        session = object_session(self)
+        session.commit()
+
+        # Envoyer une notification au gestionnaire
+        self.notify_gestion("Réaffectation des contrats du gestionnaire inactif terminée.")
+
+    def reassign_events(self):
+        """Réaffecte les contrats d'un support inactif à un autre support."""
+        new_support = self.find_alternate_support()
+        for event in self.events:
+            event.support_id = new_support.epicuser_id
+        session = object_session(self)
+        session.commit()
+
+        # Envoyer une notification au gestionnaire
+        self.notify_gestion("Réaffectation des évènements du support inactif terminée.")
+
+    def notify_gestion_to_reassign_user(self):
+        """Notifier le gestionnaire pour réaffecter les événements du support inactif."""
+        message = f"L'user {self.username} est inactif. Veuillez réaffecter ses clients/contrats/évènement."
+        self.notify_gestion(message)
+
+    def find_alternate_commercial(self):
+        """Trouver un autre commercial pour réaffecter les clients."""
+        session = object_session(self)
+        return session.query(EpicUser).filter_by(role='COM', state='A').first()
+
+    def find_alternate_gestion(self):
+        """Trouver un autre gestionnaire pour réaffecter les contrats."""
+        session = object_session(self)
+        return session.query(EpicUser).filter_by(role='GES', state='A').first()
+
+    def find_alternate_support(self):
+        """Trouver un autre support pour réaffecter les évènements."""
+        session = object_session(self)
+        return session.query(EpicUser).filter_by(role='SUP', state='A').first()
+
+    def notify_gestion(self, message):
+        """Envoyer un message au gestionnaire pour des actions manuelles."""
+        # Implémentation de l'envoi du message (par email, notification système, etc.)
+        print(f"Notification pour le gestionnaire: {message}")

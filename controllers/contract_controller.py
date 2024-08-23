@@ -1,8 +1,20 @@
-from models.entities import Contract, Paiement
-from controllers.decorator import is_authenticated, is_admin, is_commercial, is_gestion
+import os
+import sys
+from decimal import Decimal
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
+
+# Déterminez le chemin absolu du répertoire parent
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
+
+# Ajoutez le répertoire parent au PYTHONPATH
+sys.path.insert(0, parent_dir)
+from models.entities import (
+    Base, EpicUser)
 from views.data_view import DataView
+from models.entities import Contract, Paiement
+from controllers.decorator import is_authenticated, is_admin, is_commercial, is_gestion
 
 
 class ContractBase:
@@ -25,7 +37,7 @@ class ContractBase:
     @is_authenticated
     @is_admin
     @is_gestion
-    def create_contract(self, data):
+    def create_contract(session, data):
         """
         Permet de créer un contrat.
 
@@ -38,6 +50,7 @@ class ContractBase:
         ----------
         Contract : Le contrat créé.
         """
+        # Créez l'instance du contrat
         contract = Contract(
             description=data['description'],
             total_amount=data['total_amount'],
@@ -46,8 +59,11 @@ class ContractBase:
             customer_id=data['customer_id'],
             paiement_state=data.get('paiement_state', 'N')
         )
-        self.session.add(contract)
-        self.session.commit()
+        print(contract)
+
+        # Utilisation de self.session pour ajouter et valider
+        session.add(contract)
+        session.commit()
         return contract
 
     @is_authenticated
@@ -178,7 +194,7 @@ class ContractBase:
     @is_authenticated
     @is_admin
     @is_gestion
-    def add_paiement(self, ref_contract, data) -> None:
+    def add_paiement(self, contract_id, data) -> None:
         """
         Ajoute un nouveau paiement au contrat dans la base de données.
 
@@ -196,28 +212,28 @@ class ContractBase:
         IntegrityError :
             Levée si un problème d'intégrité des données survient lors de l'ajout du paiement.
         """
-        contract = Contract.find_by_ref(self.session, ref_contract)
-        if int(data['amount']) > contract.remaining_amount:
-            DataView.display_error_contract_amount()
-            raise ValueError("Le montant dépasse le restant dû")
-        else:
+        try:
+            amount = Decimal(data['amount'])
             paiement = Paiement(
-                ref=data['ref'], amount=data['amount'], contract_id=contract.contract_id)
-            if int(data['amount']) == contract.remaining_amount:
-                contract.paiement_state = 'S'
-                self.session.add(contract)
-            try:
-                self.session.add(paiement)
-                self.session.commit()
-                DataView.display_data_update()
-            except IntegrityError:
-                self.session.rollback()
-                DataView.display_error_unique()
+                paiement_id=data['paiement_id'],
+                amount=amount,
+                contract_id=contract_id
+            )
+            self.session.add(paiement)
+            self.session.commit()
+            print(f"Paiement enregistré avec succès : {paiement.paiement_id}")
+            return paiement
+        except Exception as e:
+            self.session.rollback()
+            print(f"Erreur lors de l'enregistrement du paiement : {e}")
+            raise
+
+
 
     @is_authenticated
     @is_admin
     @is_gestion
-    def signed(self, ref_contract) -> None:
+    def signed(self, contract_id) -> None:
         """
         Met à jour l'état du contrat en 'S' (Signé).
 
@@ -232,9 +248,9 @@ class ContractBase:
             Levée si aucun contrat n'est trouvé avec la référence donnée.
         """
         try:
-            contract = Contract.find_by_ref(self.session, ref_contract)
+            contract = Contract.find_by_contract_id(self.session, contract_id)
         except NoResultFound:
-            raise ValueError(f"Aucun contrat trouvé avec la référence {ref_contract}")
+            raise ValueError(f"Aucun contrat trouvé avec la référence {contract_id}")
 
         contract.state = 'S'
         self.session.add(contract)

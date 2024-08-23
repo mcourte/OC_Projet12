@@ -1,119 +1,125 @@
 import os
 import sys
+
+
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
-parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
+parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-from controllers.contract_controller import ContractBase
-from controllers.event_controller import EventBase
-from controllers.customer_controller import CustomerBase
-from controllers.user_controller import EpicUserBase
 from controllers.epic_controller import EpicDatabase
 
-from .session import stop_session
-
+from controllers.config import Config
+from controllers.session import stop_session
 from views.authentication_view import AuthenticationView
 from views.menu_view import MenuView
 
 
 class EpicDashboard:
-    """
-    Classe principale pour gérer le tableau de bord de l'application CRM EPIC EVENTS.
-    Elle gère les différentes opérations disponibles en fonction du rôle de l'utilisateur.
-    """
+    def __init__(self, epic_base) -> None:
+        self.gestion = epic_base
 
-    def __init__(self, database, host, user, password) -> None:
-        """
-        Initialise la classe EpicDashboard avec les informations de connexion à la base de données.
+        # Debugging: Vérification de l'initialisation de current_user
+        if not hasattr(self.gestion, 'current_user') or not self.gestion.current_user:
+            raise ValueError("L'utilisateur n'est pas initialisé ou n'est pas authentifié.")
 
-        Paramètres :
-        ------------
-        database (str) : Nom de la base de données.
-        host (str) : Hôte de la base de données.
-        user (str) : Nom d'utilisateur pour la base de données.
-        password (str) : Mot de passe pour la base de données.
-        """
-        # Passez les arguments nécessaires à EpicDatabase
-        self.gestion = EpicDatabase(database, host, user, password)
-        self.gestion_user = EpicUserBase(self.gestion.session)
-        self.gestion_customer = CustomerBase(self.gestion.session)
-        self.gestion_contract = ContractBase(self.gestion.session)
-        self.gestion_event = EventBase(self.gestion.session)
+        print(f"Utilisateur connecté : {self.gestion.current_user.username}")
+
+        config = Config()
+        self.database = EpicDatabase(
+            database=config.database,
+            host=config.host,
+            user=config.user,
+            password=config.password,
+            port=config.port
+        )
+        self.session = self.gestion.epic.session
 
     def call_function(self, choice) -> bool:
-        """
-        Exécute une fonction en fonction du choix de l'utilisateur.
-
-        Paramètres :
-        ------------
-        choice (str) : Choix de l'utilisateur pour déterminer quelle fonction appeler.
-
-        Retourne :
-        ----------
-        bool : True si l'application doit continuer à fonctionner, sinon False.
-        """
         match choice:
             case '01':
-                self.gestion_user.get_user()
-                self.gestion_user.update_user()
+                self.database.users.show_profil(self.gestion)
+            case '02':
+                self.database.users.update_profil(self.gestion)
             case '03':
-                self.gestion_customer.get_all_customers()
+                self.database.customers.list_of_customers(self.session)
             case '04':
-                self.gestion_contract.get_all_contracts()
+                self.database.contracts.list_of_contracts(self.session)
             case '05':
-                self.gestion_event.get_all_events()
+                self.database.events.list_of_events(self.session)
             case '06':
-                match self.gestion.user.role.code:
-                    case 'G':
-                        self.gestion_user.get_all_users()
-                    case 'C':
-                        self.gestion_customer.create_customer()
+                if self.gestion.current_user.role.code in {'GES', 'ADM', 'SUP', 'COM'}:
+                    self.database.users.list_of_users(self.session)
+                elif self.gestion.current_user.role.code in {'COM', 'ADM'}:
+                    self.database.customers.create_customer(self.session)
             case '07':
-                match self.gestion.user.role.code:
-                    case 'G':
-                        self.gestion_user.create_user()
-                    case 'C':
-                        self.gestion_customer.update_customer()
+                if self.gestion.current_user.role.code in {'GES', 'ADM'}:
+                    self.database.users.create_user(self.session)
             case '08':
-                match self.gestion.user.role.code:
-                    case 'G':
-                        self.gestion_user.update_user()
-                    case 'C':
-                        self.gestion_event.create_event()
+                if self.gestion.current_user.role.code in {'GES', 'ADM'}:
+                    self.database.users.update_user_password(self.session)
             case '09':
-                match self.gestion.user.role.code:
-                    case 'G':
-                        self.gestion_user.set_inactivate()
+                if self.gestion.current_user.role.code in {'GES', 'ADM'}:
+                    self.database.users.inactivate_user(self.session)
             case '10':
-                self.gestion_contract.create_contract()
+                if self.gestion.current_user.role.code in {'GES', 'ADM'}:
+                    self.database.contracts.create_contract(self.session)
             case '11':
-                self.gestion_contract.update_contract()
+                if self.gestion.current_user.role.code in {'GES', 'ADM', 'COM'}:
+                    self.database.contracts.update_contract(self.session)
             case '12':
-                self.gestion_customer.update_customer()
+                if self.gestion.current_user.role.code in {'ADM', 'GES'}:
+                    self.database.customers.update_customer_commercial(self.session)
             case '13':
-                self.gestion_event.update_event()
+                if self.gestion.current_user.role.code in {'ADM', 'GES', 'SUP'}:
+                    self.database.events.update_event(self.session)
+            case '14':
+                match self.gestion.current_user.role.code:
+                    case 'ADM':
+                        self.database.customers.create_customer(self.session)
+            case '15':
+                match self.gestion.current_user.role.code:
+                    case 'ADM':
+                        self.database.customers.update_customer(self.session)
+            case '16':
+                match self.gestion.current_user.role.code:
+                    case 'ADM':
+                        self.database.events.create_event(self.session)
+            case '17':
+                match self.gestion.current_user.role.code:
+                    case 'ADM':
+                        self.database.events.update_event(self.session)
             case 'D':
                 stop_session()
                 return False
             case 'Q':
-                self.gestion.refresh_session()
+                stop_session()
                 return False
         return True
 
     def run(self) -> None:
-        """
-        Lance le tableau de bord et gère le cycle de vie de l'application en affichant le menu
-        et en appelant les fonctions appropriées en fonction des choix de l'utilisateur.
-        """
-        if self.gestion.user:
+        try:
+            if not self.gestion.current_user:
+                raise ValueError("L'utilisateur n'est pas initialisé.")
+            print("Tableau de bord en cours d'exécution...")
+            username = self.gestion.current_user.username
+            print(f"Utilisateur : {username}")
+            user_info = self.database.get_user(username)
+            if user_info:
+                print("Utilisateur trouvé:", user_info)
+            else:
+                print("Aucun utilisateur trouvé.")
+        except Exception:
+            pass
+
+        if self.gestion.current_user:
             running = True
-            AuthenticationView.display_welcome(self.gestion.user.username)
+            AuthenticationView.display_welcome(self.gestion.current_user.username)
             try:
                 while running:
-                    result = MenuView.menu_choice(self.gestion.user.role.code)
+                    result = MenuView.menu_choice(self.gestion.current_user.role.code)
                     running = self.call_function(result)
             except KeyboardInterrupt:
                 pass
