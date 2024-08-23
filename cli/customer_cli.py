@@ -11,7 +11,7 @@ sys.path.insert(0, parent_dir)
 
 from controllers.epic_controller import EpicBase
 from controllers.customer_controller import CustomerBase
-from config import SessionLocal
+from config_init import SessionLocal
 from terminal.terminal_customer import EpicTerminalCustomer
 
 

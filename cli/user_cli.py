@@ -10,7 +10,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-from config import SessionLocal
+from config_init import SessionLocal
 from controllers.user_controller import EpicUserBase
 from controllers.epic_controller import EpicBase
 from terminal.terminal_user import EpicTerminalUser
@@ -23,12 +23,10 @@ def user_cli():
 
 
 @click.command()
-@click.option('--username', prompt='Nom d`utilisateur', help='The username for login.')
-@click.option('--password', prompt='Mot de passe', hide_input=True, help='The password for login.')
-def login(username, password):
+def login():
     """Login a user"""
     app = EpicBase()
-    if app.login(username=username, password=password):
+    if app.login():
         print("Connexion réussie.")
     else:
         print("Échec de la connexion.")
@@ -40,10 +38,15 @@ def login(username, password):
 @click.argument('role')
 @click.argument('password')
 def add_user(first_name, last_name, role, password):
+    """Login a user"""
+    app = EpicBase()
+    if app.login():
+        print("Connexion réussie.")
+    else:
+        print("Échec de la connexion.")
     session: Session = SessionLocal()
     user_controller = EpicUserBase(session)
     try:
-        # Construire le dictionnaire avec les données de l'utilisateur
         user_data = {
             'first_name': first_name,
             'last_name': last_name,
@@ -60,19 +63,35 @@ def add_user(first_name, last_name, role, password):
 
 @click.command()
 def list_users():
-    session: Session = SessionLocal()
-    user_controller = EpicUserBase(session)
-    users = user_controller.get_all_users()
-    for user in users:
-        click.echo(f"{user.first_name} {user.last_name} ({user.username}) - {user.email}")
-    session.close()
+    """Affiche la liste des utilisateurs"""
+    app = EpicBase()
+    if app.login():
+        print("Connexion réussie.")
+    else:
+        print("Échec de la connexion.")
+        return
+
+    session = SessionLocal()  # Créez une session locale
+    user_controller = app.epic.users  # Utilisez l'instance EpicUserBase de EpicDatabase
+    try:
+        users = user_controller.get_all_users()  # Appelle sans argument
+        for user in users:
+            click.echo(f"{user.first_name} {user.last_name} ({user.username}) - {user.email}")
+    except Exception as e:
+        click.echo(f"Erreur lors de la récupération des utilisateurs : {e}")
+    finally:
+        session.close()
 
 
 @click.command()
 def mydata():
-    """ show data of connected employee"""
+    """Login a user"""
     app = EpicBase()
-
+    if app.login():
+        print("Connexion réussie.")
+    else:
+        print("Échec de la connexion.")
+    """Show data of connected employee"""
     if app.user:
         controle_user = EpicTerminalUser(app.user, app.epic)
         controle_user.show_profil()
@@ -82,31 +101,45 @@ def mydata():
 
 @click.command()
 def update_mydata():
-    """ Update data of connected employee """
+    """Update data of connected employee"""
+    """Login a user"""
     app = EpicBase()
+    if app.login():
+        print("Connexion réussie.")
+    else:
+        print("Échec de la connexion.")
     if app.user:
         controle_user = EpicTerminalUser(app.user, app.epic)
         controle_user.update_profil()
-        app.refresh_session()  # Assurez-vous que la session est rafraîchie
+        app.refresh_session()
     app.epic.database_disconnect()
 
 
 @click.command()
 def create():
-    """ create a new employee """
+    """Create a new employee"""
+    """Login a user"""
     app = EpicBase()
+    if app.login():
+        print("Connexion réussie.")
+    else:
+        print("Échec de la connexion.")
     if app.user:
         controle_user = EpicTerminalUser(app.user, app.epic)
-        controle_user.create_new_user()
+        controle_user.create_user()
         app.refresh_session()
-        app.epic.database_disconnect()
     app.epic.database_disconnect()
 
 
 @click.command()
 def update_password():
-    """ modify the password of an employee """
+    """Modify the password of an employee"""
+    """Login a user"""
     app = EpicBase()
+    if app.login():
+        print("Connexion réussie.")
+    else:
+        print("Échec de la connexion.")
     if app.user:
         controle_employee = EpicTerminalUser(app.user, app.epic)
         controle_employee.update_user_password()
@@ -116,8 +149,12 @@ def update_password():
 
 @click.command()
 def inactivate():
-    """ inactivate an employee """
+    """Inactivate an employee"""
     app = EpicBase()
+    if app.login():
+        print("Connexion réussie.")
+    else:
+        print("Échec de la connexion.")
     if app.user:
         controle_employee = EpicTerminalUser(app.user, app.epic)
         controle_employee.inactivate_user()
