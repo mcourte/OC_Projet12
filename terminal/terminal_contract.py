@@ -8,7 +8,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-from controllers.decorator import (is_authenticated, is_gestion, is_admin)
+from controllers.decorator import (is_authenticated, requires_roles)
 from controllers.contract_controller import ContractBase
 from terminal.terminal_customer import EpicTerminalCustomer
 from terminal.terminal_user import EpicTerminalUser
@@ -41,7 +41,7 @@ class EpicTerminalContract:
         self.session = session
         self.current_user = None
         self.controller_user = EpicTerminalUser(self.epic, self.session)
-        self.controller_customer = EpicTerminalCustomer(self.epic, self.session)
+        self.controller_customer = EpicTerminalCustomer(self.epic, self.session, self.current_user)
 
     @is_authenticated
     def list_of_contracts(self, session) -> None:
@@ -52,35 +52,12 @@ class EpicTerminalContract:
         - Sélectionner un état
         - Lire la base de données et afficher les contrats.
         """
-        state = None
 
-        # Sélectionner un commercial
-        cname = self.controller_user.choice_commercial()
-
-        # Sélectionner un client parmi ceux affectés au commercial
-        customer = self.controller_customer.choice_customer(session, cname)
         contracts = session.query(Contract).all()
-        print(f"contracts récupérés: {contracts}")
-        print("Type de chaque contrat:", [type(c) for c in contracts])
-        if not customer:
-            print("Aucun client sélectionné. Retour au menu principal.")
-            return
-
-        # Sélectionner un état
-        result = PromptView.prompt_confirm_statut()
-        if result:
-            contracts = session.query(Contract).filter_by(customer_id=customer.customer_id).all()
-            try:
-                state = ContractView.prompt_select_statut()
-                filtered_contracts = [c for c in contracts if c.state == state]
-                ContractView.display_list_contracts(filtered_contracts)
-
-            except KeyboardInterrupt:
-                state = None
+        ContractView.display_list_contracts(contracts, session)
 
     @is_authenticated
-    @is_gestion
-    @is_admin
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def create_contract(self, session) -> None:
         """
         Crée un nouveau contrat en permettant de :
@@ -115,6 +92,8 @@ class EpicTerminalContract:
         except KeyboardInterrupt:
             DataView.display_interupt()
 
+    @is_authenticated
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def update_contract(self, session):
         contracts = session.query(Contract).all()
         ref = EventView.prompt_select_contract(contracts)
@@ -136,7 +115,7 @@ class EpicTerminalContract:
 
                 case 2:
                     try:
-                        contract = self.epic.db_contracts.get_contract(ref)
+                        contract = session.query(Contract).filter_by(contract_id=ref).all()
                         ContractView.display_contract_info(contract)
                         data = ContractView.prompt_data_contract(
                             ref_required=False, mt_required=False)
@@ -147,15 +126,13 @@ class EpicTerminalContract:
                         DataView.display_interupt()
                 case 3:
                     self.epic.db_contracts.signed(ref)
-                    text = f'Créez les événements du contrat {ref}'
                     contract = self.epic.db_contracts.get_contract(ref)
                     DataView.display_workflow()
         except KeyboardInterrupt:
             DataView.display_interupt()
 
     @is_authenticated
-    @is_gestion
-    @is_admin
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def update_contract_gestion(self, session) -> None:
         """
         Met à jour le commercial attribué à un client.
@@ -171,7 +148,7 @@ class EpicTerminalContract:
             print("Erreur : La session est non initialisée.")
             return
         # Récupérer tous les contrat
-        contracts = session.query(Contract).all()
+        contracts = session.query(Contract).filter_by(gestion_id=None).all()
         ref = EventView.prompt_select_contract(contracts)
         selected_contract = session.query(Contract).filter_by(contract_id=ref.contract_id).first()
         selected_contract_id = selected_contract.contract_id
@@ -179,25 +156,9 @@ class EpicTerminalContract:
         users = session.query(EpicUser).filter_by(role='GES').all()
 
         # Demander à l'utilisateur de sélectionner un gestionnaire
-        selected_customer_id = UserView.prompt_select_gestion(users)
-        if not selected_customer_id:
-            print("Erreur : Aucun contrat sélectionné.")
-            return
-
-        # Récupérer tous les commerciaux
-        gestions = session.query(EpicUser).filter_by(role='GES').all()
-        gestions_usernames = [g.username for g in gestions]
-
-        # Demander à l'utilisateur de sélectionner un commercial
-        selected_gestion_username = UserView.prompt_gestion(gestions_usernames)
-        if not selected_gestion_username:
-            print("Erreur : Aucun getionnaire sélectionné.")
-            return
-
-        # Récupérer l'ID du commercial sélectionné
-        selected_gestion = session.query(EpicUser).filter_by(username=selected_gestion_username).first()
+        selected_gestion = UserView.prompt_select_gestion(users)
         if not selected_gestion:
-            print("Erreur : Le commercial sélectionné n'existe pas.")
+            print("Erreur : Aucun contrat sélectionné.")
             return
 
         # Mettre à jour le commercial du client

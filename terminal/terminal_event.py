@@ -8,12 +8,14 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-from controllers.decorator import (is_authenticated, is_support, is_commercial, is_gestion, is_admin)
+from controllers.decorator import (is_authenticated, requires_roles)
 from controllers.event_controller import EventBase, Event
 from controllers.user_controller import EpicUser
+from controllers.customer_controller import CustomerBase, Customer
 from controllers.contract_controller import Contract
 from views.event_view import EventView
 from views.data_view import DataView
+from views.customer_view import CustomerView
 from terminal.terminal_user import EpicTerminalUser
 from terminal.terminal_customer import EpicTerminalCustomer
 from views.contract_view import ContractView
@@ -36,13 +38,12 @@ class EpicTerminalEvent:
         """
         self.epic = base
         self.session = session
+        self.current_user = None
         self.controller_user = EpicTerminalUser(self.epic, self.session)
-        self.controller_customer = EpicTerminalCustomer(self.epic, self.session)
+        self.controller_customer = EpicTerminalCustomer(self.epic, self.session, self.current_user)
 
     @is_authenticated
-    @is_gestion
-    @is_support
-    @is_admin
+    @requires_roles('ADM', 'GES', 'SUP', 'Admin', 'Gestion', 'Support')
     def update_event(self, session):
         """
         Met à jour un événement en permettant de :
@@ -52,22 +53,22 @@ class EpicTerminalEvent:
         - Appliquer les modifications dans la base de données.
         """
         try:
+            # Récupérer tous les événements
+            events = session.query(Event).filter_by(support_id=None).all()
+            print(f"Nombre d'événements trouvés: {len(events)}")
+            if events:
+                event = EventView.prompt_select_event(events)
+                event_id = event.event_id  # Assurez-vous d'utiliser l'I
+
             # Récupérer tous les supports
             supports = session.query(EpicUser).filter_by(role='SUP').all()
-            supports_dict = {s.username: s.epicuser_id for s in supports}  # Obtenez un dictionnaire username -> user_id
+            supports_dict = {s.username: s.epicuser_id for s in supports}
             support_username = UserView.prompt_select_support(list(supports_dict.keys()))
             support_id = supports_dict[support_username]  # Obtenez l'ID du support sélectionné
             print(f"Support sélectionné: {support_username} (ID: {support_id})")
 
-            # Récupérer tous les événements
-            events = session.query(Event).all()
-            print(f"Nombre d'événements trouvés: {len(events)}")
-            if events:
-                event = EventView.prompt_select_event(events)
-                event_id = event.event_id  # Assurez-vous d'utiliser l'ID
-
-                # Mettre à jour l'événement
-                EventBase.update_event(self, event_id, {"support_id": support_id})
+            # Mettre à jour l'événement
+            EventBase.update_event(self, event_id, {"support_id": support_id})
 
         except KeyboardInterrupt:
             DataView.display_interupt()
@@ -75,8 +76,7 @@ class EpicTerminalEvent:
             print(f"Erreur rencontrée: {e}")
 
     @is_authenticated
-    @is_commercial
-    @is_admin
+    @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def create_event(self, session):
         """
         Crée un nouvel événement en permettant de :
@@ -97,7 +97,7 @@ class EpicTerminalEvent:
             DataView.display_nocontracts()
 
     @is_authenticated
-    def list_of_events(self, session):
+    def list_of_events_filtered(self, session):
         """
         Affiche la liste des événements en permettant de :
         - Choisir un commercial (facultatif)
@@ -108,14 +108,16 @@ class EpicTerminalEvent:
         """
         try:
             # Choisir un commercial (facultatif)
-            commercial_name = self.controller_user.choice_commercial()
-            if commercial_name:
+            commercials = session.query(EpicUser).filter_by(role='COM').all()
+            commercial = UserView.prompt_select_commercial(commercials)
+            if commercial:
                 # Si un commercial est sélectionné, choisir un client
-                client = self.controller_customer.choice_customer(session, commercial_name)
-                print(f'Client sélectionné : {client}')
+                customers = session.query(Customer).filter_by(commercial_id=commercial.epicuser_id).all()
+                selected_customer = CustomerView.prompt_customers(customers)
+                print(f'Client sélectionné : {selected_customer}')
 
                 # Initialiser les filtres
-                filter_by_client = client.customer_id
+                filter_by_client = selected_customer.customer_id
             else:
                 # Si aucun commercial n'est sélectionné, afficher tous les événements
                 filter_by_client = None
@@ -164,3 +166,16 @@ class EpicTerminalEvent:
             DataView.display_interupt()
         except Exception as e:
             print(f"Erreur rencontrée : {e}")
+
+    @is_authenticated
+    def list_of_events(self, session):
+        """
+        Affiche la liste des événements en permettant de :
+        - Choisir un commercial (facultatif)
+        - Choisir un client (facultatif)
+        - Sélectionner un contrat (si confirmé)
+        - Sélectionner un support (si confirmé)
+        - Lire la base de données et afficher les événements.
+        """
+        events = session.query(Event).all()
+        EventView.display_list_events(events)

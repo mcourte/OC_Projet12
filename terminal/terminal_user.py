@@ -8,7 +8,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-from controllers.decorator import is_authenticated, is_gestion, is_admin
+from controllers.decorator import is_authenticated, requires_roles
 from views.user_view import UserView
 from views.data_view import DataView
 from controllers.user_controller import EpicUserBase, EpicUser
@@ -19,7 +19,7 @@ class EpicTerminalUser:
     Classe pour gérer les utilisateurs depuis l'interface terminal.
     """
 
-    def __init__(self, base, session):
+    def __init__(self, base, session, current_user=None):
         """
         Initialise la classe EpicTerminalUser avec l'utilisateur et la base de données.
 
@@ -30,43 +30,17 @@ class EpicTerminalUser:
         """
         self.epic = base
         self.session = session
-        self.current_user = None
+        self.current_user = current_user
 
-    def choice_commercial(self) -> str:
-        """
-        Permet de choisir un commercial parmi ceux disponibles.
-
-        - Demande de confirmer une sélection.
-        - Lit la liste des commerciaux dans la base de données.
-        - Demande de choisir un commercial.
-
-        Retourne :
-        -----------
-        str : Le nom d'utilisateur du commercial sélectionné.
-        """
-        cname = None
-        result = UserView.prompt_confirm_commercial()
-        if result:
-            commercials = self.session.query(EpicUser).filter_by(role='COM').all()
-            commercials_name = [c.username for c in commercials]
-            cname = UserView.prompt_commercial(commercials_name)
-        return cname
-
+    @is_authenticated
     def show_profil(self, session) -> None:
-        """
-        Affiche le profil de l'utilisateur actuellement connecté.
-        """
-        if not self.current_user:
-            print("Utilisateur non authentifié (show_profil).")
+        print(f"current_user dans show_profil: {self.current_user}")
+        if self.current_user is None:
+            print("Erreur : Aucun utilisateur connecté.")
             return
-
-        print(f"Utilisateur authentifié : {self.current_user.username}")
-
-        # Recherche de l'utilisateur dans la base de données
         user = session.query(EpicUser).filter_by(username=self.current_user.username).first()
-
+        print(f"Utilisateur trouvé dans la base de données : {user}")
         if user:
-            print(f"Profil de l'utilisateur trouvé : {user.username}")
             DataView.display_profil(user)
         else:
             print("Utilisateur non trouvé dans la base de données.")
@@ -84,6 +58,7 @@ class EpicTerminalUser:
         """
         result = UserView.prompt_confirm_profil()
         if result:
+            print(self.current_user)
             DataView.display_profil(self.current_user)
             profil = UserView.prompt_data_profil(False, False, False)
             EpicUserBase.update_user(self.current_user, profil)
@@ -91,8 +66,6 @@ class EpicTerminalUser:
             DataView.display_data_update()
 
     @is_authenticated
-    @is_gestion
-    @is_admin
     def list_of_users(self, session) -> None:
         """
         Affiche la liste de tous les utilisateurs de la base de données.
@@ -100,12 +73,12 @@ class EpicTerminalUser:
         - Lit les données des utilisateurs dans la base de données.
         - Affiche la liste des utilisateurs.
         """
+
         users = self.session.query(EpicUser).all()
         UserView.display_list_users(users)
 
     @is_authenticated
-    @is_admin
-    @is_gestion
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def create_user(self, session) -> None:
         """
         Crée un nouvel utilisateur en utilisant la session fournie.
@@ -128,25 +101,7 @@ class EpicTerminalUser:
             DataView.display_interupt()
 
     @is_authenticated
-    @is_gestion
-    @is_admin
-    def update_user_password(self) -> None:
-        """
-        Met à jour le mot de passe d'un utilisateur.
-
-        - Demande de sélectionner un utilisateur.
-        - Demande le nouveau mot de passe.
-        - Met à jour la base de données avec le nouveau mot de passe.
-        """
-        users = self.epic.db_users.get_all_users()
-        users_usernames = [e.username for e in users]
-        username = UserView.prompt_user(users_usernames)
-        password = UserView.prompt_password()
-        self.epic.db_users.update_user(username, password=password)
-
-    @is_authenticated
-    @is_gestion
-    @is_admin
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def inactivate_user(self, session) -> None:
         """
         Désactive un utilisateur.
@@ -164,11 +119,10 @@ class EpicTerminalUser:
 
         # Utiliser l'instance de EpicUserBase pour appeler set_inactivate
         epic_user_base = EpicUserBase(session)
-        epic_user_base.set_inactivate(session, username)
+        epic_user_base.set_activate_inactivate(session, username)
 
     @is_authenticated
-    @is_gestion
-    @is_admin
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def find_by_username(self):
         """
         Trouve un utilisateur par son nom d'utilisateur.

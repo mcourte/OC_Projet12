@@ -8,7 +8,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-from controllers.decorator import is_authenticated, is_commercial, is_gestion, is_admin
+from controllers.decorator import is_authenticated, requires_roles
 from controllers.user_controller import EpicUserBase, EpicUser
 from controllers.customer_controller import CustomerBase
 from views.user_view import UserView
@@ -21,18 +21,19 @@ class EpicTerminalCustomer:
     Classe pour gérer les clients depuis l'interface terminal.
     """
 
-    def __init__(self, base, session):
+    def __init__(self, base, session, current_user):
         """
         Initialise la classe EpicTerminalCustomer avec l'utilisateur et la base de données.
 
         Paramètres :
         ------------
-        user (EpicUser) : L'utilisateur actuellement connecté.
         base (EpicDatabase) : L'objet EpicDatabase pour accéder aux opérations de la base de données.
+        session (Session) : La session de base de données pour effectuer des requêtes.
+        current_user (EpicUser) : L'utilisateur actuellement connecté.
         """
         self.epic = base
         self.session = session
-        self.current_user = None
+        self.current_user = current_user  # Définir correctement l'utilisateur ici
 
     def choice_customer(self, session, commercial_username: str) -> str:
         """
@@ -77,8 +78,7 @@ class EpicTerminalCustomer:
         CustomerView.display_list_customers(customers)
 
     @is_authenticated
-    @is_gestion
-    @is_admin
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def update_customer_commercial(self, session) -> None:
         """
         Met à jour le commercial attribué à un client.
@@ -95,7 +95,7 @@ class EpicTerminalCustomer:
             return
 
         # Récupérer tous les clients
-        customers = session.query(Customer).all()
+        customers = session.query(Customer).filter_by(commercial_id=None).all()
         customers_data = [{"name": f"{c.first_name} {c.last_name}", "value": c.customer_id} for c in customers]
 
         # Demander à l'utilisateur de sélectionner un client
@@ -125,8 +125,7 @@ class EpicTerminalCustomer:
         print(f"Le commercial {selected_commercial.username} a été attribué au client {selected_customer_id} avec succès.")
 
     @is_authenticated
-    @is_commercial
-    @is_admin
+    @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def create_customer(self, session) -> None:
         """
         Crée un nouveau client en permettant de :
@@ -140,8 +139,7 @@ class EpicTerminalCustomer:
         CustomerBase.create_customer(self.current_user, session, data)
 
     @is_authenticated
-    @is_commercial
-    @is_admin
+    @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def update_customer(self, session):
         """
         Met à jour les informations d'un client en permettant de :
@@ -156,14 +154,25 @@ class EpicTerminalCustomer:
             print("Erreur : La session est non initialisée.")
             return
 
+        # Vérifiez si l'utilisateur actuel est correctement défini
+        if self.current_user is None:
+            print("Erreur : Utilisateur non connecté.")
+            return
+
         roles = EpicUserBase.get_roles(self)
         self.roles = roles
 
-        # Récupérer tous les clients
-        customers = session.query(Customer).all()
+        # Récupérer tous les clients associés à l'utilisateur actuel
+        customers = session.query(Customer).filter_by(commercial_id=self.current_user.epicuser_id).all()
         customers_data = [{"name": f"{c.first_name} {c.last_name}", "value": c.customer_id} for c in customers]
 
+        # Vérifiez s'il y a des clients associés
+        if not customers_data:
+            print("Aucun client trouvé pour ce commercial.")
+            return
+
         selected_customer_id = CustomerView.prompt_client(customers_data)
+
         # Vérifiez si l'ID du client sélectionné est valide
         if selected_customer_id is None:
             print("Erreur : Aucune sélection de client.")
