@@ -18,7 +18,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-from cli import contract_cli, customer_cli, epic_cli, event_cli, user_cli
+from cli import epic_cli
 
 
 @click.group(help="------ CRM EpicEvent ------")
@@ -31,12 +31,6 @@ def main():
 main.add_command(epic_cli.start)
 main.add_command(epic_cli.logout)
 main.add_command(epic_cli.initbase)
-
-# Ajouter les autres groupes de commandes
-main.add_command(user_cli.user_cli)
-main.add_command(customer_cli.customer_cli)
-main.add_command(contract_cli.contract_cli)
-main.add_command(event_cli.event_cli)
 
 if __name__ == '__main__':
     main()
