@@ -20,6 +20,7 @@ def is_commercial(f):
     def decorator(*args, **kwargs):
         try:
             role_code = decode_token(load_session(), SECRET_KEY).get('role')
+            print(f"Rôle de l'utilisateur : {role_code}")  # Debugging
             if role_code in {'COM', 'ADM', 'Commercial', 'Admin'}:
                 return f(*args, **kwargs)
             else:
@@ -54,8 +55,11 @@ def is_authenticated(f):
         if token is None:
             raise PermissionError("Token not found")
         try:
-            decode_token(token, SECRET_KEY)  # Assurez-vous que token est converti en bytes ici
-            return f(cls, session, *args, **kwargs)
+            decoded = decode_token(token, SECRET_KEY)
+            if decoded:
+                return f(cls, session, *args, **kwargs)
+            else:
+                raise PermissionError("Token invalid")
         except PermissionError as e:
             print(e)
             raise
@@ -95,6 +99,30 @@ def is_gestion(f):
         except PermissionError as e:
             print(e)
             raise
+    return decorator
+
+
+def requires_roles(*roles):
+    """
+    Décorateur pour vérifier si l'utilisateur a l'un des rôles requis.
+    """
+    def decorator(f):
+        @wraps(f)
+        def wrapped(cls, session, *args, **kwargs):
+            token = load_session()
+            if token is None:
+                raise PermissionError("Token not found")
+
+            try:
+                decoded = decode_token(token, SECRET_KEY)
+                user_role = decoded.get('role')
+                if user_role not in roles:
+                    raise PermissionError(f"PermissionError: User role is {user_role}, required one of {roles}")
+                return f(cls, session, *args, **kwargs)
+            except PermissionError as e:
+                print(e)
+                raise
+        return wrapped
     return decorator
 
 

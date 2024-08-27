@@ -37,16 +37,16 @@ class EpicDatabase:
         self.name = database
         self.session = scoped_session(sessionmaker(bind=self.engine))
 
-        # Assurez-vous que vous passez les bons arguments à EpicTerminalCustomer
-        self.customers = EpicTerminalCustomer(self.engine, self.session)
         if database_exists(self.url):
             print(f"Connexion à la base de données {database} réussie.")
         else:
             print('Erreur de connexion à la base de données')
 
+        # Vous devez maintenant passer un utilisateur valide lors de l'instanciation
+        self.current_user = None
         # Passer self.engine et self.session correctement
         self.users = EpicTerminalUser(self.engine, self.session)
-        self.customers = EpicTerminalCustomer(self.engine, self.session)
+        self.customers = EpicTerminalCustomer(self.engine, self.session, self.current_user)
         self.contracts = EpicTerminalContract(self.engine, self.session)
         self.events = EpicTerminalEvent(self.engine, self.session)
 

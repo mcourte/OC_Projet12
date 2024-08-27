@@ -38,6 +38,7 @@ class EpicDashboard:
         self.session = self.gestion.epic.session
 
     def call_function(self, choice) -> bool:
+
         match choice:
             case '01':
                 self.database.users.show_profil(self.gestion)
@@ -50,16 +51,19 @@ class EpicDashboard:
             case '05':
                 self.database.events.list_of_events(self.session)
             case '06':
-                if self.gestion.current_user.role.code in {'GES', 'ADM', 'SUP', 'COM'}:
-                    self.database.users.list_of_users(self.session)
-                elif self.gestion.current_user.role.code in {'COM', 'ADM'}:
-                    self.database.customers.create_customer(self.session)
+                self.database.users.list_of_users(self.session)
             case '07':
-                if self.gestion.current_user.role.code in {'GES', 'ADM'}:
-                    self.database.users.create_user(self.session)
+                if self.gestion.current_user.role.code in {'COM'}:
+                    self.database.customers.create_customer(self.session)
+                if self.gestion.current_user.role.code in {'GES'}:
+                    self.database.users.list_of_users(self.session)
+                if self.gestion.current_user.role.code in {'SUP'}:
+                    self.database.events.list_of_events_filtered(self.session)
             case '08':
                 if self.gestion.current_user.role.code in {'GES', 'ADM'}:
-                    self.database.users.update_user_password(self.session)
+                    self.database.users.create_user(self.session)
+                if self.gestion.current_user.role.code in {'COM', 'ADM'}:
+                    self.database.customers.update_customer(self.session)  # Passez le token ici
             case '09':
                 if self.gestion.current_user.role.code in {'GES', 'ADM'}:
                     self.database.users.inactivate_user(self.session)
@@ -79,21 +83,20 @@ class EpicDashboard:
                 if self.gestion.current_user.role.code in {'ADM', 'GES', 'SUP'}:
                     self.database.events.update_event(self.session)
             case '15':
-                match self.gestion.current_user.role.code:
-                    case 'ADM':
-                        self.database.customers.create_customer(self.session)
+                if self.gestion.current_user.role.code in {'ADM'}:
+                    self.database.customers.create_customer(self.session)
             case '16':
-                match self.gestion.current_user.role.code:
-                    case 'ADM':
-                        self.database.customers.update_customer(self.session)
+                if self.gestion.current_user.role.code in {'ADM', 'COM'}:
+                    self.database.customers.update_customer(self.session)
             case '17':
-                match self.gestion.current_user.role.code:
-                    case 'ADM':
-                        self.database.events.create_event(self.session)
+                if self.gestion.current_user.role.code in {'ADM', 'GES'}:
+                    self.database.events.create_event(self.session)
             case '18':
-                match self.gestion.current_user.role.code:
-                    case 'ADM':
-                        self.database.events.update_event(self.session)
+                if self.gestion.current_user.role.code in {'ADM', 'GES', 'SUP'}:
+                    self.database.events.update_event(self.session)
+            case '19':
+                if self.gestion.current_user.role.code in {'ADM', 'SUP'}:
+                    self.database.events.list_of_events_filtered(self.session)
             case 'D':
                 stop_session()
                 return False

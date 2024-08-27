@@ -62,6 +62,7 @@ def save_session(token):
     try:
         with open('session.json', 'w') as f:
             json.dump({'token': token}, f, indent=4)
+        print("Token sauvegardé dans la session.")
     except IOError as e:
         print(f"Erreur lors de l'écriture dans le fichier de session : {e}")
 
@@ -91,22 +92,12 @@ def stop_session():
 
 
 def create_session(user, delta, secret=SECRET_KEY):
-    """
-    Crée une session pour un utilisateur avec un jeton JWT.
-    """
-    # Vérification du type et de la valeur de `user.role`
-    print(f"Type de user.role: {type(user.role)}, Valeur de user.role: {user.role}")
-
-    # Récupération de la valeur du rôle, en le convertissant en chaîne si nécessaire
-    role_value = user.role.code if hasattr(user.role, 'code') else str(user.role)
-
-    # Création du token en utilisant la fonction create_token
     token = create_token(user, secret)
-
-    # Debugging line to check the token content
-    decoded = decode_token(token, secret)
-
+    print(f"Token créé : {token}")
     save_session(token)
+    decoded = decode_token(token, secret)
+    print(f"Token décodé : {decoded}")
+    print("Token enregistré dans la session.")
 
 
 def renew_session(secret=SECRET_KEY):
@@ -167,8 +158,7 @@ def get_current_user(secret=SECRET_KEY):
         return None
 
     try:
-
-        decoded = decode_token(token, secret)  # Decode using the secret key
+        decoded = decode_token(token, secret)
         username = decoded.get('username')
         if not username:
             print("Le jeton ne contient pas d'identifiant d'utilisateur.")
@@ -179,8 +169,7 @@ def get_current_user(secret=SECRET_KEY):
             print(f"Utilisateur {username} non trouvé dans la base de données.")
             return None
 
-        return user
-
+        return user  # Assurez-vous que vous retournez l'objet utilisateur et non une requête
     except PermissionError as e:
         print(f"Erreur de permission : {e}")
         return None

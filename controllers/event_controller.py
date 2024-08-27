@@ -1,5 +1,5 @@
 from models.entities import Event
-from controllers.decorator import is_authenticated, is_admin, is_commercial, is_gestion
+from controllers.decorator import is_authenticated, requires_roles
 
 
 class EventBase:
@@ -18,8 +18,7 @@ class EventBase:
         self.session = session
 
     @is_authenticated
-    @is_admin
-    @is_commercial
+    @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def create_event(self, data, session):
         """
         Crée un nouvel événement avec les données fournies.
@@ -58,8 +57,7 @@ class EventBase:
         return event
 
     @is_authenticated
-    @is_admin
-    @is_commercial
+    @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def get_event(self, event_id):
         """
         Récupère un événement à partir de son ID.
@@ -86,9 +84,7 @@ class EventBase:
         return self.session.query(Event).all()
 
     @is_authenticated
-    @is_admin
-    @is_commercial
-    @is_gestion
+    @requires_roles('ADM', 'COM', 'GES', 'Admin', 'Commercial', 'Gestion')
     def update_event(self, event_id, data):
         """
         Met à jour un événement existant avec les nouvelles données.

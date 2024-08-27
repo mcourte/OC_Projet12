@@ -1,7 +1,8 @@
 from models.entities import Customer, Contract
 from datetime import datetime
-from controllers.decorator import is_authenticated, is_admin, is_commercial
+from controllers.decorator import is_authenticated, requires_roles
 from views.customer_view import CustomerView
+
 
 class CustomerBase:
     """
@@ -21,8 +22,7 @@ class CustomerBase:
         self.session = session
 
     @is_authenticated
-    @is_admin
-    @is_commercial
+    @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def create_customer(self, session, customer_data):
         """
         Permet de créer un client.
@@ -52,8 +52,7 @@ class CustomerBase:
         return customer
 
     @is_authenticated
-    @is_admin
-    @is_commercial
+    @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def get_customer(self, cname: str, session) -> list[Customer]:
         """
         Récupère la liste des clients selon le nom du commercial.
@@ -82,8 +81,7 @@ class CustomerBase:
         return self.session.query(Customer).all()
 
     @is_authenticated
-    @is_admin
-    @is_commercial
+    @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def update_customer(self, session, customer_id):
         """
         Permet de mettre à jour le profil d'un client via son ID.
@@ -111,8 +109,7 @@ class CustomerBase:
         session.commit()
 
     @is_authenticated
-    @is_admin
-    @is_commercial
+    @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def find_without_contract(self):
         """
         Permet de lister tous les clients qui n'ont pas de contrat associé.
@@ -124,6 +121,8 @@ class CustomerBase:
         return self.session.query(Customer).outerjoin(Customer.contracts).filter(Contract.customer_id.is_(None)).all()
 
     @classmethod
+    @is_authenticated
+    @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def update_commercial_customer(cls, current_user, session, customer_id, commercial_id):
         """
         Met à jour le commercial attribué à un client.

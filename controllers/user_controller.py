@@ -1,5 +1,5 @@
 from models.entities import EpicUser, Contract
-from controllers.decorator import is_authenticated, is_admin, is_gestion
+from controllers.decorator import is_authenticated, requires_roles
 import logging
 from sqlalchemy.orm import object_session
 # Obtenez le logger configuré
@@ -56,30 +56,7 @@ class EpicUserBase:
         return user
 
     @is_authenticated
-    @is_admin
-    @is_gestion
-    def get_user(self, username):
-        """
-        Récupère un utilisateur à partir de son nom d'utilisateur.
-
-        :param username: Le nom d'utilisateur de l'utilisateur à récupérer.
-        :return: L'objet EpicUser correspondant, ou None si l'utilisateur n'est pas trouvé.
-        """
-        profil = self.session.query(EpicUser).filter_by(username=username).first()
-        return profil
-
-    @is_authenticated
-    def get_all_users(self):
-        """
-        Récupère la liste de tous les utilisateurs.
-
-        :return: Une liste d'objets EpicUser représentant tous les utilisateurs.
-        """
-        return self.session.query(EpicUser).all()
-
-    @is_authenticated
-    @is_admin
-    @is_gestion
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def update_user(self, session, name, password=None, role=None, state=None):
         """
         Met à jour les informations d'un utilisateur existant.
@@ -133,61 +110,18 @@ class EpicUserBase:
         return role_map.get(role_name)
 
     @is_authenticated
-    @is_admin
-    @is_gestion
-    def get_commercials(self):
-        """
-        Récupère la liste de tous les utilisateurs ayant le rôle de Commercial.
-
-        :return: Une liste d'objets EpicUser représentant les utilisateurs avec le rôle 'Commercial'.
-        """
-        return self.session.query(EpicUser).filter_by(role='COM').all()
-
-    @is_authenticated
-    @is_admin
-    @is_gestion
-    def get_supports(self):
-        """
-        Récupère la liste de tous les utilisateurs ayant le rôle de Support.
-
-        :return: Une liste d'objets EpicUser représentant les utilisateurs avec le rôle 'Support'.
-        """
-        return self.session.query(EpicUser).filter_by(role='SUP').all()
-
-    @is_authenticated
-    @is_admin
-    @is_gestion
-    def get_gestions(self):
-        """
-        Récupère la liste de tous les utilisateurs ayant le rôle de Gestion.
-
-        :return: Une liste d'objets EpicUser représentant les utilisateurs avec le rôle 'Gestion'.
-        """
-        return self.session.query(EpicUser).filter_by(role='GES').all()
-
-    @is_authenticated
-    @is_admin
-    @is_gestion
-    def find_by_username(cls, session, username):
-        """
-        Recherche un utilisateur par son nom d'utilisateur.
-
-        :param session: Session de base de données utilisée pour interagir avec les utilisateurs.
-        :param username: Le nom d'utilisateur de l'utilisateur à rechercher.
-        :return: L'objet EpicUser correspondant, ou None si l'utilisateur n'est pas trouvé.
-        """
-        return session.query(cls).filter_by(username=username).first()
-
-    def set_inactivate(self, session, username):
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
+    def set_activate_inactivate(self, session, username):
         """
         Définit l'utilisateur comme inactif et déclenche les réaffectations ou notifications nécessaires.
         """
         user = session.query(EpicUser).filter_by(username=username).first()
-        if user is not None:
+
+        print(f"Le statut actuel de {username} est {user.state}")
+        if user is not None and user.state == 'A':
             user.state = 'I'
-            print('session va commiter')
+            print(f"{user.username} est Inactife")
             session.commit()
-            print('session a commit')
             if user.role == 'COM':
                 self.notify_gestion_to_reassign_user(user)
                 self.reassign_customers()
@@ -197,7 +131,13 @@ class EpicUserBase:
             elif user.role == 'SUP':
                 self.notify_gestion_to_reassign_user(user)
                 self.reassign_events()
+        elif user is not None and user.state == 'I':
+            user.state = 'A'
+            print(f"{user.username} est de nouveau Actif")
+            session.commit()
 
+    @is_authenticated
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def reassign_customers(self):
         """Réaffecte les clients du commercial inactif à un autre commercial."""
         new_commercial = self.find_alternate_commercial()
@@ -209,6 +149,8 @@ class EpicUserBase:
         # Envoyer une notification au gestionnaire
         self.notify_gestion("Réaffectation des clients du commercial inactif terminée.")
 
+    @is_authenticated
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def reassign_contracts(self, session):
         """Réaffecte les contrats d'un gestionnaire inactif à un autre gestionnaire."""
         new_gestion = session.query(EpicUser).filter_by(role='SUP', state='A').first()
@@ -222,6 +164,8 @@ class EpicUserBase:
         # Envoyer une notification au gestionnaire
         self.notify_gestion("Réaffectation des contrats du gestionnaire inactif terminée.")
 
+    @is_authenticated
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def reassign_events(self):
         """Réaffecte les contrats d'un support inactif à un autre support."""
         new_support = self.find_alternate_support()
@@ -233,6 +177,8 @@ class EpicUserBase:
         # Envoyer une notification au gestionnaire
         self.notify_gestion("Réaffectation des évènements du support inactif terminée.")
 
+    @is_authenticated
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def notify_gestion_to_reassign_user(self, user):
         """Notifier le gestionnaire pour réaffecter les événements du support inactif."""
         if user:  # Vérifier si l'utilisateur est passé en paramètre
@@ -242,21 +188,29 @@ class EpicUserBase:
         else:
             print("Aucun utilisateur sélectionné pour la notification de réaffectation.")
 
+    @is_authenticated
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def find_alternate_commercial(self):
         """Trouver un autre commercial pour réaffecter les clients."""
         session = object_session(self)
         return session.query(EpicUser).filter_by(role='COM', state='A').first()
 
+    @is_authenticated
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def find_alternate_gestion(self):
         """Trouver un autre gestionnaire pour réaffecter les contrats."""
         session = object_session(self)
         return session.query(EpicUser).filter_by(role='GES', state='A').first()
 
+    @is_authenticated
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def find_alternate_support(self):
         """Trouver un autre support pour réaffecter les évènements."""
         session = object_session(self)
         return session.query(EpicUser).filter_by(role='SUP', state='A').first()
 
+    @is_authenticated
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def notify_gestion(self, message):
         """Envoyer un message au gestionnaire pour des actions manuelles."""
         # Implémentation de l'envoi du message (par email, notification système, etc.)

@@ -1,13 +1,11 @@
 import jwt
-import json
 import os
 import sys
 from controllers.config import Config, Environ
 from controllers.database_controller import EpicDatabase
-from terminal.terminal_user import EpicTerminalUser
-from controllers.session import load_session, stop_session, create_session, save_session
+from terminal.terminal_user import EpicTerminalUser, EpicUser
+from controllers.session import load_session, stop_session, create_session, save_session, get_current_user
 from controllers.session import create_token
-from controllers.decorator import is_authenticated
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
@@ -23,17 +21,22 @@ class EpicBase:
     Elle initialise l'environnement, la base de données, et gère la session utilisateur.
     """
     def __init__(self) -> None:
-        """
-        Initialise la classe EpicBase en chargeant l'environnement,
-        en créant la base de données et en vérifiant la session actuelle.
-        """
         print("Initialisation de EpicBase...")
         self.env = Environ()
         db_config = self.get_config()
         self.epic = EpicDatabase(**db_config)
+        self.session = self.epic.session
 
         self.current_user = None
-        self.epic.users = EpicTerminalUser(self.epic, self.epic.session)
+        self.epic.users = EpicTerminalUser(self.epic, self.epic.session, self.current_user)
+
+        # Obtenez et affichez le utilisateur actuel pour débogage
+        self.current_user = get_current_user(self.session)
+        print(f"Utilisateur actuel dans EpicBase : {self.current_user}")
+
+        self.epic.users = EpicTerminalUser(self.epic, self.session, self.current_user)
+
+        self.check_session()
 
     def get_config(self):
         """
@@ -72,7 +75,7 @@ class EpicBase:
             user_data = self.epic.check_connection(username, password)
 
             if user_data and hasattr(user_data, 'username') and hasattr(user_data, 'role'):
-                self.current_user = user_data
+                self.current_user = user_data  # Définir ici current_user
 
                 token = create_token(user_data, self.env.SECRET_KEY)
                 create_session(user_data, token)
@@ -85,39 +88,6 @@ class EpicBase:
         except Exception as e:
             print(f"Erreur lors du processus de connexion : {e}")
             return False
-
-    @is_authenticated
-    def check_logout(self) -> bool:
-        """
-        Arrête la session actuelle et déconnecte l'utilisateur.
-
-        Retourne :
-        ----------
-        bool : True si la déconnexion est réussie.
-        """
-        stop_session()
-        print("Déconnecté")
-        return True
-
-    def load_session():
-        """
-        Charge le jeton JWT depuis 'session.json'.
-        """
-        try:
-            with open('session.json', 'r') as file:
-                data = json.load(file)
-                token = data.get('token')
-
-                if isinstance(token, str):
-                    return token
-                else:
-                    raise ValueError("Token in session.json must be a string")
-        except FileNotFoundError:
-            print("Le fichier de session est introuvable.")
-            return None
-        except json.JSONDecodeError as e:
-            print(f"Erreur de décodage JSON : {e}")
-            return None
 
     def check_session(self):
         """
@@ -133,7 +103,14 @@ class EpicBase:
                     user = self.epic.check_user(username)
                     if user:
                         self.user = user
-                        return user
+                        # Authentifier de nouveau l'utilisateur pour assurer qu'il est toujours valide
+                        if self.authenticate_user(self.epic.session, username, user.password):
+                            self.current_user = self.user
+                            return user
+                        else:
+                            print("Erreur : Utilisateur non authentifié.")
+                else:
+                    print("Le jeton ne contient pas de nom d'utilisateur valide.")
             except jwt.ExpiredSignatureError:
                 print("Le jeton a expiré.")
                 self.refresh_session()
@@ -168,10 +145,11 @@ class EpicBase:
         EpicDatabase(database=db.database, host=db.host, user=db.user, password=db.password, port=db.port)
         AuthenticationView.display_database_connection(values[0])
 
-    def authenticate_user(self, username, password):
+    def authenticate_user(self, session, username, password):
         # Logique pour authentifier un utilisateur et définir self.user
-        user = self.db_users.get_user(username)
+        user = session.query(EpicUser).filter_by(username=username).first()
         if user and user.check_password(password):
             self.user = user
+            self.current_user = user  # Assurez-vous de définir current_user ici
             return True
         return False

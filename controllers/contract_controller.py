@@ -11,7 +11,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 sys.path.insert(0, parent_dir)
 from views.data_view import DataView
 from models.entities import Contract, Paiement
-from controllers.decorator import is_authenticated, is_admin, is_commercial, is_gestion
+from controllers.decorator import is_authenticated, requires_roles
 
 
 class ContractBase:
@@ -35,8 +35,7 @@ class ContractBase:
         self.current_user = current_user
 
     @is_authenticated
-    @is_admin
-    @is_gestion
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def create_contract(self, data):
         """
         Permet de créer un contrat.
@@ -67,8 +66,7 @@ class ContractBase:
         return contract
 
     @is_authenticated
-    @is_admin
-    @is_gestion
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def get_contract(self, contract_id):
         """
         Permet de retrouver un contrat via son ID.
@@ -84,6 +82,7 @@ class ContractBase:
         """
         return self.session.query(Contract).filter_by(contract_id=contract_id).first()
 
+    @is_authenticated
     def get_all_contracts(self):
         """
         Permet de retourner la liste de tous les contrats.
@@ -95,9 +94,7 @@ class ContractBase:
         return self.session.query(Contract).all()
 
     @is_authenticated
-    @is_admin
-    @is_gestion
-    @is_commercial
+    @requires_roles('ADM', 'GES', 'COM', 'Admin', 'Gestion', 'Commercial')
     def update_contract(self, contract_id, data):
         """
         Permet de mettre à jour un contrat existant.
@@ -124,8 +121,7 @@ class ContractBase:
         self.session.commit()
 
     @is_authenticated
-    @is_admin
-    @is_gestion
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def find_by_customer(self, customer_id):
         """
         Permet de retrouver les contrats affiliés à un client spécifique.
@@ -142,8 +138,7 @@ class ContractBase:
         return self.session.query(Contract).filter_by(customer_id=customer_id).all()
 
     @is_authenticated
-    @is_admin
-    @is_gestion
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def find_by_state(self, state):
         """
         Permet de lister les contrats en fonction de leur statut.
@@ -160,8 +155,7 @@ class ContractBase:
         return self.session.query(Contract).filter_by(state=state).all()
 
     @is_authenticated
-    @is_admin
-    @is_gestion
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def state_signed(self):
         """
         Permet de lister tous les contrats qui sont signés.
@@ -173,9 +167,7 @@ class ContractBase:
         return self.session.query(Contract).filter_by(state="S").all()
 
     @is_authenticated
-    @is_admin
-    @is_gestion
-    @is_commercial
+    @requires_roles('ADM', 'GES', 'COM', 'Admin', 'Gestion', 'Commercial')
     def find_by_paiement_state(self, paiement_state):
         """
         Permet de lister les contrats en fonction de leur état de paiement.
@@ -192,8 +184,7 @@ class ContractBase:
         return self.session.query(Contract).filter_by(paiement_state=paiement_state).all()
 
     @is_authenticated
-    @is_admin
-    @is_gestion
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def add_paiement(self, contract_id, data) -> None:
         """
         Ajoute un nouveau paiement au contrat dans la base de données.
@@ -229,8 +220,7 @@ class ContractBase:
             raise
 
     @is_authenticated
-    @is_admin
-    @is_gestion
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def signed(self, contract_id) -> None:
         """
         Met à jour l'état du contrat en 'S' (Signé).
@@ -256,6 +246,8 @@ class ContractBase:
         DataView.display_data_update()
 
     @classmethod
+    @is_authenticated
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def update_gestion_contract(cls, current_user, session, contract_id, gestion_id):
         """
         Met à jour le commercial attribué à un client.
