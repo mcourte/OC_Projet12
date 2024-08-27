@@ -27,8 +27,8 @@ class AuthenticationView:
         ------------
         username (str) : Le nom d'utilisateur à inclure dans le message de bienvenue.
         """
-        text = f" Bienvenue {username} sur EpicEvent"
-        panel = Panel(Text(text, justify="center"))
+        text = f"!!! Bienvenue {username} sur le CRM de EpicEvent !!!"
+        panel = Panel(Text(text, justify="center", style="bold blue"))
         console.print(panel)
 
     @classmethod
@@ -41,24 +41,8 @@ class AuthenticationView:
         f (Callable) : La fonction à exécuter pour créer la base de données.
         data (tuple) : Les arguments à passer à la fonction de création de la base de données.
         """
-        print("Création de la base de données ...")
         with console.status("Création de la base de données ...", spinner="circleQuarters"):
             f(*data)
-
-    @classmethod
-    def display_login(cls):
-        """
-        Affiche les invites pour entrer un identifiant et un mot de passe, puis les retourne.
-
-        Retourne :
-        -----------
-        tuple : Un tuple contenant l'identifiant et le mot de passe saisis par l'utilisateur.
-        """
-        username = console.input("Identifiant:")
-        console.print(username)
-        password = console.input("Mot de passe:")
-        console.print(password)
-        return username, password
 
     @staticmethod
     def prompt_login(**kwargs):
@@ -73,6 +57,8 @@ class AuthenticationView:
         -----------
         tuple : Un tuple contenant l'identifiant et le mot de passe saisis par l'utilisateur.
         """
+        text = "Pour vous connecter au CRM d'EpicEvents, merci de rentrez votre nom d'utilisateur et votre mot de passe"
+        console.print(text, justify="center", style="bold blue")
         username = questionary.text("Identifiant:").ask()
         password = questionary.password("Password:").ask()
         return username, password

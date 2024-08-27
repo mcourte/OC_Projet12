@@ -110,20 +110,6 @@ class UserView:
             "Choix du support:", values)
 
     @classmethod
-    def prompt_select_gestion(cls, values) -> str:
-        """
-        Demande à l'utilisateur de sélectionner un support dans une liste.
-
-        Args:
-            values (list): Liste des noms d'utilisateur des supports.
-
-        Returns:
-            str: Nom d'utilisateur du support sélectionné.
-        """
-        return PromptView.prompt_select(
-            "Choix du gestionnaire:", values)
-
-    @classmethod
     def prompt_confirm_profil(cls, **kwargs) -> bool:
         """
         Demande une confirmation pour modifier les données de l'utilisateur.
@@ -261,8 +247,7 @@ class UserView:
         return {'role': data_role}
 
     @classmethod
-    def display_list_users(
-            cls, all_users, pager=True) -> None:
+    def display_list_users(cls, all_users, pager=False) -> None:
         """
         Affiche une liste des employés.
 
@@ -270,24 +255,34 @@ class UserView:
             all_users (list): Liste des instances d'employés.
             pager (bool, optional): Si la pagination est nécessaire. Defaults to True.
         """
-        table = Table(title="Liste des employés", box=box.SQUARE)
-        table.add_column("Département")
-        table.add_column("Id")
-        table.add_column("Identifiant")
-        table.add_column("Email")
-        table.add_column("Role")
-        table.add_column("Statut")
+        table = Table(
+            title="Liste des employés d'EpicEvent",
+            box=box.SQUARE,
+            title_justify="center",
+            title_style="bold blue"
+        )
+        table.add_column("Nom", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Prénom", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Id", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Identifiant", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Email", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Role", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Statut", justify="center", style="cyan", header_style="bold cyan")
 
         for e in all_users:
             table.add_row(
-                e.name,
-                str(e.id), e.username, e.email, e.role.value, e.state.value)
+                e.last_name, e.first_name,
+                str(e.epicuser_id), e.username, e.email, e.role.value, e.state.value
+            )
 
         if pager:
             with console.pager():
                 console.print(table)
         else:
             console.print(table)
+        # Après l'affichage de la liste, demander à l'utilisateur de continuer
+        print("\nAppuyez sur Entrée pour continuer...")
+        input()
 
     @classmethod
     def prompt_update_user(cls, user):
@@ -322,11 +317,11 @@ class UserView:
         Returns:
             Contract: Instance du contrat sélectionné ou None si aucun contrat n'est sélectionné.
         """
-        print(f"Gestionnaires disponibles: {all_gestions}")
+        print(f"Gestionnaires du gestionnaire: {all_gestions}")
         choices = [f"{gestion.first_name} {gestion.last_name}" for gestion in all_gestions]
 
         selected_choice = questionary.select(
-            "Choix du contrat:",
+            "Choix du gestionnaire:",
             choices=choices,
         ).ask()
 
@@ -334,4 +329,29 @@ class UserView:
             for gestion in all_gestions:
                 if f"{gestion.first_name} {gestion.last_name}" == selected_choice:
                     return gestion
+        return None
+
+    @classmethod
+    def prompt_select_commercial(cls, all_commercials):
+        """
+        Demande à l'utilisateur de sélectionner un contrat dans une liste.
+
+        Args:
+            all_contracts (list): Liste des instances de contrats.
+
+        Returns:
+            Contract: Instance du contrat sélectionné ou None si aucun contrat n'est sélectionné.
+        """
+        print(f"Gestionnaires du gestionnaire: {all_commercials}")
+        choices = [f"{commercial.first_name} {commercial.last_name}" for commercial in all_commercials]
+
+        selected_choice = questionary.select(
+            "Choix du Commercial:",
+            choices=choices,
+        ).ask()
+
+        if selected_choice:
+            for commercial in all_commercials:
+                if f"{commercial.first_name} {commercial.last_name}" == selected_choice:
+                    return commercial
         return None

@@ -15,6 +15,7 @@ sys.path.insert(0, parent_dir)
 from views.console_view import console
 from views.regexformat import regexformat
 from controllers.contract_controller import Contract
+from controllers.user_controller import EpicUser
 
 
 class ContractView:
@@ -23,7 +24,7 @@ class ContractView:
     """
 
     @classmethod
-    def display_list_contracts(cls, all_contracts, pager=True) -> None:
+    def display_list_contracts(cls, all_contracts, session, pager=False) -> None:
         """
         Affiche la liste des contrats.
 
@@ -32,14 +33,19 @@ class ContractView:
         all_contracts (list) : Liste des instances de contrat.
         pager (bool, optionnel) : Indique si le pager est utilisé. Par défaut à True.
         """
-        table = Table(title="Liste des contrats", box=box.SQUARE)
-        table.add_column("Description")
-        table.add_column("Client")
-        table.add_column("Montant")
-        table.add_column("Reste dû")
-        table.add_column("Statut")
-        table.add_column("Commercial")
-        table.add_column("Gestionnaire")
+        table = Table(
+            title="Liste des Contrats",
+            box=box.SQUARE,
+            title_justify="center",
+            title_style="bold blue"
+        )
+        table.add_column("Description", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Client", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Montant", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Reste dû", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Statut", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Commercial", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Gestionnaire_id", justify="center", style="cyan", header_style="bold cyan")
         for c in all_contracts:
             client_name = f"{c.customer.first_name} {c.customer.last_name}".strip()
             table.add_row(
@@ -47,13 +53,15 @@ class ContractView:
                 str(c.total_amount), str(c.remaining_amount or "0"),
                 c.state.value,
                 c.customer.commercial.username,
-                c.gestion.username
+                str(c.gestion_id)
             )
         if pager:
             with console.pager():
                 console.print(table)
         else:
             console.print(table)
+        print("\nAppuyez sur Entrée pour continuer...")
+        input()
 
     @classmethod
     def display_contract_info(cls, contract) -> None:

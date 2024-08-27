@@ -4,6 +4,14 @@ from rich.panel import Panel
 from rich.columns import Columns
 from rich.align import Align
 from rich import box
+from rich.text import Text
+from rich import print
+from rich.console import Console
+from rich.tree import Tree
+from time import sleep
+from rich.progress import Progress
+from rich.live import Live
+from rich.table import Table
 import questionary
 import os
 import sys
@@ -48,9 +56,8 @@ class MenuView:
         Returns:
             Panel: Menu de gestion formaté.
         """
-        menu_text = "    06-Liste des employés\n"
-        menu_text += "    07-Créer un nouvel employé\n"
-        menu_text += "    08-Modifier le rôle d'un employé\n"
+        menu_text = "    07-Liste des employés triées\n"
+        menu_text += "    08-Créer un nouvel employé\n"
         menu_text += "    09-Changer le statut actif/inactif d'un employé\n"
         menu_text += "    10-Créer un contrat\n"
         menu_text += "    11-Modifier un contrat\n"
@@ -72,19 +79,19 @@ class MenuView:
         Returns:
             Panel: Menu de gestion formaté.
         """
-        menu_text = "    06-Liste des employés\n"
-        menu_text += "    07-Créer un nouvel employé\n"
-        menu_text += "    08-Modifier le rôle d'un employé\n"
+        menu_text = "    07-Liste des employés triée\n"
+        menu_text += "    08-Créer un nouvel employé\n"
         menu_text += "    09-Changer le statut actif/inactif d'un employé\n"
         menu_text += "    10-Créer un contrat\n"
         menu_text += "    11-Modifier un contrat\n"
-        menu_text += "    12-Affecter un commercial à un client\n"
+        menu_text += "    11-Affecter un commercial à un client\n"
         menu_text += "    13-Affecter un gestionnaire à un contrat\n"
         menu_text += "    14-Affecter un support à un évènement\n"
         menu_text += "    15-Créer un nouveau client\n"
         menu_text += "    16-Modifier les données d'un client\n"
         menu_text += "    17-Créer un évènement\n"
         menu_text += "    18-Modifier un évènement\n"
+        menu_text += "    19-Lister évènement\n"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
@@ -100,10 +107,10 @@ class MenuView:
         Returns:
             Panel: Menu commercial formaté.
         """
-        menu_text = "    06-Créer un nouveau client\n"
-        menu_text += "    07-Modifier les données d'un client\n"
-        menu_text += "    08-Créer un évènement\n"
-        menu_text += "    09-Effectuer une demande de création de contrat\n"
+        menu_text = "    07-Créer un nouveau client\n"
+        menu_text += "    08-Modifier les données d'un client\n"
+        menu_text += "    09-Créer un évènement\n"
+        menu_text += "    10-Effectuer une demande de création de contrat\n"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
@@ -119,8 +126,8 @@ class MenuView:
         Returns:
             Panel: Menu support formaté.
         """
-        menu_text = "    06-Liste des évènements qui me sont attribués\n"
-        menu_text += "    07-Modifier les données d'un évènement\n"
+        menu_text = "    07-Liste des évènements qui me sont attribués\n"
+        menu_text += "    08-Modifier les données d'un évènement\n"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
@@ -164,7 +171,8 @@ class MenuView:
         menu_text += "    02-Mettre à jour mes données\n"
         menu_text += "    03-Liste des clients\n"
         menu_text += "    04-Liste des contrats\n"
-        menu_text += "    05-Liste des évènements"
+        menu_text += "    05-Liste des évènements\n"
+        menu_text += "    06-Liste des utilisateurs"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
@@ -223,16 +231,18 @@ class MenuView:
             """
             match role:
                 case 'GES': max_menu_idx = 14
-                case 'ADM': max_menu_idx = 18
-                case 'COM': max_menu_idx = 9
-                case 'SUP': max_menu_idx = 7
+                case 'ADM': max_menu_idx = 19
+                case 'COM': max_menu_idx = 10
+                case 'SUP': max_menu_idx = 8
             if result == 'Q':
                 return True
             elif int(result) <= max_menu_idx:
                 return True
             else:
                 return False
-
+        text = "Menu du CRM d'EpicEvents"
+        panel = Panel(Text(text, justify="center", style="bold blue"))
+        console.print(panel)
         console.print()
         menu = [cls.menu_accueil(), cls.menu_role(role), cls.menu_quit()]
         console.print(Columns(menu))

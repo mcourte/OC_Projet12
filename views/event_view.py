@@ -25,7 +25,7 @@ class EventView:
     """
 
     @classmethod
-    def display_list_events(cls, all_events, pager=True):
+    def display_list_events(cls, all_events, pager=False):
         """
         Affiche la liste des évènements.
 
@@ -33,30 +33,37 @@ class EventView:
             all_events (list): Liste d'instances d'évènements à afficher.
             pager (bool, optional): Si la pagination est utilisée. Par défaut à True.
         """
-        table = Table(title="Liste des évènements", box=box.SQUARE)
-        table.add_column("Ref. Contrat")
-        table.add_column("Titre")
-        table.add_column("Lieu")
-        table.add_column("Nb. participants")
-        table.add_column("Dates")
-        table.add_column("Commercial")
-        table.add_column("Support")
+        table = Table(
+            title="Liste des Evènements",
+            box=box.SQUARE,
+            title_justify="center",
+            title_style="bold blue"
+        )
+        table.add_column("Ref. Contrat", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Titre", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Lieu", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Nb. participants", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Date de Début", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Date de Fin", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Commercial", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Support", justify="center", style="cyan", header_style="bold cyan")
 
         for e in all_events:
             if e.support:
-                str_support = e.support_id
+                str_support = str(e.support_id)
             else:
                 str_support = ''
             fmt_date = '%d/%m/%Y'
-            str_dates = f'du {e.date_started.strftime(fmt_date)}'
-            str_dates += f'\nau {e.date_ended.strftime(fmt_date)}'
+            debut_dates = f'du {e.date_started.strftime(fmt_date)}'
+            end_dates = f'\nau {e.date_ended.strftime(fmt_date)}'
             table.add_row(
                 str(e.event_id),
                 e.title,
                 e.location,
                 str(e.attendees),
-                str_dates,
-                e.customer_id,
+                debut_dates,
+                end_dates,
+                str(e.customer_id),
                 str_support)
 
         if pager:
@@ -64,6 +71,9 @@ class EventView:
                 console.print(table)
         else:
             console.print(table)
+        # Après l'affichage de la liste, demander à l'utilisateur de continuer
+        print("\nAppuyez sur Entrée pour continuer...")
+        input()
 
     @classmethod
     def display_no_event(cls):

@@ -115,7 +115,7 @@ class CustomerView:
                 'company_name': company_name}
 
     @classmethod
-    def display_list_customers(cls, all_customers, pager=True) -> None:
+    def display_list_customers(cls, all_customers, pager=False) -> None:
         """
         Affiche la liste des clients.
 
@@ -124,12 +124,21 @@ class CustomerView:
         all_customers (list) : Liste des instances de client.
         pager (bool, optionnel) : Indique si le pager est utilisé. Par défaut à True.
         """
-        table = Table(title="Liste des clients", box=box.SQUARE)
-        table.add_column("Nom complet")
-        table.add_column("Commercial")
+        table = Table(
+            title="Liste des Clients",
+            box=box.SQUARE,
+            title_justify="center",
+            title_style="bold blue"
+        )
+        table.add_column("Nom complet", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Entreprise", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Téléphone", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Email", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Commercial associé", justify="center", style="cyan", header_style="bold cyan")
         for c in all_customers:
             table.add_row(
-                f"{c.first_name} {c.last_name}",  # Nom complet du client
+                f"{c.first_name} {c.last_name}",
+                  c.company_name, c.phone, c.email,
                 str(c.commercial.username) if c.commercial else 'Aucun commercial'  # Nom d'utilisateur du commercial
             )
 
@@ -151,17 +160,20 @@ class CustomerView:
         ------------
         customer (Client) : Instance du client à afficher.
         """
-        title = "Données du client"
-        table = Table(title=title, box=box.SQUARE)
-        table.add_column("Nom")
-        table.add_column("Prénom")
-        table.add_column("Email")
-        table.add_column("Téléphone")
-        table.add_column("Entreprise")
-        table.add_column("Commercial")
-        table.add_column("Nb contrats")
-        table.add_row(
-                      customer.first_name, customer.last_name, customer.email,
+        table = Table(
+            title="Information du Client",
+            box=box.SQUARE,
+            title_justify="center",
+            title_style="bold blue"
+        )
+        table.add_column("Nom", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Prénom", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Email", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Téléphone", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Entreprise", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Commercial", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Nb contrats", justify="center", style="cyan", header_style="bold cyan")
+        table.add_row(customer.first_name, customer.last_name, customer.email,
                       customer.phone, customer.company_name,
                       str(customer.commercial),
                       str(len(customer.contracts)),
