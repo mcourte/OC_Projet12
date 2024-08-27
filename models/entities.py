@@ -113,6 +113,9 @@ class EpicUser(Base):
         first_name_normalized = unidecode(first_name)
         last_name_normalized = unidecode(last_name)
 
+        # Remplacement des espaces par des underscores dans le nom de famille
+        last_name_normalized = last_name_normalized.replace(" ", "_")
+
         base_username = f"{first_name_normalized[0].lower()}{last_name_normalized.lower()}"
         username = base_username
         counter = 1
