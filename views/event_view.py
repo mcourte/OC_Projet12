@@ -24,7 +24,7 @@ class EventView:
     """
 
     @classmethod
-    def display_list_events(cls, all_events, pager=False):
+    def display_list_events(cls, all_events, pager=False) -> None:
         """
         Affiche la liste des évènements.
 
@@ -289,3 +289,15 @@ class EventView:
             code = selected_choice.split()[0]
             return code
         return None
+
+    @classmethod
+    def prompt_add_support(cls, **kwargs) -> bool:
+        """
+        Demande si un contrat doit être sélectionné.
+
+        Retourne :
+        -----------
+        bool : True si un contrat doit être sélectionné, sinon False.
+        """
+        return questionary.confirm(
+            "Souhaitez-vous ajouter un support à cet évenènement ?", **kwargs).ask()

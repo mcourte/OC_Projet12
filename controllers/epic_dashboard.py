@@ -50,8 +50,7 @@ class EpicDashboard:
             case '04':
                 self.database.contracts.list_of_contracts(self.session)
             case '05':
-                if self.gestion.current_user.role.code in {'ADM'}:
-                    self.database.contracts.list_of_contracts_filtered(self.session)
+                self.database.events.list_of_events(self.session)
             case '06':
                 self.database.users.list_of_users(self.session)
             case '07':

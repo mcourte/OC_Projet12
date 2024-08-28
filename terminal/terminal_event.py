@@ -91,7 +91,9 @@ class EpicTerminalEvent:
             contract = EventView.prompt_select_contract(contracts)
             try:
                 data = EventView.prompt_data_event()
-                EventBase.create_event(contract, data, session)
+                event = EventBase.create_event(contract, data, session)
+                if EventView.prompt_add_support():
+                    EpicTerminalEvent.update_event_support(self, session, event)
             except KeyboardInterrupt:
                 DataView.display_interupt()
         else:
@@ -185,3 +187,30 @@ class EpicTerminalEvent:
         """
         events = session.query(Event).all()
         EventView.display_list_events(events)
+
+    @is_authenticated
+    @requires_roles('ADM', 'GES', 'SUP', 'Admin', 'Gestion', 'Support')
+    def update_event_support(self, session, event):
+        """
+        Met à jour un événement en permettant de :
+        - Sélectionner un support
+        - Sélectionner un contrat
+        - Sélectionner un événement à mettre à jour
+        - Appliquer les modifications dans la base de données.
+        """
+        try:
+
+            # Récupérer tous les supports
+            supports = session.query(EpicUser).filter_by(role='SUP').all()
+            supports_dict = {s.username: s.epicuser_id for s in supports}
+            support_username = UserView.prompt_select_support(list(supports_dict.keys()))
+            support_id = supports_dict[support_username]  # Obtenez l'ID du support sélectionné
+            print(f"Support sélectionné: {support_username} (ID: {support_id})")
+
+            # Mettre à jour l'événement
+            EventBase.update_event(self, event.event_id, {"support_id": support_id})
+
+        except KeyboardInterrupt:
+            DataView.display_interupt()
+        except Exception as e:
+            print(f"Erreur rencontrée: {e}")

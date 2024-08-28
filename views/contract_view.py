@@ -59,6 +59,7 @@ class ContractView:
                 console.print(table)
         else:
             console.print(table)
+        # Après l'affichage de la liste, demander à l'utilisateur de continuer
         print("\nAppuyez sur Entrée pour continuer...")
         input()
 
@@ -71,9 +72,9 @@ class ContractView:
         ------------
         contract (Contract) : Instance du contrat à afficher.
         """
-        title = f"Données du contrat {contract.ref}"
+        title = f"Données du contrat {contract.contract_id}"
         table = Table(title=title, box=box.SQUARE)
-        table.add_column("Référence")
+        table.add_column("Contract ID")
         table.add_column("Description")
         table.add_column("Client")
         table.add_column("Montant")
@@ -82,7 +83,7 @@ class ContractView:
         table.add_column("Nb évènements")
         table.add_column("Commercial")
         table.add_row(
-            contract.ref, contract.description, contract.customer.first_name, contract.customer.last_name,
+            contract.contract_id, contract.description, contract.customer.first_name, contract.customer.last_name,
             str(contract.total_amount), str(contract.remaining_amount),
             contract.state.value, str(len(contract.events)),
             contract.customer.commercial.username
@@ -219,3 +220,15 @@ class ContractView:
         """
         return questionary.confirm(
             "Souhaitez-vous trier les contrats par statut?", **kwargs).ask()
+
+    @classmethod
+    def prompt_add_gestion(cls, **kwargs) -> bool:
+        """
+        Demande si un contrat doit être sélectionné.
+
+        Retourne :
+        -----------
+        bool : True si un contrat doit être sélectionné, sinon False.
+        """
+        return questionary.confirm(
+            "Souhaitez-vous ajouter un gestionnaire à ce contrat ?", **kwargs).ask()

@@ -50,7 +50,6 @@ class ContractBase:
         Contract : Le contrat créé.
         """
         # Créez l'instance du contrat
-        print(f"Data : {data}")
         contract = Contract(
             description=data['description'],
             total_amount=data['total_amount'],
@@ -186,7 +185,7 @@ class ContractBase:
 
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
-    def add_paiement(self, contract_id, data) -> None:
+    def add_paiement(self, session, contract_id, data) -> None:
         """
         Ajoute un nouveau paiement au contrat dans la base de données.
 
@@ -204,6 +203,7 @@ class ContractBase:
         IntegrityError :
             Levée si un problème d'intégrité des données survient lors de l'ajout du paiement.
         """
+
         try:
             amount = Decimal(data['amount'])
             paiement = Paiement(
@@ -211,18 +211,18 @@ class ContractBase:
                 amount=amount,
                 contract_id=contract_id
             )
-            self.session.add(paiement)
-            self.session.commit()
+            session.add(paiement)
+            session.commit()
             print(f"Paiement enregistré avec succès : {paiement.paiement_id}")
             return paiement
         except Exception as e:
-            self.session.rollback()
+            session.rollback()
             print(f"Erreur lors de l'enregistrement du paiement : {e}")
             raise
 
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
-    def signed(self, contract_id) -> None:
+    def signed(self, session, contract_id) -> None:
         """
         Met à jour l'état du contrat en 'S' (Signé).
 
@@ -237,13 +237,14 @@ class ContractBase:
             Levée si aucun contrat n'est trouvé avec la référence donnée.
         """
         try:
-            contract = Contract.find_by_contract_id(self.session, contract_id)
+            contract = session.query(Contract).filter_by(contract_id=contract_id[0]).all()
+            print(contract)
         except NoResultFound:
             raise ValueError(f"Aucun contrat trouvé avec la référence {contract_id}")
 
         contract.state = 'S'
-        self.session.add(contract)
-        self.session.commit()
+        session.add(contract)
+        session.commit()
         DataView.display_data_update()
 
     @classmethod

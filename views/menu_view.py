@@ -262,9 +262,8 @@ class MenuView:
         """
         menu_text = [
             'Enregistrer un paiement']
-        if state == 'C':
-            menu_text.append('Modifier les données du contrat')
-            menu_text.append('Signer le contrat')
+        menu_text.append('Modifier les données du contrat')
+        menu_text.append('Signer le contrat')
         choice = questionary.select("Que voulez-vous faire ?",
                                     choices=menu_text).ask()
         if choice is None:

@@ -84,8 +84,9 @@ class EpicTerminalContract:
             commercial_id = client.commercial_id
             data['commercial_id'] = commercial_id
             # Appeler la fonction pour créer le contrat
-            ContractBase.create_contract(session, data)
-
+            contract = ContractBase.create_contract(session, data)
+            if ContractView.prompt_add_gestion():
+                EpicTerminalContract.update_contract_choose(self, session, contract)
             contract_ref = data['description']
             text = f'Contrat {contract_ref} en attente de signature'
             return text
@@ -98,8 +99,10 @@ class EpicTerminalContract:
     def update_contract(self, session):
         contracts = session.query(Contract).all()
         ref = EventView.prompt_select_contract(contracts)
-        selected_contract = session.query(Contract).filter_by(contract_id=ref.contract_id).first()
+        print(f"ref : {ref}")
 
+        # Assurez-vous d'obtenir un seul objet au lieu d'une liste
+        selected_contract = session.query(Contract).filter_by(contract_id=ref.contract_id).first()
         if not selected_contract:
             raise ValueError("Contrat introuvable")
 
@@ -109,26 +112,29 @@ class EpicTerminalContract:
                 case 1:
                     try:
                         data = ContractView.prompt_data_paiement()
-                        contract_base_instance = ContractBase(session)
-                        contract_base_instance.add_paiement(selected_contract.contract_id, data)
+                        contract_base_instance = ContractBase(self, session)
+                        contract_base_instance.add_paiement(selected_contract.contract_id, session, data)
                     except ValueError as e:
                         print(f"Erreur: {e}")
 
                 case 2:
                     try:
-                        contract = session.query(Contract).filter_by(contract_id=ref).all()
-                        ContractView.display_contract_info(contract)
+                        # Affichez les informations du contrat
+                        ContractView.display_contract_info(selected_contract)
                         data = ContractView.prompt_data_contract(
                             ref_required=False, mt_required=False)
-                        newref = self.epic.db_contracts.update_contract(ref, data)
-                        contract = self.epic.db_contracts.get_contract(newref)
-                        ContractView.display_contract_info(contract)
+
+                        new_contract = ContractBase.update_contract(selected_contract.contract_id, data)
+                        ContractView.display_contract_info(new_contract)
                     except KeyboardInterrupt:
                         DataView.display_interupt()
                 case 3:
-                    self.epic.db_contracts.signed(ref)
-                    contract = self.epic.db_contracts.get_contract(ref)
-                    DataView.display_workflow()
+                    try:
+                        # Signez le contrat
+                        ContractBase.signed(self, session, selected_contract.contract_id)
+                        DataView.display_workflow()
+                    except KeyboardInterrupt:
+                        DataView.display_interupt()
         except KeyboardInterrupt:
             DataView.display_interupt()
 
@@ -236,3 +242,32 @@ class EpicTerminalContract:
             DataView.display_interupt()
         except Exception as e:
             print(f"Erreur rencontrée : {e}")
+
+    @is_authenticated
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
+    def update_contract_choose(self, session, contract) -> None:
+        """
+        Met à jour le commercial attribué à un client.
+
+        Cette fonction permet de :
+        - Sélectionner un client.
+        - Sélectionner un commercial.
+        - Attribuer le commercial sélectionné au client sélectionné.
+        - Mettre à jour la base de données.
+        """
+        # Vérifiez si la session est correctement initialisée
+        if session is None:
+            print("Erreur : La session est non initialisée.")
+            return
+        # Récupérer tous les gestionnaires
+        users = session.query(EpicUser).filter_by(role='GES').all()
+
+        # Demander à l'utilisateur de sélectionner un gestionnaire
+        selected_gestion = UserView.prompt_select_gestion(users)
+        if not selected_gestion:
+            print("Erreur : Aucun contrat sélectionné.")
+            return
+        # Mettre à jour le commercial du client
+        ContractBase.update_gestion_contract(self.current_user, session, contract.contract_id, selected_gestion.epicuser_id)
+        print(f"Le gestionnaire {selected_gestion.username} a été attribué au contrat {contract} avec succès.")
+        ContractBase.update_contract

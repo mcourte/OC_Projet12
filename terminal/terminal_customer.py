@@ -70,8 +70,6 @@ class EpicTerminalCustomer:
         - Lire la base de données et afficher les contrats.
         """
         customers = session.query(Customer).all()
-        print(f"customers récupérés: {customers}")
-        print("Type de chaque customers:", [type(c) for c in customers])
         if not customers:
             print("Aucun client sélectionné. Retour au menu principal.")
             return
@@ -136,7 +134,9 @@ class EpicTerminalCustomer:
         roles = EpicUserBase.get_roles(self)
         self.roles = roles
         data = CustomerView.prompt_data_customer()
-        CustomerBase.create_customer(self.current_user, session, data)
+        customer = CustomerBase.create_customer(self.current_user, session, data)
+        if CustomerView.prompt_confirm_commercial():
+            EpicTerminalCustomer.add_customer_commercial(self, session, customer)
 
     @is_authenticated
     @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
@@ -191,3 +191,40 @@ class EpicTerminalCustomer:
 
         # Mettre à jour le client avec les nouvelles données
         CustomerBase.update_customer(self.current_user, session, selected_customer_id)
+
+    @is_authenticated
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
+    def add_customer_commercial(self, session, customer) -> None:
+        """
+        Met à jour le commercial attribué à un client.
+
+        Cette fonction permet de :
+        - Sélectionner un client.
+        - Sélectionner un commercial.
+        - Attribuer le commercial sélectionné au client sélectionné.
+        - Mettre à jour la base de données.
+        """
+        # Vérifiez si la session est correctement initialisée
+        if session is None:
+            print("Erreur : La session est non initialisée.")
+            return
+
+        # Récupérer tous les commerciaux
+        commercials = session.query(EpicUser).filter_by(role='COM').all()
+        commercial_usernames = [c.username for c in commercials]
+
+        # Demander à l'utilisateur de sélectionner un commercial
+        selected_commercial_username = UserView.prompt_commercial(commercial_usernames)
+        if not selected_commercial_username:
+            print("Erreur : Aucun commercial sélectionné.")
+            return
+
+        # Récupérer l'ID du commercial sélectionné
+        selected_commercial = session.query(EpicUser).filter_by(username=selected_commercial_username).first()
+        if not selected_commercial:
+            print("Erreur : Le commercial sélectionné n'existe pas.")
+            return
+
+        # Mettre à jour le commercial du client
+        CustomerBase.update_commercial_customer(self.current_user, session, customer.customer_id, selected_commercial.epicuser_id)
+        print(f"Le commercial {selected_commercial.username} a été attribué au client {customer} avec succès.")

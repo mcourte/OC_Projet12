@@ -204,3 +204,15 @@ class CustomerView:
                 if f"{customer.first_name} {customer.last_name}" == selected_name:
                     return customer
         return None
+
+    @classmethod
+    def prompt_confirm_commercial(cls, **kwargs) -> bool:
+        """
+        Demande confirmation pour la sélection d'un client.
+
+        Retourne :
+        -----------
+        bool : True si l'utilisateur souhaite sélectionner un client, sinon False.
+        """
+        return questionary.confirm(
+            "Souhaitez-vous ajouter un commercial associé à ce client ?", **kwargs).ask()
