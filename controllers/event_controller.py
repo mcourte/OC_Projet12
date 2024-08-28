@@ -1,5 +1,5 @@
 from models.entities import Event
-from controllers.decorator import is_authenticated, requires_roles
+from controllers.decorator import is_authenticated, requires_roles, sentry_activate
 
 
 class EventBase:
@@ -17,6 +17,7 @@ class EventBase:
         """
         self.session = session
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def create_event(self, data, session):
@@ -56,6 +57,7 @@ class EventBase:
         session.commit()
         return event
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def get_event(self, event_id):
@@ -72,6 +74,7 @@ class EventBase:
         """
         return self.session.query(Event).filter_by(event_id=event_id).first()
 
+    @sentry_activate
     @is_authenticated
     def get_all_events(self):
         """
@@ -83,6 +86,7 @@ class EventBase:
         """
         return self.session.query(Event).all()
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'COM', 'GES', 'Admin', 'Commercial', 'Gestion')
     def update_event(self, event_id, data):

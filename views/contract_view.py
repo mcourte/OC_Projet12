@@ -32,6 +32,7 @@ class ContractView:
         all_contracts (list) : Liste des instances de contrat.
         pager (bool, optionnel) : Indique si le pager est utilisé. Par défaut à True.
         """
+
         table = Table(
             title="Liste des Contrats",
             box=box.SQUARE,
@@ -54,6 +55,7 @@ class ContractView:
                 str(c.customer.commercial.username),
                 str(c.gestion_id)
             )
+
         if pager:
             with console.pager():
                 console.print(table)

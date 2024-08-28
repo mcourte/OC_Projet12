@@ -1,6 +1,6 @@
 from models.entities import Customer, Contract
 from datetime import datetime
-from controllers.decorator import is_authenticated, requires_roles
+from controllers.decorator import is_authenticated, requires_roles, sentry_activate
 from views.customer_view import CustomerView
 
 
@@ -21,6 +21,7 @@ class CustomerBase:
         """
         self.session = session
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def create_customer(self, session, customer_data):
@@ -51,6 +52,7 @@ class CustomerBase:
         session.commit()
         return customer
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def get_customer(self, cname: str, session) -> list[Customer]:
@@ -69,6 +71,7 @@ class CustomerBase:
         # Exemple d'utilisation de session pour une requête
         return session.query(Customer).filter(Customer.last_name == cname).all()
 
+    @sentry_activate
     @is_authenticated
     def get_all_customers(self):
         """
@@ -80,6 +83,7 @@ class CustomerBase:
         """
         return self.session.query(Customer).all()
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def update_customer(self, session, customer_id):
@@ -108,6 +112,7 @@ class CustomerBase:
 
         session.commit()
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def find_without_contract(self):
@@ -121,6 +126,7 @@ class CustomerBase:
         return self.session.query(Customer).outerjoin(Customer.contracts).filter(Contract.customer_id.is_(None)).all()
 
     @classmethod
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def update_commercial_customer(cls, current_user, session, customer_id, commercial_id):

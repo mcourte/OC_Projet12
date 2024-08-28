@@ -49,11 +49,11 @@ class MenuView:
         Returns:
             Panel: Menu de gestion formaté.
         """
-        menu_text = "    07-Liste des employés triées\n"
-        menu_text += "    08-Créer un nouvel employé\n"
-        menu_text += "    09-Changer le statut actif/inactif d'un employé\n"
-        menu_text += "    10-Créer un contrat\n"
-        menu_text += "    11-Modifier un contrat\n"
+        menu_text = "    07-Créer un nouvel employé\n"
+        menu_text += "    08-Changer le statut actif/inactif d'un employé\n"
+        menu_text += "    09-Créer un contrat\n"
+        menu_text += "    10-Modifier un contrat\n"
+        menu_text += "    11-Ajouter un paiement à un contrat\n"
         menu_text += "    12-Affecter un commercial à un client\n"
         menu_text += "    13-Affecter un gestionnaire à un contrat\n"
         menu_text += "    14-Affecter un support à un évènement"
@@ -72,20 +72,21 @@ class MenuView:
         Returns:
             Panel: Menu de gestion formaté.
         """
-        menu_text = "    07-Liste des employés triée\n"
-        menu_text += "    08-Créer un nouvel employé\n"
-        menu_text += "    09-Changer le statut actif/inactif d'un employé\n"
-        menu_text += "    10-Créer un contrat\n"
-        menu_text += "    11-Modifier un contrat\n"
-        menu_text += "    11-Affecter un commercial à un client\n"
+        menu_text = "    07-Liste des évènements triées\n"
+        menu_text += "    08-Changer le statut actif/inactif d'un employé\n"
+        menu_text += "    09-Créer un contrat\n"
+        menu_text += "    10-Modifier un contrat\n"
+        menu_text += "    11-Ajouter un paiement à un contrat\n"
+        menu_text += "    12-Affecter un commercial à un client\n"
         menu_text += "    13-Affecter un gestionnaire à un contrat\n"
         menu_text += "    14-Affecter un support à un évènement\n"
         menu_text += "    15-Créer un nouveau client\n"
         menu_text += "    16-Modifier les données d'un client\n"
         menu_text += "    17-Créer un évènement\n"
         menu_text += "    18-Modifier un évènement\n"
-        menu_text += "    19-Lister évènement\n"
-        menu_text += "    20-Lister contracts\n"
+        menu_text += "    19-Créer un utilisateur\n"
+        menu_text += "    20-Lister évènement\n"
+        menu_text += "    21-Lister contracts\n"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
@@ -104,7 +105,7 @@ class MenuView:
         menu_text = "    07-Créer un nouveau client\n"
         menu_text += "    08-Modifier les données d'un client\n"
         menu_text += "    09-Créer un évènement\n"
-        menu_text += "    10-Effectuer une demande de création de contrat\n"
+        menu_text += "    10-Modifier un contrat\n"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
@@ -121,7 +122,7 @@ class MenuView:
             Panel: Menu support formaté.
         """
         menu_text = "    07-Liste des évènements qui me sont attribués\n"
-        menu_text += "    08-Modifier les données d'un évènement\n"
+        menu_text += "    08-Modifier un évènement\n"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
@@ -224,8 +225,8 @@ class MenuView:
                 bool: True si le choix est valide, sinon False.
             """
             match role:
-                case 'GES': max_menu_idx = 14
-                case 'ADM': max_menu_idx = 30
+                case 'GES': max_menu_idx = 16
+                case 'ADM': max_menu_idx = 22
                 case 'COM': max_menu_idx = 10
                 case 'SUP': max_menu_idx = 8
             if result == 'Q':
@@ -261,8 +262,7 @@ class MenuView:
             2 pour "Modifier les données du contrat", etc.).
         """
         menu_text = [
-            'Enregistrer un paiement']
-        menu_text.append('Modifier les données du contrat')
+            'Modifier les données du contrat']
         menu_text.append('Signer le contrat')
         choice = questionary.select("Que voulez-vous faire ?",
                                     choices=menu_text).ask()

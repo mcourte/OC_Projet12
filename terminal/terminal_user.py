@@ -8,7 +8,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-from controllers.decorator import is_authenticated, requires_roles
+from controllers.decorator import is_authenticated, requires_roles, sentry_activate
 from views.user_view import UserView
 from views.data_view import DataView
 from controllers.user_controller import EpicUserBase, EpicUser
@@ -32,6 +32,7 @@ class EpicTerminalUser:
         self.session = session
         self.current_user = current_user
 
+    @sentry_activate
     @is_authenticated
     def show_profil(self, session) -> None:
         print(f"current_user dans show_profil: {self.current_user}")
@@ -45,6 +46,7 @@ class EpicTerminalUser:
         else:
             print("Utilisateur non trouvé dans la base de données.")
 
+    @sentry_activate
     @is_authenticated
     def update_profil(self, session):
         """
@@ -65,6 +67,7 @@ class EpicTerminalUser:
             DataView.display_profil(self.current_user)
             DataView.display_data_update()
 
+    @sentry_activate
     @is_authenticated
     def list_of_users(self, session) -> None:
         """
@@ -77,6 +80,7 @@ class EpicTerminalUser:
         users = self.session.query(EpicUser).all()
         UserView.display_list_users(users)
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def create_user(self, session) -> None:
@@ -100,6 +104,7 @@ class EpicTerminalUser:
         except KeyboardInterrupt:
             DataView.display_interupt()
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def inactivate_user(self, session) -> None:
@@ -121,6 +126,7 @@ class EpicTerminalUser:
         epic_user_base = EpicUserBase(session)
         epic_user_base.set_activate_inactivate(session, username)
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def find_by_username(self):

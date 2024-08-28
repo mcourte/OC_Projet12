@@ -4,7 +4,8 @@ from controllers.session import load_session, decode_token
 from jwt.exceptions import DecodeError
 import sys
 import os
-
+import sentry_sdk
+from sentry_sdk import capture_exception
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
@@ -13,6 +14,18 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 sys.path.insert(0, parent_dir)
 
 from config_init import SECRET_KEY
+from views.error_view import ErrorView
+
+
+def sentry_activate(f):
+    def decorator(*args, **kwargs):
+        with sentry_sdk.start_transaction(name="epicevent"):
+            try:
+                return f(*args, **kwargs)
+            except Exception as e:
+                ErrorView.display_error_exception(e)
+                capture_exception(e)
+    return decorator
 
 
 def is_commercial(f):

@@ -57,48 +57,54 @@ class EpicDashboard:
                 if self.gestion.current_user.role.code in {'COM'}:
                     self.database.customers.create_customer(self.session)
                 if self.gestion.current_user.role.code in {'GES'}:
-                    self.database.users.list_of_users(self.session)
-                if self.gestion.current_user.role.code in {'SUP'}:
+                    self.database.users.create_user(self.session)
+                if self.gestion.current_user.role.code in {'SUP', 'ADM'}:
                     self.database.events.list_of_events_filtered(self.session)
             case '08':
                 if self.gestion.current_user.role.code in {'GES', 'ADM'}:
-                    self.database.users.create_user(self.session)
-                if self.gestion.current_user.role.code in {'COM', 'ADM'}:
-                    self.database.customers.update_customer(self.session)  # Passez le token ici
+                    self.database.users.inactivate_user(self.session)
+                if self.gestion.current_user.role.code in {'COM'}:
+                    self.database.customers.update_customer(self.session)
+                if self.gestion.current_user.role.code in {'SUP'}:
+                    self.database.events.update_event(self.session)
             case '09':
                 if self.gestion.current_user.role.code in {'GES', 'ADM'}:
-                    self.database.users.inactivate_user(self.session)
+                    self.database.contracts.create_contract(self.session)
+                if self.gestion.current_user.role.code in {'COM'}:
+                    self.database.events.create_event(self.session)
             case '10':
                 if self.gestion.current_user.role.code in {'GES', 'ADM'}:
-                    self.database.contracts.create_contract(self.session)
-            case '11':
-                if self.gestion.current_user.role.code in {'GES', 'ADM', 'COM'}:
                     self.database.contracts.update_contract(self.session)
+                if self.gestion.current_user.role.code in {'COM'}:
+                    self.database.contracts.update_contract(self.session)
+            case '11':
+                if self.gestion.current_user.role.code in {'GES', 'ADM'}:
+                    self.database.contracts.add_paiement_contract(self.session)
             case '12':
-                if self.gestion.current_user.role.code in {'ADM', 'GES'}:
+                if self.gestion.current_user.role.code in {'GES', 'ADM'}:
                     self.database.customers.update_customer_commercial(self.session)
             case '13':
-                if self.gestion.current_user.role.code in {'ADM', 'GES'}:
+                if self.gestion.current_user.role.code in {'GES', 'ADM'}:
                     self.database.contracts.update_contract_gestion(self.session)
             case '14':
-                if self.gestion.current_user.role.code in {'ADM', 'GES', 'SUP'}:
-                    self.database.events.update_event(self.session)
+                if self.gestion.current_user.role.code in {'GES', 'ADM'}:
+                    self.database.events.update_event_support(self.session)
             case '15':
                 if self.gestion.current_user.role.code in {'ADM'}:
                     self.database.customers.create_customer(self.session)
             case '16':
-                if self.gestion.current_user.role.code in {'ADM', 'COM'}:
+                if self.gestion.current_user.role.code in {'ADM'}:
                     self.database.customers.update_customer(self.session)
             case '17':
-                if self.gestion.current_user.role.code in {'ADM', 'GES'}:
+                if self.gestion.current_user.role.code in {'ADM'}:
                     self.database.events.create_event(self.session)
             case '18':
-                if self.gestion.current_user.role.code in {'ADM', 'GES', 'SUP'}:
+                if self.gestion.current_user.role.code in {'ADM'}:
                     self.database.events.update_event(self.session)
+            case '18':
+                if self.gestion.current_user.role.code in {'ADM'}:
+                    self.database.users.create_user(self.session)
             case '19':
-                if self.gestion.current_user.role.code in {'ADM', 'SUP'}:
-                    self.database.events.list_of_events_filtered(self.session)
-            case '20':
                 if self.gestion.current_user.role.code in {'ADM'}:
                     self.database.contracts.list_of_contracts_filtered(self.session)
             case 'D':

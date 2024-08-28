@@ -7,7 +7,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-from controllers.decorator import (is_authenticated, requires_roles)
+from controllers.decorator import (is_authenticated, requires_roles, sentry_activate)
 from controllers.contract_controller import ContractBase
 from terminal.terminal_customer import EpicTerminalCustomer
 from terminal.terminal_user import EpicTerminalUser
@@ -42,6 +42,7 @@ class EpicTerminalContract:
         self.controller_user = EpicTerminalUser(self.epic, self.session)
         self.controller_customer = EpicTerminalCustomer(self.epic, self.session, self.current_user)
 
+    @sentry_activate
     @is_authenticated
     def list_of_contracts(self, session) -> None:
         """
@@ -55,6 +56,7 @@ class EpicTerminalContract:
         contracts = session.query(Contract).all()
         ContractView.display_list_contracts(contracts, session)
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def create_contract(self, session) -> None:
@@ -94,6 +96,7 @@ class EpicTerminalContract:
         except KeyboardInterrupt:
             DataView.display_interupt()
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def update_contract(self, session):
@@ -111,14 +114,6 @@ class EpicTerminalContract:
             match choice:
                 case 1:
                     try:
-                        data = ContractView.prompt_data_paiement()
-                        contract_base_instance = ContractBase(self, session)
-                        contract_base_instance.add_paiement(selected_contract.contract_id, session, data)
-                    except ValueError as e:
-                        print(f"Erreur: {e}")
-
-                case 2:
-                    try:
                         # Affichez les informations du contrat
                         ContractView.display_contract_info(selected_contract)
                         data = ContractView.prompt_data_contract(
@@ -128,7 +123,7 @@ class EpicTerminalContract:
                         ContractView.display_contract_info(new_contract)
                     except KeyboardInterrupt:
                         DataView.display_interupt()
-                case 3:
+                case 2:
                     try:
                         # Signez le contrat
                         ContractBase.signed(self, session, selected_contract.contract_id)
@@ -138,6 +133,7 @@ class EpicTerminalContract:
         except KeyboardInterrupt:
             DataView.display_interupt()
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def update_contract_gestion(self, session) -> None:
@@ -173,6 +169,7 @@ class EpicTerminalContract:
         print(f"Le gestionnaire {selected_gestion.username} a été attribué au contrat {selected_contract_id} avec succès.")
         ContractBase.update_contract
 
+    @sentry_activate
     @is_authenticated
     def list_of_contracts_filtered(self, session):
         """
@@ -243,6 +240,7 @@ class EpicTerminalContract:
         except Exception as e:
             print(f"Erreur rencontrée : {e}")
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def update_contract_choose(self, session, contract) -> None:
@@ -271,3 +269,25 @@ class EpicTerminalContract:
         ContractBase.update_gestion_contract(self.current_user, session, contract.contract_id, selected_gestion.epicuser_id)
         print(f"Le gestionnaire {selected_gestion.username} a été attribué au contrat {contract} avec succès.")
         ContractBase.update_contract
+
+    @sentry_activate
+    @is_authenticated
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
+    def add_paiement_contract(self, session):
+        contracts = session.query(Contract).all()
+        ref = EventView.prompt_select_contract(contracts)
+        print(f"ref : {ref}")
+
+        # Assurez-vous d'obtenir un seul objet au lieu d'une liste
+        selected_contract = session.query(Contract).filter_by(contract_id=ref.contract_id).first()
+        if not selected_contract:
+            raise ValueError("Contrat introuvable")
+
+        try:
+            data = ContractView.prompt_data_paiement()
+            contract_base_instance = ContractBase(self, session)
+            contract_base_instance.add_paiement(selected_contract.contract_id, session, data)
+        except ValueError as e:
+            print(f"Erreur: {e}")
+        except KeyboardInterrupt:
+            DataView.display_interupt()

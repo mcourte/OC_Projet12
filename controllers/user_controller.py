@@ -1,5 +1,5 @@
 from models.entities import EpicUser, Contract
-from controllers.decorator import is_authenticated, requires_roles
+from controllers.decorator import is_authenticated, requires_roles, sentry_activate
 import logging
 from sqlalchemy.orm import object_session
 # Obtenez le logger configuré
@@ -55,6 +55,7 @@ class EpicUserBase:
 
         return user
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def update_user(self, session, name, password=None, role=None, state=None):
@@ -109,6 +110,7 @@ class EpicUserBase:
         }
         return role_map.get(role_name)
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def set_activate_inactivate(self, session, username):
@@ -136,6 +138,7 @@ class EpicUserBase:
             print(f"{user.username} est de nouveau Actif")
             session.commit()
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def reassign_customers(self):
@@ -149,6 +152,7 @@ class EpicUserBase:
         # Envoyer une notification au gestionnaire
         self.notify_gestion("Réaffectation des clients du commercial inactif terminée.")
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def reassign_contracts(self, session):
@@ -164,6 +168,7 @@ class EpicUserBase:
         # Envoyer une notification au gestionnaire
         self.notify_gestion("Réaffectation des contrats du gestionnaire inactif terminée.")
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def reassign_events(self):
@@ -177,6 +182,7 @@ class EpicUserBase:
         # Envoyer une notification au gestionnaire
         self.notify_gestion("Réaffectation des évènements du support inactif terminée.")
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def notify_gestion_to_reassign_user(self, user):
@@ -188,6 +194,7 @@ class EpicUserBase:
         else:
             print("Aucun utilisateur sélectionné pour la notification de réaffectation.")
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def find_alternate_commercial(self):
@@ -195,6 +202,7 @@ class EpicUserBase:
         session = object_session(self)
         return session.query(EpicUser).filter_by(role='COM', state='A').first()
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def find_alternate_gestion(self):
@@ -202,6 +210,7 @@ class EpicUserBase:
         session = object_session(self)
         return session.query(EpicUser).filter_by(role='GES', state='A').first()
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def find_alternate_support(self):
@@ -209,6 +218,7 @@ class EpicUserBase:
         session = object_session(self)
         return session.query(EpicUser).filter_by(role='SUP', state='A').first()
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def notify_gestion(self, message):

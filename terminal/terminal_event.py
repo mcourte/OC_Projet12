@@ -8,7 +8,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-from controllers.decorator import (is_authenticated, requires_roles)
+from controllers.decorator import (is_authenticated, requires_roles, sentry_activate)
 from controllers.event_controller import EventBase, Event
 from controllers.user_controller import EpicUser
 from controllers.customer_controller import Customer
@@ -43,6 +43,7 @@ class EpicTerminalEvent:
         self.controller_user = EpicTerminalUser(self.epic, self.session)
         self.controller_customer = EpicTerminalCustomer(self.epic, self.session, self.current_user)
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'SUP', 'Admin', 'Gestion', 'Support')
     def update_event(self, session):
@@ -61,21 +62,22 @@ class EpicTerminalEvent:
                 event = EventView.prompt_select_event(events)
                 event_id = event.event_id  # Assurez-vous d'utiliser l'I
 
-            # Récupérer tous les supports
-            supports = session.query(EpicUser).filter_by(role='SUP').all()
-            supports_dict = {s.username: s.epicuser_id for s in supports}
-            support_username = UserView.prompt_select_support(list(supports_dict.keys()))
-            support_id = supports_dict[support_username]  # Obtenez l'ID du support sélectionné
-            print(f"Support sélectionné: {support_username} (ID: {support_id})")
+                # Récupérer tous les supports
+                supports = session.query(EpicUser).filter_by(role='SUP').all()
+                supports_dict = {s.username: s.epicuser_id for s in supports}
+                support_username = UserView.prompt_select_support(list(supports_dict.keys()))
+                support_id = supports_dict[support_username]  # Obtenez l'ID du support sélectionné
+                print(f"Support sélectionné: {support_username} (ID: {support_id})")
 
-            # Mettre à jour l'événement
-            EventBase.update_event(self, event_id, {"support_id": support_id})
+                # Mettre à jour l'événement
+                EventBase.update_event(self, event_id, {"support_id": support_id})
 
         except KeyboardInterrupt:
             DataView.display_interupt()
         except Exception as e:
             print(f"Erreur rencontrée: {e}")
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def create_event(self, session):
@@ -99,6 +101,7 @@ class EpicTerminalEvent:
         else:
             DataView.display_nocontracts()
 
+    @sentry_activate
     @is_authenticated
     def list_of_events_filtered(self, session):
         """
@@ -175,6 +178,7 @@ class EpicTerminalEvent:
         except Exception as e:
             print(f"Erreur rencontrée : {e}")
 
+    @sentry_activate
     @is_authenticated
     def list_of_events(self, session):
         """

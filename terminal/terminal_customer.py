@@ -8,7 +8,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-from controllers.decorator import is_authenticated, requires_roles
+from controllers.decorator import is_authenticated, requires_roles, sentry_activate
 from controllers.user_controller import EpicUserBase, EpicUser
 from controllers.customer_controller import CustomerBase
 from views.user_view import UserView
@@ -60,6 +60,7 @@ class EpicTerminalCustomer:
 
         return selected_customer
 
+    @sentry_activate
     @is_authenticated
     def list_of_customers(self, session) -> None:
         """
@@ -75,6 +76,7 @@ class EpicTerminalCustomer:
             return
         CustomerView.display_list_customers(customers)
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def update_customer_commercial(self, session) -> None:
@@ -122,6 +124,7 @@ class EpicTerminalCustomer:
         CustomerBase.update_commercial_customer(self.current_user, session, selected_customer_id, selected_commercial.epicuser_id)
         print(f"Le commercial {selected_commercial.username} a été attribué au client {selected_customer_id} avec succès.")
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def create_customer(self, session) -> None:
@@ -138,6 +141,7 @@ class EpicTerminalCustomer:
         if CustomerView.prompt_confirm_commercial():
             EpicTerminalCustomer.add_customer_commercial(self, session, customer)
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def update_customer(self, session):
@@ -192,6 +196,7 @@ class EpicTerminalCustomer:
         # Mettre à jour le client avec les nouvelles données
         CustomerBase.update_customer(self.current_user, session, selected_customer_id)
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def add_customer_commercial(self, session, customer) -> None:

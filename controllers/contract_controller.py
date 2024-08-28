@@ -11,7 +11,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 sys.path.insert(0, parent_dir)
 from views.data_view import DataView
 from models.entities import Contract, Paiement
-from controllers.decorator import is_authenticated, requires_roles
+from controllers.decorator import is_authenticated, requires_roles, sentry_activate
 
 
 class ContractBase:
@@ -34,6 +34,7 @@ class ContractBase:
         self.session = session
         self.current_user = current_user
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def create_contract(session, data):
@@ -65,6 +66,7 @@ class ContractBase:
         session.commit()
         return contract
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def get_contract(self, contract_id):
@@ -82,6 +84,7 @@ class ContractBase:
         """
         return self.session.query(Contract).filter_by(contract_id=contract_id).first()
 
+    @sentry_activate
     @is_authenticated
     def get_all_contracts(self):
         """
@@ -93,6 +96,7 @@ class ContractBase:
         """
         return self.session.query(Contract).all()
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'COM', 'Admin', 'Gestion', 'Commercial')
     def update_contract(self, contract_id, data):
@@ -120,6 +124,7 @@ class ContractBase:
 
         self.session.commit()
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def find_by_customer(self, customer_id):
@@ -137,6 +142,7 @@ class ContractBase:
         """
         return self.session.query(Contract).filter_by(customer_id=customer_id).all()
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def find_by_state(self, state):
@@ -154,6 +160,7 @@ class ContractBase:
         """
         return self.session.query(Contract).filter_by(state=state).all()
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def state_signed(self):
@@ -166,6 +173,7 @@ class ContractBase:
         """
         return self.session.query(Contract).filter_by(state="S").all()
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'COM', 'Admin', 'Gestion', 'Commercial')
     def find_by_paiement_state(self, paiement_state):
@@ -183,6 +191,7 @@ class ContractBase:
         """
         return self.session.query(Contract).filter_by(paiement_state=paiement_state).all()
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def add_paiement(self, session, contract_id, data) -> None:
@@ -220,6 +229,7 @@ class ContractBase:
             print(f"Erreur lors de l'enregistrement du paiement : {e}")
             raise
 
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def signed(self, session, contract_id) -> None:
@@ -248,6 +258,7 @@ class ContractBase:
         DataView.display_data_update()
 
     @classmethod
+    @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def update_gestion_contract(cls, current_user, session, contract_id, gestion_id):
