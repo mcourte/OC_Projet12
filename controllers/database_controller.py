@@ -22,7 +22,7 @@ sys.path.insert(0, parent_dir)
 from models.entities import (
     Base, EpicUser)
 from views.authentication_view import AuthenticationView
-
+from views.console_view import console
 from terminal.terminal_contract import EpicTerminalContract
 from terminal.terminal_customer import EpicTerminalCustomer
 from terminal.terminal_user import EpicTerminalUser
@@ -38,9 +38,11 @@ class EpicDatabase:
         self.session = scoped_session(sessionmaker(bind=self.engine))
 
         if database_exists(self.url):
-            print(f"Connexion à la base de données {database} réussie.")
+            text = f"Connexion à la base de données {database} réussie."
+            console.print(text, style="green")
         else:
-            print('Erreur de connexion à la base de données')
+            text = 'Erreur de connexion à la base de données'
+            console.print(text, style="bold red")
 
         # Vous devez maintenant passer un utilisateur valide lors de l'instanciation
         self.current_user = None
@@ -98,13 +100,14 @@ class EpicDatabase:
         """
         user = EpicUser.find_by_username(self.session, username)
         if user:
-            print(f"User found: {username}")
             try:
                 if user.check_password(password):
                     AuthenticationView.display_database_connection(self.name)
                     return user
                 else:
-                    print("Password does not match")
+                    text = "Le mot de passe est incorrect"
+                    console.print(text, style="bold red")
+                    pass
             except VerifyMismatchError as e:
                 print(f"Password verification error: {e}")
         else:

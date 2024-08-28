@@ -14,6 +14,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 sys.path.insert(0, parent_dir)
 
 from models.entities import EpicUser
+from views.console_view import console
 # Configuration de la session SQLAlchemy
 engine = create_engine('postgresql://postgres:password@localhost:5432/app_db')
 Session = sessionmaker(bind=engine)
@@ -77,7 +78,6 @@ def load_session():
             else:
                 raise ValueError("Token in session.json must be a string")
     except FileNotFoundError:
-        print("Le fichier de session est introuvable.")
         return None
     except json.JSONDecodeError as e:
         print(f"Erreur de décodage JSON : {e}")
@@ -93,11 +93,7 @@ def stop_session():
 
 def create_session(user, delta, secret=SECRET_KEY):
     token = create_token(user, secret)
-    print(f"Token créé : {token}")
     save_session(token)
-    decoded = decode_token(token, secret)
-    print(f"Token décodé : {decoded}")
-    print("Token enregistré dans la session.")
 
 
 def renew_session(secret=SECRET_KEY):
@@ -105,7 +101,7 @@ def renew_session(secret=SECRET_KEY):
     Renouvelle le jeton JWT stocké dans 'session.json'.
     """
     # Vous devrez passer l'utilisateur à cette fonction si nécessaire pour recréer le jeton
-    user = get_current_user()  # Remplacez ceci par la méthode pour obtenir l'utilisateur courant
+    user = get_current_user()
     new_token = create_token(user, secret)
 
     with open('session.json', 'w') as file:
@@ -135,18 +131,21 @@ def read_role(secret=SECRET_KEY):
     """
     token = load_session()
     if not token:
-        print("Aucun jeton trouvé dans la session.")
+        text = "Aucun jeton trouvé dans la session."
+        console.print(text, style="bold red")
         return None
 
     try:
-        decoded = decode_token(token, secret)  # Utiliser decode_token ici
+        decoded = decode_token(token, secret)
         role = decoded.get('role')
         if not role:
-            print("Le rôle dans le jeton est None.")
+            text = "Le rôle dans le jeton est None."
+            console.print(text, style="bold red")
             return None
         return role
     except PermissionError as e:
-        print(f"Erreur de permission : {e}")
+        text = f"Erreur de permission : {e}"
+        console.print(text, style="bold red")
         new_token = renew_session(secret)
         return new_token
 
@@ -154,24 +153,28 @@ def read_role(secret=SECRET_KEY):
 def get_current_user(secret=SECRET_KEY):
     token = load_session()
     if not token:
-        print("Aucun jeton trouvé dans la session.")
+        text = "Aucun jeton trouvé dans la session."
+        console.print(text, style="bold red")
         return None
 
     try:
         decoded = decode_token(token, secret)
         username = decoded.get('username')
         if not username:
-            print("Le jeton ne contient pas d'identifiant d'utilisateur.")
+            text = "Le jeton ne contient pas d'identifiant d'utilisateur."
+            console.print(text, style="bold red")
             return None
 
         user = session.query(EpicUser).filter_by(username=username).first()
         if not user:
-            print(f"Utilisateur {username} non trouvé dans la base de données.")
+            text = f"Utilisateur {username} non trouvé dans la base de données."
+            console.print(text, style="bold red")
             return None
 
-        return user  # Assurez-vous que vous retournez l'objet utilisateur et non une requête
+        return user
     except PermissionError as e:
-        print(f"Erreur de permission : {e}")
+        text = f"Erreur de permission : {e}"
+        console.print(text, style="bold red")
         return None
 
 
@@ -182,7 +185,8 @@ def force_refresh_token(secret=SECRET_KEY):
     # Charger le jeton actuel
     token = load_session()
     if not token:
-        print("Aucun jeton trouvé dans la session.")
+        text = "Aucun jeton trouvé dans la session."
+        console.print(text, style="bold red")
         return None
 
     try:
@@ -191,13 +195,15 @@ def force_refresh_token(secret=SECRET_KEY):
         username = decoded.get('username')
 
         if not username:
-            print("Le jeton ne contient pas d'identifiant d'utilisateur.")
+            text = "Le jeton ne contient pas d'identifiant d'utilisateur."
+            console.print(text, style="bold red")
             return None
 
         # Récupérer l'utilisateur à partir de la base de données
         user = session.query(EpicUser).filter_by(username=username).first()
         if not user:
-            print(f"Utilisateur {username} non trouvé dans la base de données.")
+            text = f"Utilisateur {username} non trouvé dans la base de données."
+            console.print(text, style="bold red")
             return None
 
         # Créer un nouveau jeton avec les mêmes informations (ou mises à jour)
@@ -209,8 +215,10 @@ def force_refresh_token(secret=SECRET_KEY):
         return new_token
 
     except jwt.ExpiredSignatureError:
-        print("Le jeton a expiré. Veuillez vous reconnecter.")
+        text = "Le jeton a expiré. Veuillez vous reconnecter."
+        console.print(text, style="bold red")
         return None
     except jwt.InvalidTokenError:
-        print("Jeton invalide.")
+        text = "Jeton invalide."
+        console.print(text, style="bold red")
         return None

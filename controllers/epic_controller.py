@@ -13,6 +13,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 from views.authentication_view import AuthenticationView
+from views.console_view import console
 
 
 class EpicBase:
@@ -21,7 +22,8 @@ class EpicBase:
     Elle initialise l'environnement, la base de données, et gère la session utilisateur.
     """
     def __init__(self) -> None:
-        print("Initialisation de EpicBase...")
+        text = "Initialisation de EpicBase..."
+        console.print(text, style="bold green")
         self.env = Environ()
         db_config = self.get_config()
         self.epic = EpicDatabase(**db_config)
@@ -32,7 +34,9 @@ class EpicBase:
 
         # Obtenez et affichez le utilisateur actuel pour débogage
         self.current_user = get_current_user(self.session)
-        print(f"Utilisateur actuel dans EpicBase : {self.current_user}")
+        if self.current_user:
+            text = f"Utilisateur actuel dans EpicBase : {self.current_user}"
+            console.print(text, style="green")
 
         self.epic.users = EpicTerminalUser(self.epic, self.session, self.current_user)
 
@@ -75,18 +79,20 @@ class EpicBase:
             user_data = self.epic.check_connection(username, password)
 
             if user_data and hasattr(user_data, 'username') and hasattr(user_data, 'role'):
-                self.current_user = user_data  # Définir ici current_user
+                self.current_user = user_data
 
                 token = create_token(user_data, self.env.SECRET_KEY)
                 create_session(user_data, token)
-
-                print("Connexion réussie")
+                text = "Connexion réussie"
+                console.print(text, style="bold blue")
                 return True
             else:
-                print("Échec de la connexion")
+                text = "Échec de la connexion"
+                console.print(text, style="bold blue")
                 return False
         except Exception as e:
-            print(f"Erreur lors du processus de connexion : {e}")
+            text = f"Erreur lors du processus de connexion : {e}"
+            console.print(text, style="bold red")
             return False
 
     def check_session(self):
@@ -108,14 +114,18 @@ class EpicBase:
                             self.current_user = self.user
                             return user
                         else:
-                            print("Erreur : Utilisateur non authentifié.")
+                            text = "Erreur : Utilisateur non authentifié."
+                            console.print(text, style="bold red")
                 else:
-                    print("Le jeton ne contient pas de nom d'utilisateur valide.")
+                    text = "Le jeton ne contient pas de nom d'utilisateur valide."
+                    console.print(text, style="bold red")
             except jwt.ExpiredSignatureError:
-                print("Le jeton a expiré.")
+                text = "Le jeton a expiré."
+                console.print(text, style="bold red")
                 self.refresh_session()
             except jwt.InvalidTokenError:
-                print("Jeton invalide.")
+                text = "Jeton invalide."
+                console.print(text, style="bold red")
         return None
 
     def refresh_session(self):
@@ -125,10 +135,11 @@ class EpicBase:
         Si aucun utilisateur n'est connecté, une erreur est affichée.
         """
         if self.user:
-            new_token = create_token(self.user)  # Passez l'objet utilisateur complet
+            new_token = create_token(self.user)
             save_session(new_token)
         else:
-            print("Aucun utilisateur connecté pour rafraîchir la session.")
+            text = "Aucun utilisateur connecté pour rafraîchir la session."
+            console.print(text, style="bold red")
 
     @classmethod
     def initbase(cls):

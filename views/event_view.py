@@ -14,7 +14,6 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 sys.path.insert(0, parent_dir)
 
 from views.console_view import console
-from views.prompt_view import PromptView
 from views.regexformat import regexformat
 from controllers.contract_controller import Contract
 
@@ -166,7 +165,8 @@ class EventView:
         Returns:
             str: La référence de l'évènement sélectionné.
         """
-        print(f"Evènements disponibles: {all_events}")
+        text = (f"Evènements disponibles: {all_events}")
+        console.print(text, justify="cente", style="bold blue")
         choices = [f"{event.event_id} {event.title}" for event in all_events]
 
         selected_choice = questionary.select(
@@ -255,7 +255,8 @@ class EventView:
         Returns:
             Contract: Instance du contrat sélectionné ou None si aucun contrat n'est sélectionné.
         """
-        print(f"Contrats disponibles: {all_contracts}")
+        text = (f"Contrats disponibles: {all_contracts}")
+        console.print(text, justify="cente", style="bold blue")
         choices = [f"{contract.contract_id} {contract.description}" for contract in all_contracts]
 
         selected_choice = questionary.select(

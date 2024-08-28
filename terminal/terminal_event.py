@@ -11,11 +11,12 @@ sys.path.insert(0, parent_dir)
 from controllers.decorator import (is_authenticated, requires_roles)
 from controllers.event_controller import EventBase, Event
 from controllers.user_controller import EpicUser
-from controllers.customer_controller import CustomerBase, Customer
+from controllers.customer_controller import Customer
 from controllers.contract_controller import Contract
 from views.event_view import EventView
 from views.data_view import DataView
 from views.customer_view import CustomerView
+from views.console_view import console
 from terminal.terminal_user import EpicTerminalUser
 from terminal.terminal_customer import EpicTerminalCustomer
 from views.contract_view import ContractView
@@ -112,12 +113,15 @@ class EpicTerminalEvent:
             commercial = UserView.prompt_select_commercial(commercials)
             if commercial:
                 # Si un commercial est sélectionné, choisir un client
-                customers = session.query(Customer).filter_by(commercial_id=commercial.epicuser_id).all()
-                selected_customer = CustomerView.prompt_customers(customers)
-                print(f'Client sélectionné : {selected_customer}')
-
-                # Initialiser les filtres
-                filter_by_client = selected_customer.customer_id
+                if CustomerView.prompt_confirm_customer():
+                    customers = session.query(Customer).filter_by(commercial_id=commercial.epicuser_id).all()
+                    selected_customer = CustomerView.prompt_customers(customers)
+                    text = (f'Client sélectionné : {selected_customer}')
+                    console.print(text, justify="cente", style="bold blue")
+                    # Initialiser les filtres
+                    filter_by_client = selected_customer.customer_id
+                else:
+                    filter_by_client = None
             else:
                 # Si aucun commercial n'est sélectionné, afficher tous les événements
                 filter_by_client = None
@@ -128,7 +132,8 @@ class EpicTerminalEvent:
             # Sélectionner un contrat si confirmé
             if filter_by_client and ContractView.prompt_confirm_contract():
                 contracts = session.query(Contract).filter_by(customer_id=filter_by_client).all()
-                print(f'Contrats disponibles : {contracts}')
+                text = (f'Contrats disponibles : {contracts}')
+                console.print(text, justify="cente", style="bold blue")
                 contracts_data = [{"Description": f"{c.description}", "ID": c.contract_id} for c in contracts]
                 contract_ref = EventView.prompt_select_contract(contracts_data)
                 filter_by_contract = contract_ref['ID'] if contract_ref else None
@@ -139,11 +144,12 @@ class EpicTerminalEvent:
                 supports_name = [c.username for c in supports]
                 supports_name.append(EventView.no_support())
                 sname = UserView.prompt_select_support(supports_name)
-                print(f'Support sélectionné : {sname}')
+                text = (f'Support sélectionné : {sname}')
+                console.print(text, justify="cente", style="bold blue")
                 if sname != EventView.no_support():
                     support = session.query(EpicUser).filter_by(username=sname).first()
                     if support:
-                        filter_by_support = support.user_id
+                        filter_by_support = support.epicuser_id
                     else:
                         print('Support non trouvé.')
 
@@ -156,7 +162,7 @@ class EpicTerminalEvent:
             if filter_by_support:
                 query = query.filter_by(support_id=filter_by_support)
             else:
-                query = query.all()
+                query = query
 
             # Exécuter la requête et afficher les résultats
             events = query.all()

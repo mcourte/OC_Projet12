@@ -15,7 +15,6 @@ sys.path.insert(0, parent_dir)
 from views.console_view import console
 from views.regexformat import regexformat
 from controllers.contract_controller import Contract
-from controllers.user_controller import EpicUser
 
 
 class ContractView:
@@ -24,7 +23,7 @@ class ContractView:
     """
 
     @classmethod
-    def display_list_contracts(cls, all_contracts, session, pager=False) -> None:
+    def display_list_contracts(cls, all_contracts, pager=False) -> None:
         """
         Affiche la liste des contrats.
 
@@ -52,7 +51,7 @@ class ContractView:
                 c.description, client_name,
                 str(c.total_amount), str(c.remaining_amount or "0"),
                 c.state.value,
-                c.customer.commercial.username,
+                str(c.customer.commercial.username),
                 str(c.gestion_id)
             )
         if pager:
@@ -209,3 +208,14 @@ class ContractView:
         if amount is None:
             raise KeyboardInterrupt
         return {'paiement_id': ref, 'amount': amount}
+
+    def prompt_confirm_contract_state(cls, **kwargs) -> bool:
+        """
+        Demande si un contrat doit être sélectionné.
+
+        Retourne :
+        -----------
+        bool : True si un contrat doit être sélectionné, sinon False.
+        """
+        return questionary.confirm(
+            "Souhaitez-vous trier les contrats par statut?", **kwargs).ask()

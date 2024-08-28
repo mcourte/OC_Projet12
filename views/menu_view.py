@@ -5,13 +5,6 @@ from rich.columns import Columns
 from rich.align import Align
 from rich import box
 from rich.text import Text
-from rich import print
-from rich.console import Console
-from rich.tree import Tree
-from time import sleep
-from rich.progress import Progress
-from rich.live import Live
-from rich.table import Table
 import questionary
 import os
 import sys
@@ -92,6 +85,7 @@ class MenuView:
         menu_text += "    17-Créer un évènement\n"
         menu_text += "    18-Modifier un évènement\n"
         menu_text += "    19-Lister évènement\n"
+        menu_text += "    20-Lister contracts\n"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
@@ -231,7 +225,7 @@ class MenuView:
             """
             match role:
                 case 'GES': max_menu_idx = 14
-                case 'ADM': max_menu_idx = 19
+                case 'ADM': max_menu_idx = 30
                 case 'COM': max_menu_idx = 10
                 case 'SUP': max_menu_idx = 8
             if result == 'Q':

@@ -1,8 +1,6 @@
 import re
 import questionary
 from .console_view import console
-from rich.panel import Panel
-from rich.text import Text
 
 
 class AuthenticationView:
@@ -28,8 +26,7 @@ class AuthenticationView:
         username (str) : Le nom d'utilisateur à inclure dans le message de bienvenue.
         """
         text = f"!!! Bienvenue {username} sur le CRM de EpicEvent !!!"
-        panel = Panel(Text(text, justify="center", style="bold blue"))
-        console.print(panel)
+        console.print(text, justify="center", style="bold blue")
 
     @classmethod
     def display_waiting_databasecreation(cls, f, data):
@@ -72,7 +69,8 @@ class AuthenticationView:
         ------------
         name (str) : Le nom de la base de données à afficher dans le message.
         """
-        console.print(f'La base {name} est opérationnelle')
+        text = f'La base {name} est opérationnelle'
+        console.print(text, style="green")
 
     @classmethod
     def prompt_baseinit(cls, **kwargs):

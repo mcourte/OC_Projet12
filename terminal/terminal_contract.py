@@ -1,6 +1,5 @@
 import os
 import sys
-
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
@@ -14,13 +13,13 @@ from terminal.terminal_customer import EpicTerminalCustomer
 from terminal.terminal_user import EpicTerminalUser
 from models.entities import Customer, Contract
 from controllers.user_controller import EpicUser
-from views.prompt_view import PromptView
 from views.contract_view import ContractView
 from views.customer_view import CustomerView
 from views.event_view import EventView
 from views.user_view import UserView
 from views.menu_view import MenuView
 from views.data_view import DataView
+from views.console_view import console
 
 
 class EpicTerminalContract:
@@ -81,11 +80,13 @@ class EpicTerminalContract:
 
             # Ajouter l'identifiant du client sélectionné au dictionnaire data
             data['customer_id'] = client_id
-
+            client = session.query(Customer).filter_by(customer_id=client_id).first()
+            commercial_id = client.commercial_id
+            data['commercial_id'] = commercial_id
             # Appeler la fonction pour créer le contrat
             ContractBase.create_contract(session, data)
 
-            contract_ref = data['ref']
+            contract_ref = data['description']
             text = f'Contrat {contract_ref} en attente de signature'
             return text
 
@@ -165,3 +166,73 @@ class EpicTerminalContract:
         ContractBase.update_gestion_contract(self.current_user, session, selected_contract_id, selected_gestion.epicuser_id)
         print(f"Le gestionnaire {selected_gestion.username} a été attribué au contrat {selected_contract_id} avec succès.")
         ContractBase.update_contract
+
+    @is_authenticated
+    def list_of_contracts_filtered(self, session):
+        """
+        Affiche la liste des événements en permettant de :
+        - Choisir un commercial (facultatif)
+        - Choisir un client (facultatif)
+        - Sélectionner un contrat (si confirmé)
+        - Sélectionner un support (si confirmé)
+        - Lire la base de données et afficher les événements.
+        """
+        try:
+            # Choisir un commercial (facultatif)
+            contracts = session.query(Contract).all()
+            commercials = session.query(EpicUser).filter_by(role='COM').all()
+            if UserView.prompt_confirm_commercial():
+                commercial = UserView.prompt_select_commercial(commercials)
+                if commercial:
+                    filter_by_commercial = commercial.epicuser_id
+                    # Si un commercial est sélectionné, choisir un client
+                    if CustomerView.prompt_confirm_customer():
+                        customers = session.query(Customer).filter_by(commercial_id=commercial.epicuser_id).all()
+                        selected_customer = CustomerView.prompt_customers(customers)
+                        text = (f'Client sélectionné : {selected_customer}')
+                        console.print(text, justify="cente", style="bold blue")
+                        # Initialiser les filtres
+                        filter_by_client = selected_customer.customer_id
+                    else:
+                        filter_by_client = None
+            else:
+                filter_by_commercial = None
+                if CustomerView.prompt_confirm_customer():
+                    customers = session.query(Customer).all()
+                    selected_customer = CustomerView.prompt_customers(customers)
+                    text = (f'Client sélectionné : {selected_customer}')
+                    console.print(text, justify="cente", style="bold blue")
+                    # Initialiser les filtres
+                    filter_by_client = selected_customer.customer_id
+                else:
+                    filter_by_client = None
+
+            filter_by_statut = None
+
+            # Sélectionner un contrat si confirmé
+            if ContractView.prompt_confirm_contract_state(contracts):
+                selected_statut = ContractView.prompt_select_statut()
+                filter_by_statut = selected_statut
+            else:
+                filter_by_statut = None
+
+            # Construire la requête de filtrage des événements
+            query = session.query(Contract)
+
+            if filter_by_commercial:
+                query = query.filter_by(commercial_id=filter_by_commercial)
+            if filter_by_client:
+                query = query.filter_by(customer_id=filter_by_client)
+            if filter_by_statut:
+                query = query.filter_by(state=filter_by_statut)
+            else:
+                query = query
+
+            # Exécuter la requête et afficher les résultats
+            contracts = query.all()
+            ContractView.display_list_contracts(contracts)
+
+        except KeyboardInterrupt:
+            DataView.display_interupt()
+        except Exception as e:
+            print(f"Erreur rencontrée : {e}")

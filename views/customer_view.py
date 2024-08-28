@@ -137,9 +137,8 @@ class CustomerView:
         table.add_column("Commercial associé", justify="center", style="cyan", header_style="bold cyan")
         for c in all_customers:
             table.add_row(
-                f"{c.first_name} {c.last_name}",
-                  c.company_name, c.phone, c.email,
-                str(c.commercial.username) if c.commercial else 'Aucun commercial'  # Nom d'utilisateur du commercial
+                f"{c.first_name} {c.last_name}", c.company_name, c.phone, c.email,
+                str(c.commercial.username) if c.commercial else 'Aucun commercial'
             )
 
         if pager:

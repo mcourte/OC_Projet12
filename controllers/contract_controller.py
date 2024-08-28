@@ -36,7 +36,7 @@ class ContractBase:
 
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
-    def create_contract(self, data):
+    def create_contract(session, data):
         """
         Permet de créer un contrat.
 
@@ -50,6 +50,7 @@ class ContractBase:
         Contract : Le contrat créé.
         """
         # Créez l'instance du contrat
+        print(f"Data : {data}")
         contract = Contract(
             description=data['description'],
             total_amount=data['total_amount'],
@@ -57,12 +58,12 @@ class ContractBase:
             state=data.get('state', 'C'),
             customer_id=data['customer_id'],
             paiement_state=data.get('paiement_state', 'N'),
+            commercial_id=data.get('commercial_id')
         )
-        print(contract)
 
         # Utilisation de self.session pour ajouter et valider
-        self.session.add(contract)
-        self.session.commit()
+        session.add(contract)
+        session.commit()
         return contract
 
     @is_authenticated

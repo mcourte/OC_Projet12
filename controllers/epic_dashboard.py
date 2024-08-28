@@ -15,6 +15,7 @@ from controllers.config import Config
 from controllers.session import stop_session
 from views.authentication_view import AuthenticationView
 from views.menu_view import MenuView
+from views.console_view import console
 
 
 class EpicDashboard:
@@ -24,8 +25,8 @@ class EpicDashboard:
         # Debugging: Vérification de l'initialisation de current_user
         if not hasattr(self.gestion, 'current_user') or not self.gestion.current_user:
             raise ValueError("L'utilisateur n'est pas initialisé ou n'est pas authentifié.")
-
-        print(f"Utilisateur connecté : {self.gestion.current_user.username}")
+        text = (f"Utilisateur connecté : {self.gestion.current_user.username}")
+        console.print(text, style="bold")
 
         config = Config()
         self.database = EpicDatabase(
@@ -49,7 +50,8 @@ class EpicDashboard:
             case '04':
                 self.database.contracts.list_of_contracts(self.session)
             case '05':
-                self.database.events.list_of_events(self.session)
+                if self.gestion.current_user.role.code in {'ADM'}:
+                    self.database.contracts.list_of_contracts_filtered(self.session)
             case '06':
                 self.database.users.list_of_users(self.session)
             case '07':
@@ -97,6 +99,9 @@ class EpicDashboard:
             case '19':
                 if self.gestion.current_user.role.code in {'ADM', 'SUP'}:
                     self.database.events.list_of_events_filtered(self.session)
+            case '20':
+                if self.gestion.current_user.role.code in {'ADM'}:
+                    self.database.contracts.list_of_contracts_filtered(self.session)
             case 'D':
                 stop_session()
                 return False
@@ -109,14 +114,6 @@ class EpicDashboard:
         try:
             if not self.gestion.current_user:
                 raise ValueError("L'utilisateur n'est pas initialisé.")
-            print("Tableau de bord en cours d'exécution...")
-            username = self.gestion.current_user.username
-            print(f"Utilisateur : {username}")
-            user_info = self.database.get_user(username)
-            if user_info:
-                print("Utilisateur trouvé:", user_info)
-            else:
-                print("Aucun utilisateur trouvé.")
         except Exception:
             pass
 
