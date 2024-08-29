@@ -84,12 +84,18 @@ class ContractView:
         table.add_column("Statut")
         table.add_column("Nb évènements")
         table.add_column("Commercial")
+        customer_name = f"{contract.customer.first_name} {contract.customer.last_name}"
         table.add_row(
-            contract.contract_id, contract.description, contract.customer.first_name, contract.customer.last_name,
-            str(contract.total_amount), str(contract.remaining_amount),
-            contract.state.value, str(len(contract.events)),
+            str(contract.contract_id),
+            contract.description,
+            customer_name,
+            str(contract.total_amount),
+            str(contract.remaining_amount),
+            contract.state.value,
+            str(len(contract.events)),
             contract.customer.commercial.username
         )
+
         console.print(table)
 
     @classmethod

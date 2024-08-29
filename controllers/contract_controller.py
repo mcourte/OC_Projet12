@@ -1,7 +1,6 @@
 import os
 import sys
 from decimal import Decimal
-from sqlalchemy.orm.exc import NoResultFound
 
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
@@ -99,7 +98,7 @@ class ContractBase:
     @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'COM', 'Admin', 'Gestion', 'Commercial')
-    def update_contract(self, contract_id, data):
+    def update_contract(contract_id, data, session):
         """
         Permet de mettre à jour un contrat existant.
 
@@ -115,14 +114,14 @@ class ContractBase:
         ValueError :
             Levée si aucun contrat n'est trouvé avec l'ID spécifié.
         """
-        contract = self.session.query(Contract).filter_by(contract_id=contract_id).first()
+        print(f"data du controller: {data}")
+        contract = session.query(Contract).filter_by(contract_id=contract_id).first()
         if not contract:
             raise ValueError("Il n'existe pas de contrat avec cet ID")
-
         for key, value in data.items():
             setattr(contract, key, value)
 
-        self.session.commit()
+        session.commit()
 
     @sentry_activate
     @is_authenticated
@@ -175,83 +174,76 @@ class ContractBase:
 
     @sentry_activate
     @is_authenticated
-    @requires_roles('ADM', 'GES', 'COM', 'Admin', 'Gestion', 'Commercial')
-    def find_by_paiement_state(self, paiement_state):
-        """
-        Permet de lister les contrats en fonction de leur état de paiement.
-
-        Paramètres :
-        ------------
-        paiement_state : str
-            L'état de paiement des contrats à retrouver ('P' pour soldé, 'N' pour non soldé).
-
-        Retourne :
-        ----------
-        list[Contract] : La liste des contrats correspondant à l'état de paiement donné.
-        """
-        return self.session.query(Contract).filter_by(paiement_state=paiement_state).all()
-
-    @sentry_activate
-    @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def add_paiement(self, session, contract_id, data) -> None:
         """
         Ajoute un nouveau paiement au contrat dans la base de données.
-
-        Paramètres :
-        ------------
-        ref_contract : int
-            La référence du contrat auquel ajouter le paiement.
-        data : dict
-            Les informations sur le paiement à ajouter.
-
-        Exceptions :
-        ------------
-        ValueError :
-            Levée si le montant du paiement dépasse le restant dû du contrat.
-        IntegrityError :
-            Levée si un problème d'intégrité des données survient lors de l'ajout du paiement.
         """
-
         try:
             amount = Decimal(data['amount'])
+            paiement_id = data['paiement_id']
+
+            # Vérifier si le paiement existe déjà pour le contrat donné
+            existing_paiement = session.query(Paiement).filter_by(paiement_id=paiement_id, contract_id=contract_id).first()
+            if existing_paiement:
+                raise ValueError(f"Un paiement avec la référence {paiement_id} existe déjà pour le contrat ID={contract_id}.")
+
+            # Récupérer le contrat associé
+            contract = session.query(Contract).filter_by(contract_id=contract_id).first()
+            if not contract:
+                raise ValueError("Contrat introuvable")
+
+            # Log de la valeur du montant restant avant mise à jour
+            print(f"Montant restant avant mise à jour : {contract.remaining_amount}")
+
+            # Vérifier si le montant du paiement dépasse le restant dû
+            if contract.remaining_amount is not None and amount > contract.remaining_amount:
+                raise ValueError("Le montant du paiement dépasse le restant dû du contrat.")
+
+            # Créer le paiement
             paiement = Paiement(
-                paiement_id=data['paiement_id'],
+                paiement_id=paiement_id,
                 amount=amount,
                 contract_id=contract_id
             )
             session.add(paiement)
+
+            # Mettre à jour le montant restant dû du contrat
+            if contract.remaining_amount is not None:
+                contract.remaining_amount -= float(amount)
+                if contract.remaining_amount < 0:
+                    contract.remaining_amount = 0
+
+                # Log de la valeur du montant restant après mise à jour
+                print(f"Montant restant après mise à jour : {contract.remaining_amount}")
+
+            # Mettre à jour l'état du paiement du contrat
+            if contract.remaining_amount == 0:
+                contract.paiement_state = 'P'  # Soldé
+            else:
+                contract.paiement_state = 'N'  # Non Soldé
+
+            # Ajouter la mise à jour du contrat à la session
+            session.add(contract)
+
             session.commit()
             print(f"Paiement enregistré avec succès : {paiement.paiement_id}")
+            print(f"Contrat mis à jour: ID={contract.contract_id}, Remaining Amount={contract.remaining_amount}")
             return paiement
+
         except Exception as e:
             session.rollback()
             print(f"Erreur lors de l'enregistrement du paiement : {e}")
             raise
 
+    @staticmethod
     @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
-    def signed(self, session, contract_id) -> None:
-        """
-        Met à jour l'état du contrat en 'S' (Signé).
-
-        Paramètres :
-        ------------
-        ref_contract : int
-            ID du contrat à marquer comme signé.
-
-        Exceptions :
-        ------------
-        ValueError :
-            Levée si aucun contrat n'est trouvé avec la référence donnée.
-        """
-        try:
-            contract = session.query(Contract).filter_by(contract_id=contract_id[0]).all()
-            print(contract)
-        except NoResultFound:
-            raise ValueError(f"Aucun contrat trouvé avec la référence {contract_id}")
-
+    def signed(session, contract_id):
+        contract = session.query(Contract).filter_by(contract_id=contract_id).first()
+        if not contract:
+            raise ValueError(f"Aucun contrat trouvé avec l'ID {contract_id}")
         contract.state = 'S'
         session.add(contract)
         session.commit()

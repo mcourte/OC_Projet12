@@ -1,6 +1,5 @@
 import os
 import sys
-import random
 from sqlalchemy import (
     ForeignKey,
     Column, Integer, String, TIMESTAMP, Sequence, Float
@@ -8,7 +7,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship, configure_mappers
 from sqlalchemy_utils import ChoiceType
 from sqlalchemy.sql import func
-from sqlalchemy.exc import NoResultFound
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from datetime import datetime
@@ -181,62 +179,6 @@ class EpicUser(Base):
         except VerifyMismatchError:
             return False
 
-    def to_dict(self) -> dict:
-        """
-        Convertit les informations de l'utilisateur en dictionnaire.
-
-        Retourne :
-        ----------
-        dict : Dictionnaire des informations de l'utilisateur.
-        """
-        return {
-            'username': self.username,
-            'password': self.password,
-            'email': self.email,
-            'role': self.role
-        }
-
-    @classmethod
-    def get_all_users(cls, session):
-        """
-        Récupère tous les utilisateurs dans la base de données.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-
-        Retourne :
-        ----------
-        list : Liste de tous les utilisateurs.
-        """
-        return session.query(cls).all()
-
-    @classmethod
-    def find_by_userpwd(cls, session, username, password):
-        """
-        Trouve un utilisateur par son nom d'utilisateur et son mot de passe.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-        username : str
-            Le nom d'utilisateur.
-        password : str
-            Le mot de passe en texte clair.
-
-        Retourne :
-        ----------
-        EpicUser : L'utilisateur trouvé, ou None s'il n'est pas trouvé.
-        """
-        try:
-            user = session.query(cls).filter_by(username=username).one()
-            if user.check_password(password):
-                return user
-        except NoResultFound:
-            return None
-
     @classmethod
     def find_by_username(cls, session, username):
         """
@@ -349,44 +291,12 @@ class Admin(EpicUser):
         'polymorphic_identity': 'ADM',
     }
 
-    @classmethod
-    def get_all_admins(cls, session):
-        """
-        Récupère tous les administrateurs dans la base de données.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-
-        Retourne :
-        ----------
-        list : Liste de tous les administrateurs.
-        """
-        return session.query(cls).filter_by(role='ADM').order_by(cls.username).all()
-
 
 class Commercial(EpicUser):
 
     __mapper_args__ = {
         'polymorphic_identity': 'COM',
     }
-
-    @classmethod
-    def get_all_commercials(cls, session):
-        """
-        Récupère tous les commerciaux dans la base de données.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-
-        Retourne :
-        ----------
-        list : Liste de tous les commerciaux.
-        """
-        return session.query(cls).filter_by(role='COM').order_by(cls.username).all()
 
     @property
     def contracts(self):
@@ -413,22 +323,6 @@ class Support(EpicUser):
 
     events = relationship('Event', back_populates='support')
 
-    @classmethod
-    def get_all_supports(cls, session):
-        """
-        Récupère tous les supports dans la base de données.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-
-        Retourne :
-        ----------
-        list : Liste de tous les supports.
-        """
-        return session.query(cls).filter_by(role='SUP').order_by(cls.username).all()
-
 
 class Gestion(EpicUser):
     """
@@ -437,39 +331,6 @@ class Gestion(EpicUser):
     __mapper_args__ = {
         'polymorphic_identity': 'GES',
     }
-
-    @classmethod
-    def get_all_gestions(cls, session):
-        """
-        Récupère tous les gestionnaires dans la base de données.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-
-        Retourne :
-        ----------
-        list : Liste de tous les gestionnaires.
-        """
-        return session.query(cls).filter_by(role='GES').order_by(cls.username).all()
-
-    @classmethod
-    def get_gestion(cls, session):
-        """
-        Récupère un gestionnaire au hasard dans la base de données.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-
-        Retourne :
-        ----------
-        Gestion : Un gestionnaire aléatoire, ou None s'il n'y en a pas.
-        """
-        all_gest = session.query(cls).filter_by(role='GES').order_by(cls.username).all()
-        return random.choice(all_gest) if all_gest else None
 
 
 class Customer(Base):
@@ -494,57 +355,6 @@ class Customer(Base):
 
     def __repr__(self):
         return f'Customer {self.first_name} {self.last_name}'
-
-    @classmethod
-    def find_by_name(cls, session, name):
-        """
-        Trouve un client par son nom complet.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-        name : str
-            Le nom complet du client.
-
-        Retourne :
-        ----------
-        Customer : Le client trouvé, ou lève une exception s'il n'est pas trouvé.
-        """
-        return session.query(cls).filter_by(full_name=name).one()
-
-    @classmethod
-    def get_all_customers(cls, session):
-        """
-        Récupère tous les clients dans la base de données.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-
-        Retourne :
-        ----------
-        list : Liste de tous les clients.
-        """
-        return session.query(cls).order_by(cls.last_name).all()
-
-    @classmethod
-    def find_without_contract(cls, session):
-        """
-        Trouve tous les clients sans contrat.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-
-        Retourne :
-        ----------
-        list : Liste de tous les clients sans contrat.
-        """
-        return session.query(cls).outerjoin(Contract).filter(Contract.customer_id.is_(None)).order_by(
-            cls.last_name).all()
 
 
 class Event(Base):
@@ -604,62 +414,6 @@ class Event(Base):
     support = relationship('Support', back_populates='events')
     contract = relationship('Contract', back_populates='events')
 
-    @classmethod
-    def find_by_title(cls, session, contract_id, title):
-        """
-        Trouve un événement par son titre et l'identifiant du contrat.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-        contract_id : int
-            L'identifiant du contrat associé à l'événement.
-        title : str
-            Le titre de l'événement.
-
-        Retourne :
-        ----------
-        Event : L'événement trouvé.
-        """
-        return session.query(cls).filter_by(title=title, contract_id=contract_id).one()
-
-    @classmethod
-    def find_by_support(cls, session, support_id, title):
-        """
-        Trouve un événement par son titre et l'identifiant du support.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-        support_id : int
-            L'identifiant du support associé à l'événement.
-        title : str
-            Le titre de l'événement.
-
-        Retourne :
-        ----------
-        Event : L'événement trouvé.
-        """
-        return session.query(cls).filter_by(title=title, support_id=support_id).one()
-
-    @classmethod
-    def get_all_events(cls, session):
-        """
-        Récupère tous les événements dans la base de données.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-
-        Retourne :
-        ----------
-        list : Liste de tous les événements.
-        """
-        return session.query(cls).all()
-
 
 class Contract(Base):
     """
@@ -709,7 +463,7 @@ class Contract(Base):
     contract_id = Column(Integer, Sequence('contract_id_seq'), primary_key=True)
     description = Column(String(500), nullable=False)
     total_amount = Column(Float, nullable=False)
-    remaining_amount = Column(Float, nullable=True)
+    remaining_amount = Column(Float, nullable=True)  # Peut être initialisé à None au début
     state = Column(ChoiceType(CONTRACT_STATES, impl=String(length=1)), default='C')
     customer_id = Column(Integer, ForeignKey('customers.customer_id'), nullable=False, index=True)
     paiement_state = Column(ChoiceType(PAIEMENT_STATES, impl=String(length=1)), default='N')
@@ -719,193 +473,26 @@ class Contract(Base):
 
     customer = relationship('Customer', back_populates='contracts')
     events = relationship('Event', back_populates='contract')
-    paiements = relationship('Paiement', back_populates='contract')
+    paiements = relationship('Paiement', back_populates='contract', lazy='joined')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.total_amount is not None:
+            self.remaining_amount = self.total_amount
 
     def __repr__(self):
-        """
-        Retourne une représentation en chaîne de caractères du contrat.
-
-        Retourne :
-        ----------
-        str : Description du contrat.
-        """
         return f'{self.description}'
-
-    @classmethod
-    def find_by_contract_id(cls, session, contract_id):
-        """
-        Trouve un contrat par son identifiant.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-        contract_id : int
-            L'identifiant du contrat.
-
-        Retourne :
-        ----------
-        Contract : Le contrat trouvé.
-        """
-        return session.query(cls).filter_by(contract_id=contract_id).one()
-
-    @classmethod
-    def find_by_customer(cls, session, customer):
-        """
-        Trouve tous les contrats associés à un client donné.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-        customer : Customer
-            Le client dont on cherche les contrats.
-
-        Retourne :
-        ----------
-        list : Liste des contrats associés au client.
-        """
-        return session.query(cls).filter_by(customer=customer).order_by(cls.contract_id).all()
-
-    @classmethod
-    def find_by_epicuser_id(cls, session, epicuser_id):
-        """
-        Trouve tous les contrats associés à un utilisateur Epic spécifique.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-        epicuser_id : int
-            L'identifiant de l'utilisateur Epic.
-
-        Retourne :
-        ----------
-        list : Liste des contrats associés à l'utilisateur.
-        """
-        return session.query(cls).filter_by(epicuser=epicuser_id).order_by(cls.contract_id).all()
-
-    @classmethod
-    def find_by_state(cls, session, state):
-        """
-        Trouve tous les contrats par état.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-        state : str
-            L'état des contrats à rechercher.
-
-        Retourne :
-        ----------
-        list : Liste des contrats correspondant à l'état.
-        """
-        return session.query(cls).filter_by(state=state).order_by(cls.contract_id).all()
-
-    @classmethod
-    def state_signed(cls, session):
-        """
-        Trouve tous les contrats signés.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-
-        Retourne :
-        ----------
-        list : Liste de tous les contrats signés.
-        """
-        return session.query(cls).filter_by(state="S").order_by(cls.contract_id).all()
-
-    @classmethod
-    def find_by_paiement_state(cls, session, paiement_state):
-        """
-        Trouve tous les contrats par état de paiement.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-        paiement_state : str
-            L'état de paiement des contrats à rechercher.
-
-        Retourne :
-        ----------
-        list : Liste des contrats correspondant à l'état de paiement.
-        """
-        return session.query(cls).filter_by(paiement_state=paiement_state).order_by(cls.contract_id).all()
-
-    @classmethod
-    def get_all_contracts(cls, session):
-        """
-        Récupère tous les contrats dans la base de données.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-
-        Retourne :
-        ----------
-        list : Liste de tous les contrats.
-        """
-        return session.query(cls).order_by(cls.contract_id).all()
-
-    @classmethod
-    def find_by_selection(cls, session, commercial, customer):
-        """
-        Trouve tous les contrats en fonction d'un commercial et/ou d'un client.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-        commercial : str
-            Le nom d'utilisateur du commercial.
-        customer : str
-            Le nom de famille du client.
-
-        Retourne :
-        ----------
-        list : Liste des contrats correspondant aux critères.
-        """
-        query = session.query(cls).join(Customer, Customer.customer_id == cls.customer_id)
-        if customer:
-            query = query.filter(Customer.last_name == customer)
-        if commercial:
-            query = query.join(EpicUser, EpicUser.epicuser_id == Customer.commercial_id).filter(
-                EpicUser.username == commercial)
-        return query.order_by(cls.contract_id).all()
 
 
 class Paiement(Base):
     """
     Classe représentant un paiement dans le système.
-
-    Attributs :
-    -----------
-    id : Column
-        Identifiant unique du paiement.
-    ref : Column
-        Référence unique du paiement.
-    date_amount : Column
-        Date et heure du paiement.
-    amount : Column
-        Montant payé.
-    contract_id : Column
-        Identifiant du contrat associé au paiement.
-
-    Relations :
-    -----------
-    contract : relationship
-        Relation avec le contrat associé au paiement.
     """
+
     __tablename__ = 'paiements'
 
-    paiement_id = Column(Integer, primary_key=True)
-    date_amount = Column(TIMESTAMP, nullable=False, default=datetime.now())
+    paiement_id = Column(String, primary_key=True)  # Changement ici
+    date_amount = Column(TIMESTAMP, nullable=False, default=datetime.now)
     amount = Column(Integer)
     contract_id = Column(Integer, ForeignKey('contracts.contract_id'), nullable=False, index=True)
 
@@ -920,30 +507,8 @@ class Paiement(Base):
     def __repr__(self):
         """
         Retourne une représentation en chaîne de caractères du paiement.
-
-        Retourne :
-        ----------
-        str : Représentation du paiement avec la date, la référence et le montant.
         """
-        return f'{self.date_amount}: {self.ref}/{self.amount}'
-
-    @classmethod
-    def find_by_paiement_id(cls, session, paiement_id):
-        """
-        Trouve un paiement par sa référence unique.
-
-        Paramètres :
-        ------------
-        session : Session
-            La session de la base de données en cours.
-        ref : str
-            La référence unique du paiement.
-
-        Retourne :
-        ----------
-        Paiement : Le paiement trouvé.
-        """
-        return session.query(cls).filter_by(paiement_id=paiement_id).one()
+        return f'{self.date_amount}: {self.paiement_id}/{self.amount}'  # Modifié ici pour paiement_id
 
 
 configure_mappers()

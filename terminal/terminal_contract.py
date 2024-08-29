@@ -101,33 +101,30 @@ class EpicTerminalContract:
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def update_contract(self, session):
         contracts = session.query(Contract).all()
-        ref = EventView.prompt_select_contract(contracts)
-        print(f"ref : {ref}")
+        selected_contract = EventView.prompt_select_contract(contracts)
 
-        # Assurez-vous d'obtenir un seul objet au lieu d'une liste
-        selected_contract = session.query(Contract).filter_by(contract_id=ref.contract_id).first()
         if not selected_contract:
+            raise ValueError("Contrat sélectionné invalide")
+
+        contract_id = selected_contract.contract_id
+        contract = session.query(Contract).filter_by(contract_id=contract_id).first()
+        if not contract:
             raise ValueError("Contrat introuvable")
 
         try:
-            choice = MenuView.menu_update_contract(selected_contract)
+            choice = MenuView.menu_update_contract(contract)
             match choice:
                 case 1:
                     try:
-                        # Affichez les informations du contrat
-                        ContractView.display_contract_info(selected_contract)
-                        data = ContractView.prompt_data_contract(
-                            ref_required=False, mt_required=False)
-
-                        new_contract = ContractBase.update_contract(selected_contract.contract_id, data)
-                        ContractView.display_contract_info(new_contract)
+                        ContractView.display_contract_info(contract)
+                        data = ContractView.prompt_data_contract()
+                        ContractBase.update_contract(contract_id, data, session)
+                        ContractView.display_contract_info(contract)
                     except KeyboardInterrupt:
                         DataView.display_interupt()
                 case 2:
                     try:
-                        # Signez le contrat
-                        ContractBase.signed(self, session, selected_contract.contract_id)
-                        DataView.display_workflow()
+                        ContractBase.signed(session, contract_id)
                     except KeyboardInterrupt:
                         DataView.display_interupt()
         except KeyboardInterrupt:
@@ -278,7 +275,6 @@ class EpicTerminalContract:
         ref = EventView.prompt_select_contract(contracts)
         print(f"ref : {ref}")
 
-        # Assurez-vous d'obtenir un seul objet au lieu d'une liste
         selected_contract = session.query(Contract).filter_by(contract_id=ref.contract_id).first()
         if not selected_contract:
             raise ValueError("Contrat introuvable")
@@ -286,7 +282,8 @@ class EpicTerminalContract:
         try:
             data = ContractView.prompt_data_paiement()
             contract_base_instance = ContractBase(self, session)
-            contract_base_instance.add_paiement(selected_contract.contract_id, session, data)
+            # Corriger l'ordre des arguments ici
+            contract_base_instance.add_paiement(session, selected_contract.contract_id, data)
         except ValueError as e:
             print(f"Erreur: {e}")
         except KeyboardInterrupt:

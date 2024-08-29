@@ -73,9 +73,7 @@ class EpicDashboard:
                 if self.gestion.current_user.role.code in {'COM'}:
                     self.database.events.create_event(self.session)
             case '10':
-                if self.gestion.current_user.role.code in {'GES', 'ADM'}:
-                    self.database.contracts.update_contract(self.session)
-                if self.gestion.current_user.role.code in {'COM'}:
+                if self.gestion.current_user.role.code in {'GES', 'ADM', 'COM'}:
                     self.database.contracts.update_contract(self.session)
             case '11':
                 if self.gestion.current_user.role.code in {'GES', 'ADM'}:

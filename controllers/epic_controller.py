@@ -134,8 +134,8 @@ class EpicBase:
 
         Si aucun utilisateur n'est connecté, une erreur est affichée.
         """
-        if self.user:
-            new_token = create_token(self.user)
+        if self.current_user:
+            new_token = create_token(self.current_user)
             save_session(new_token)
         else:
             text = "Aucun utilisateur connecté pour rafraîchir la session."
