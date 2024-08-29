@@ -1,17 +1,16 @@
 import click
 import os
 import sys
-import logging
 import sentry_sdk
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
-# Configuration de base du logging
-logging.basicConfig(
-    level=logging.DEBUG,  # Niveau de log minimum
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Format des messages de log
-)
+import logging
 
-# Créer un logger pour ce module
-logger = logging.getLogger(__name__)
+# Désactiver tous les messages sauf CRITICAL
+logging.basicConfig(level=logging.CRITICAL)
+
+# Pour asyncio seulement (ou n'importe quelle autre bibliothèque spécifique)
+logging.getLogger('asyncio').setLevel(logging.CRITICAL)
+
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
