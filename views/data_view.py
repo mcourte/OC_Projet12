@@ -98,6 +98,7 @@ class DataView:
         p = Panel(
             Align.center(text, vertical='bottom'),
             box=box.ROUNDED,
+            style='cyan',
             title_align='center',
-            title=e.username)
+            title='Mes informations')
         console.print(p)

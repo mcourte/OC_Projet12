@@ -72,21 +72,18 @@ class MenuView:
         Returns:
             Panel: Menu de gestion formaté.
         """
-        menu_text = "    07-Liste des évènements triées\n"
-        menu_text += "    08-Changer le statut actif/inactif d'un employé\n"
+        menu_text = "    07-Changer le statut actif/inactif d'un employé\n"
+        menu_text += "    08-Ajouter un client\n"
         menu_text += "    09-Créer un contrat\n"
         menu_text += "    10-Modifier un contrat\n"
         menu_text += "    11-Ajouter un paiement à un contrat\n"
         menu_text += "    12-Affecter un commercial à un client\n"
         menu_text += "    13-Affecter un gestionnaire à un contrat\n"
         menu_text += "    14-Affecter un support à un évènement\n"
-        menu_text += "    15-Créer un nouveau client\n"
-        menu_text += "    16-Modifier les données d'un client\n"
-        menu_text += "    17-Créer un évènement\n"
-        menu_text += "    18-Modifier un évènement\n"
-        menu_text += "    19-Créer un utilisateur\n"
-        menu_text += "    20-Lister évènement\n"
-        menu_text += "    21-Lister contracts\n"
+        menu_text += "    15-Modifier les données d'un client\n"
+        menu_text += "    16-Créer un évènement\n"
+        menu_text += "    17-Modifier un évènement\n"
+        menu_text += "    18-Créer un utilisateur\n"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
@@ -121,8 +118,7 @@ class MenuView:
         Returns:
             Panel: Menu support formaté.
         """
-        menu_text = "    07-Liste des évènements qui me sont attribués\n"
-        menu_text += "    08-Modifier un évènement\n"
+        menu_text = "    07-Modifier un évènement\n"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
@@ -225,10 +221,10 @@ class MenuView:
                 bool: True si le choix est valide, sinon False.
             """
             match role:
-                case 'GES': max_menu_idx = 16
-                case 'ADM': max_menu_idx = 22
+                case 'GES': max_menu_idx = 14
+                case 'ADM': max_menu_idx = 18
                 case 'COM': max_menu_idx = 10
-                case 'SUP': max_menu_idx = 8
+                case 'SUP': max_menu_idx = 7
             if result == 'Q':
                 return True
             elif int(result) <= max_menu_idx:
@@ -248,24 +244,3 @@ class MenuView:
             result = ask_prompt()
 
         return result
-
-    @classmethod
-    def menu_update_contract(cls, state):
-        """
-        Affiche le menu pour la mise à jour d'un contrat en fonction de son état et demande une sélection.
-
-        Args:
-            state (str): L'état actuel du contrat.
-
-        Returns:
-            int: L'index du choix sélectionné (1 pour "Enregistrer un paiement",
-            2 pour "Modifier les données du contrat", etc.).
-        """
-        menu_text = [
-            'Modifier les données du contrat']
-        menu_text.append('Signer le contrat')
-        choice = questionary.select("Que voulez-vous faire ?",
-                                    choices=menu_text).ask()
-        if choice is None:
-            raise KeyboardInterrupt
-        return menu_text.index(choice) + 1

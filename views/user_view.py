@@ -293,9 +293,6 @@ class UserView:
         """
 
         # Demande des informations à mettre à jour
-        new_password = questionary.text(
-            "Nouveau mot de passe (laisser vide pour ne pas changer):"
-        ).ask()
 
         new_first_name = questionary.text(
             "Nouveau Prénom (laisser vide pour ne pas changer):"
@@ -303,6 +300,9 @@ class UserView:
 
         new_last_name = questionary.text(
             "Nouveau Nom (laisser vide pour ne pas changer):"
+        ).ask()
+        new_password = questionary.text(
+            "Nouveau mot de passe (laisser vide pour ne pas changer):"
         ).ask()
         return new_first_name, new_last_name, new_password
 

@@ -65,35 +65,6 @@ class ContractBase:
         session.commit()
         return contract
 
-    @sentry_activate
-    @is_authenticated
-    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
-    def get_contract(self, contract_id):
-        """
-        Permet de retrouver un contrat via son ID.
-
-        Paramètres :
-        ------------
-        contract_id : int
-            L'ID du contrat à retrouver.
-
-        Retourne :
-        ----------
-        Contract : Le contrat correspondant à l'ID, ou None s'il n'existe pas.
-        """
-        return self.session.query(Contract).filter_by(contract_id=contract_id).first()
-
-    @sentry_activate
-    @is_authenticated
-    def get_all_contracts(self):
-        """
-        Permet de retourner la liste de tous les contrats.
-
-        Retourne :
-        ----------
-        list[Contract] : La liste de tous les contrats.
-        """
-        return self.session.query(Contract).all()
 
     @sentry_activate
     @is_authenticated
@@ -122,55 +93,6 @@ class ContractBase:
             setattr(contract, key, value)
 
         session.commit()
-
-    @sentry_activate
-    @is_authenticated
-    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
-    def find_by_customer(self, customer_id):
-        """
-        Permet de retrouver les contrats affiliés à un client spécifique.
-
-        Paramètres :
-        ------------
-        customer_id : int
-            L'ID du client pour lequel retrouver les contrats.
-
-        Retourne :
-        ----------
-        list[Contract] : La liste des contrats du client.
-        """
-        return self.session.query(Contract).filter_by(customer_id=customer_id).all()
-
-    @sentry_activate
-    @is_authenticated
-    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
-    def find_by_state(self, state):
-        """
-        Permet de lister les contrats en fonction de leur statut.
-
-        Paramètres :
-        ------------
-        state : str
-            Le statut des contrats à retrouver (par exemple, 'C' pour créé, 'S' pour signé).
-
-        Retourne :
-        ----------
-        list[Contract] : La liste des contrats correspondant au statut donné.
-        """
-        return self.session.query(Contract).filter_by(state=state).all()
-
-    @sentry_activate
-    @is_authenticated
-    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
-    def state_signed(self):
-        """
-        Permet de lister tous les contrats qui sont signés.
-
-        Retourne :
-        ----------
-        list[Contract] : La liste des contrats signés.
-        """
-        return self.session.query(Contract).filter_by(state="S").all()
 
     @sentry_activate
     @is_authenticated

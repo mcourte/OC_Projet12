@@ -1,4 +1,4 @@
-from models.entities import Customer, Contract
+from models.entities import Customer
 from datetime import datetime
 from controllers.decorator import is_authenticated, requires_roles, sentry_activate
 from views.customer_view import CustomerView
@@ -55,37 +55,6 @@ class CustomerBase:
     @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
-    def get_customer(self, cname: str, session) -> list[Customer]:
-        """
-        Récupère la liste des clients selon le nom du commercial.
-
-        Paramètres :
-        ------------
-        cname (str) : Nom du commercial.
-        session (Session) : La session SQLAlchemy à utiliser.
-
-        Retourne :
-        ----------
-        List[Customer] : Liste des clients associés.
-        """
-        # Exemple d'utilisation de session pour une requête
-        return session.query(Customer).filter(Customer.last_name == cname).all()
-
-    @sentry_activate
-    @is_authenticated
-    def get_all_customers(self):
-        """
-        Permet de retourner la liste de tous les clients.
-
-        Retourne :
-        ----------
-        list[Customer] : La liste de tous les clients.
-        """
-        return self.session.query(Customer).all()
-
-    @sentry_activate
-    @is_authenticated
-    @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def update_customer(self, session, customer_id):
         """
         Permet de mettre à jour le profil d'un client via son ID.
@@ -111,19 +80,6 @@ class CustomerBase:
             setattr(customer, key, value)
 
         session.commit()
-
-    @sentry_activate
-    @is_authenticated
-    @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
-    def find_without_contract(self):
-        """
-        Permet de lister tous les clients qui n'ont pas de contrat associé.
-
-        Retourne :
-        ----------
-        list[Customer] : La liste des clients sans contrat.
-        """
-        return self.session.query(Customer).outerjoin(Customer.contracts).filter(Contract.customer_id.is_(None)).all()
 
     @classmethod
     @sentry_activate

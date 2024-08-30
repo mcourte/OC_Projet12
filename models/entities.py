@@ -90,6 +90,20 @@ class EpicUser(Base):
     customers = relationship('Customer', back_populates='commercial')
     events = relationship('Event', back_populates='support', primaryjoin="EpicUser.epicuser_id==Event.support_id")
 
+    def to_dict(self):
+        """
+        Convertit l'objet EpicUser en un dictionnaire sérialisable en JSON.
+        """
+        return {
+            'epicuser_id': self.epicuser_id,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'username': self.username,
+            'email': self.email,
+            'role': self.role.code if hasattr(self.role, 'code') else str(self.role),
+            'state': self.state.code if hasattr(self.state, 'code') else str(self.state),
+        }
+
     @classmethod
     def generate_unique_username(cls, session, first_name, last_name):
         """

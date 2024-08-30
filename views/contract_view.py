@@ -46,21 +46,39 @@ class ContractView:
         table.add_column("Statut", justify="center", style="cyan", header_style="bold cyan")
         table.add_column("Commercial", justify="center", style="cyan", header_style="bold cyan")
         table.add_column("Gestionnaire_id", justify="center", style="cyan", header_style="bold cyan")
+
         for c in all_contracts:
-            client_name = f"{c.customer.first_name} {c.customer.last_name}".strip()
-            table.add_row(
-                c.description, client_name,
-                str(c.total_amount), str(c.remaining_amount or "0"),
-                c.state.value,
-                str(c.customer.commercial.username),
-                str(c.gestion_id)
-            )
+            try:
+                client_name = f"{c.customer.first_name} {c.customer.last_name}".strip()
+                remaining_amount = str(c.remaining_amount) if c.remaining_amount is not None else "0"
+                commercial_username = str(c.customer.commercial.username) if c.customer and c.customer.commercial else ""
+                gestion_id = str(c.gestion_id) if c.gestion_id is not None else ""
+
+                # Affichage des informations pour le débogage
+                print(f"Description: {c.description}, Client: {client_name}, Montant: {c.total_amount}, "
+                      "Reste dû: {remaining_amount}, Statut: {c.state.value}, Commercial: {commercial_username},"
+                      " Gestionnaire_id: {gestion_id}")
+
+                table.add_row(
+                    c.description,
+                    client_name,
+                    str(c.total_amount),
+                    remaining_amount,
+                    c.state.value,
+                    commercial_username,
+                    gestion_id
+                )
+            except AttributeError as e:
+                print(f"Erreur d'attribut manquant pour un contrat : {e}")
+            except Exception as e:
+                print(f"Erreur inattendue lors du traitement des contrats : {e}")
 
         if pager:
             with console.pager():
                 console.print(table)
         else:
             console.print(table)
+
         # Après l'affichage de la liste, demander à l'utilisateur de continuer
         print("\nAppuyez sur Entrée pour continuer...")
         input()
@@ -218,6 +236,7 @@ class ContractView:
             raise KeyboardInterrupt
         return {'paiement_id': ref, 'amount': amount}
 
+    @classmethod
     def prompt_confirm_contract_state(cls, **kwargs) -> bool:
         """
         Demande si un contrat doit être sélectionné.
@@ -240,3 +259,94 @@ class ContractView:
         """
         return questionary.confirm(
             "Souhaitez-vous ajouter un gestionnaire à ce contrat ?", **kwargs).ask()
+
+    @classmethod
+    def prompt_confirm_contract_paiement(cls, **kwargs) -> bool:
+        """
+        Demande si un contrat doit être sélectionné.
+
+        Retourne :
+        -----------
+        bool : True si un contrat doit être sélectionné, sinon False.
+        """
+        return questionary.confirm(
+            "Souhaitez-vous trier les contrats par solde?", **kwargs).ask()
+
+    @classmethod
+    def prompt_choose_paiement_state(cls) -> str:
+        """
+        Demande à l'utilisateur de sélectionner un employé dans une liste.
+
+        Args:
+            all_users (list): Liste des noms d'employés.
+
+        Returns:
+            str: Nom de l'employé sélectionné.
+        """
+        paiement_state = ["Contrats soldés", "Contrats non soldés"]
+        return questionary.select(
+            "Sélectionnez l'état de paiement:",
+            choices=paiement_state
+        ).ask()
+
+    @classmethod
+    def prompt_confirm_filtered_contract(cls, **kwargs) -> bool:
+        """
+        Demande si un contrat doit être sélectionné.
+
+        Retourne :
+        -----------
+        bool : True si un contrat doit être sélectionné, sinon False.
+        """
+        return questionary.confirm(
+            "Souhaitez-vous voir uniquement les contrats qui vous sont affectés?", **kwargs).ask()
+
+    @classmethod
+    def prompt_choose_state(cls) -> str:
+        """
+        Demande à l'utilisateur de sélectionner un employé dans une liste.
+
+        Args:
+            all_users (list): Liste des noms d'employés.
+
+        Returns:
+            str: Nom de l'employé sélectionné.
+        """
+        paiement_state = ["Contrats signés", "Contrats non signés"]
+        return questionary.select(
+            "Sélectionnez le type de contrat :",
+            choices=paiement_state
+        ).ask()
+
+    @classmethod
+    def prompt_confirm_customer(cls, **kwargs) -> bool:
+        """
+        Demande si un contrat doit être sélectionné.
+
+        Retourne :
+        -----------
+        bool : True si un contrat doit être sélectionné, sinon False.
+        """
+        return questionary.confirm(
+            "Souhaitez-vous choisir un client?", **kwargs).ask()
+
+    @classmethod
+    def menu_update_contract(cls, state):
+        """
+        Affiche le menu pour la mise à jour d'un contrat en fonction de son état et demande une sélection.
+
+        Args:
+            state (str): L'état actuel du contrat.
+
+        Returns:
+            int: L'index du choix sélectionné (1 pour "Enregistrer un paiement",
+            2 pour "Modifier les données du contrat", etc.).
+        """
+        menu_text = [
+            'Modifier les données du contrat']
+        menu_text.append('Signer le contrat')
+        choice = questionary.select("Que voulez-vous faire ?",
+                                    choices=menu_text).ask()
+        if choice is None:
+            raise KeyboardInterrupt
+        return menu_text.index(choice) + 1

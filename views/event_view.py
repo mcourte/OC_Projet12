@@ -301,3 +301,29 @@ class EventView:
         """
         return questionary.confirm(
             "Souhaitez-vous ajouter un support à cet évenènement ?", **kwargs).ask()
+
+    @classmethod
+    def prompt_filtered_events_gestion(cls, **kwargs) -> bool:
+        """
+        Demande si un contrat doit être sélectionné.
+
+        Retourne :
+        -----------
+        bool : True si un contrat doit être sélectionné, sinon False.
+        """
+        return questionary.confirm(
+            "Souhaitez-vous voir la totalité des évènements (Y) ou "
+            "uniquement ceux qui n'ont pas de support associés (n)  ?", **kwargs).ask()
+
+    @classmethod
+    def prompt_filtered_events_support(cls, **kwargs) -> bool:
+        """
+        Demande si un contrat doit être sélectionné.
+
+        Retourne :
+        -----------
+        bool : True si un contrat doit être sélectionné, sinon False.
+        """
+        return questionary.confirm(
+            "Souhaitez-vous voir la totalité des évènements (Y) ou "
+            "uniquement ceux qui vous sont associés (n)  ?", **kwargs).ask()

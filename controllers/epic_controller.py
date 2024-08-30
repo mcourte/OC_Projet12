@@ -4,7 +4,7 @@ import sys
 from controllers.config import Config, Environ
 from controllers.database_controller import EpicDatabase
 from terminal.terminal_user import EpicTerminalUser, EpicUser
-from controllers.session import load_session, stop_session, create_session, save_session, get_current_user
+from controllers.session import load_session, clear_session, create_session, save_session, get_current_user
 from controllers.session import create_token
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
@@ -33,7 +33,7 @@ class EpicBase:
         self.epic.users = EpicTerminalUser(self.epic, self.epic.session, self.current_user)
 
         # Obtenez et affichez le utilisateur actuel pour débogage
-        self.current_user = get_current_user(self.session)
+        self.current_user = get_current_user()
         if self.current_user:
             text = f"Utilisateur actuel dans EpicBase : {self.current_user}"
             console.print(text, style="green")
@@ -73,16 +73,20 @@ class EpicBase:
         bool : True si la connexion est réussie, sinon False.
         """
         try:
-            stop_session()
+            clear_session()
 
             username, password = AuthenticationView.prompt_login(**kwargs)
             user_data = self.epic.check_connection(username, password)
 
-            if user_data and hasattr(user_data, 'username') and hasattr(user_data, 'role'):
+            if user_data and hasattr(user_data, 'to_dict'):
                 self.current_user = user_data
 
-                token = create_token(user_data, self.env.SECRET_KEY)
-                create_session(user_data, token)
+                # Convertir l'utilisateur en dictionnaire
+                user_dict = user_data.to_dict()
+
+                token = create_token(user_dict, self.env.SECRET_KEY)
+                create_session(user_dict, token)
+
                 text = "Connexion réussie"
                 console.print(text, style="bold blue")
                 return True
@@ -149,7 +153,7 @@ class EpicBase:
         Demande à l'utilisateur de saisir les informations nécessaires pour la configuration,
         puis crée la base de données et la configure.
         """
-        stop_session()
+        clear_session()
         values = AuthenticationView.prompt_baseinit()  # Suppose (database, username, password, port)
         Config().create_config(*values)  # Appelle create_config avec les arguments appropriés
         db = Config()  # Charge la configuration

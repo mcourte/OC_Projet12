@@ -13,7 +13,8 @@ from controllers.user_controller import EpicUserBase, EpicUser
 from controllers.customer_controller import CustomerBase
 from views.user_view import UserView
 from views.customer_view import CustomerView
-from models.entities import Customer
+from models.entities import Customer, Commercial
+from views.console_view import console
 
 
 class EpicTerminalCustomer:
@@ -52,7 +53,8 @@ class EpicTerminalCustomer:
         customers = session.query(Customer).join(Customer.commercial).filter(EpicUser.username == commercial_username).all()
 
         if not customers:
-            print("Aucun client n'est associé à ce commercial.")
+            text = "Aucun client n'est associé à ce commercial."
+            console.print(text, style="bold red")
             return None
 
         # Afficher la liste des clients pour sélection
@@ -72,13 +74,14 @@ class EpicTerminalCustomer:
         """
         customers = session.query(Customer).all()
         if not customers:
-            print("Aucun client sélectionné. Retour au menu principal.")
+            text = "Aucun client existant. Retour au menu principal."
+            console.print(text, style="red")
             return
         CustomerView.display_list_customers(customers)
 
     @sentry_activate
     @is_authenticated
-    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion', 'COM', 'Commercial')
     def update_customer_commercial(self, session) -> None:
         """
         Met à jour le commercial attribué à un client.
@@ -91,7 +94,8 @@ class EpicTerminalCustomer:
         """
         # Vérifiez si la session est correctement initialisée
         if session is None:
-            print("Erreur : La session est non initialisée.")
+            text = "Erreur : La session est non initialisée."
+            console.print(text, style="bold red")
             return
 
         # Récupérer tous les clients
@@ -101,7 +105,8 @@ class EpicTerminalCustomer:
         # Demander à l'utilisateur de sélectionner un client
         selected_customer_id = CustomerView.prompt_client(customers_data)
         if not selected_customer_id:
-            print("Erreur : Aucun client sélectionné.")
+            text = "Erreur : Aucun client sélectionné."
+            console.print(text, style="red")
             return
 
         # Récupérer tous les commerciaux
@@ -111,18 +116,21 @@ class EpicTerminalCustomer:
         # Demander à l'utilisateur de sélectionner un commercial
         selected_commercial_username = UserView.prompt_commercial(commercial_usernames)
         if not selected_commercial_username:
-            print("Erreur : Aucun commercial sélectionné.")
+            text = "Erreur : Aucun commercial sélectionné."
+            console.print(text, style="bold red")
             return
 
         # Récupérer l'ID du commercial sélectionné
         selected_commercial = session.query(EpicUser).filter_by(username=selected_commercial_username).first()
         if not selected_commercial:
-            print("Erreur : Le commercial sélectionné n'existe pas.")
+            text = "Erreur : Le commercial sélectionné n'existe pas."
+            console.print(text, style="bold red")
             return
 
         # Mettre à jour le commercial du client
         CustomerBase.update_commercial_customer(self.current_user, session, selected_customer_id, selected_commercial.epicuser_id)
-        print(f"Le commercial {selected_commercial.username} a été attribué au client {selected_customer_id} avec succès.")
+        text = f"Le commercial {selected_commercial.username} a été attribué au client {selected_customer_id} avec succès."
+        console.print(text, style="cyan")
 
     @sentry_activate
     @is_authenticated
@@ -134,12 +142,21 @@ class EpicTerminalCustomer:
         - Sélectionner un gestionnaire aléatoire
         - Envoyer une tâche au gestionnaire pour créer le contrat.
         """
+        if not self.current_user:
+            text = "Erreur : Utilisateur non connecté ou non valide."
+            console.print(text, style="bold red")
+            return
+
         roles = EpicUserBase.get_roles(self)
         self.roles = roles
         data = CustomerView.prompt_data_customer()
-        customer = CustomerBase.create_customer(self.current_user, session, data)
-        if CustomerView.prompt_confirm_commercial():
-            EpicTerminalCustomer.add_customer_commercial(self, session, customer)
+        if self.current_user.role == 'COM':
+            if isinstance(self.current_user, Commercial):
+                data['commercial_id'] = self.current_user.epicuser_id
+                customer = CustomerBase.create_customer(self.current_user, session, data)
+        else:
+            if CustomerView.prompt_confirm_commercial():
+                EpicTerminalCustomer.add_customer_commercial(self, session, customer)
 
     @sentry_activate
     @is_authenticated
@@ -155,12 +172,14 @@ class EpicTerminalCustomer:
         """
         # Vérifiez si la session est correctement initialisée
         if session is None:
-            print("Erreur : La session est non initialisée.")
+            text = "Erreur : La session est non initialisée."
+            console.print(text, style="bold red")
             return
 
         # Vérifiez si l'utilisateur actuel est correctement défini
         if self.current_user is None:
-            print("Erreur : Utilisateur non connecté.")
+            text = "Erreur : Utilisateur non connecté."
+            console.print(text, style="bold red")
             return
 
         roles = EpicUserBase.get_roles(self)
@@ -172,14 +191,16 @@ class EpicTerminalCustomer:
 
         # Vérifiez s'il y a des clients associés
         if not customers_data:
-            print("Aucun client trouvé pour ce commercial.")
+            text = "Aucun client trouvé pour ce commercial."
+            console.print(text, style="red")
             return
 
         selected_customer_id = CustomerView.prompt_client(customers_data)
 
         # Vérifiez si l'ID du client sélectionné est valide
         if selected_customer_id is None:
-            print("Erreur : Aucune sélection de client.")
+            text = "Erreur : Aucune sélection de client."
+            console.print(text, style="red")
             return
 
         # Rechercher le client par ID
@@ -188,9 +209,10 @@ class EpicTerminalCustomer:
             # Utilisation des attributs de l'objet client
             title = f"Données du client {customer}"
             # Afficher ou manipuler les données du client
-            print(title)
+            console.print(title, style="bold cyan")
         else:
-            print("Aucun client trouvé avec cet ID.")
+            text = "Aucun client trouvé avec cet ID."
+            console.print(text, style="red")
             return  # Sortir si le client n'existe pas
 
         # Mettre à jour le client avec les nouvelles données
@@ -198,7 +220,7 @@ class EpicTerminalCustomer:
 
     @sentry_activate
     @is_authenticated
-    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion', 'COM', 'Commerical')
     def add_customer_commercial(self, session, customer) -> None:
         """
         Met à jour le commercial attribué à un client.
@@ -211,7 +233,8 @@ class EpicTerminalCustomer:
         """
         # Vérifiez si la session est correctement initialisée
         if session is None:
-            print("Erreur : La session est non initialisée.")
+            text = "Erreur : La session est non initialisée."
+            console.print(text, style="bold red")
             return
 
         # Récupérer tous les commerciaux
@@ -221,15 +244,18 @@ class EpicTerminalCustomer:
         # Demander à l'utilisateur de sélectionner un commercial
         selected_commercial_username = UserView.prompt_commercial(commercial_usernames)
         if not selected_commercial_username:
-            print("Erreur : Aucun commercial sélectionné.")
+            text = "Erreur : Aucun commercial sélectionné."
+            console.print(text, style="bold red")
             return
 
         # Récupérer l'ID du commercial sélectionné
         selected_commercial = session.query(EpicUser).filter_by(username=selected_commercial_username).first()
         if not selected_commercial:
-            print("Erreur : Le commercial sélectionné n'existe pas.")
+            text = "Erreur : Le commercial sélectionné n'existe pas."
+            console.print(text, style="bold red")
             return
 
         # Mettre à jour le commercial du client
         CustomerBase.update_commercial_customer(self.current_user, session, customer.customer_id, selected_commercial.epicuser_id)
-        print(f"Le commercial {selected_commercial.username} a été attribué au client {customer} avec succès.")
+        text = f"Le commercial {selected_commercial.username} a été attribué au client {customer} avec succès."
+        console.print(text, style="cyan")

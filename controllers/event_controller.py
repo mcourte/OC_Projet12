@@ -59,35 +59,6 @@ class EventBase:
 
     @sentry_activate
     @is_authenticated
-    @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
-    def get_event(self, event_id):
-        """
-        Récupère un événement à partir de son ID.
-
-        Paramètres :
-        ------------
-        event_id (int) : ID de l'événement à récupérer.
-
-        Retourne :
-        ----------
-        Event : L'événement correspondant à l'ID, ou None si l'événement n'existe pas.
-        """
-        return self.session.query(Event).filter_by(event_id=event_id).first()
-
-    @sentry_activate
-    @is_authenticated
-    def get_all_events(self):
-        """
-        Récupère tous les événements de la base de données.
-
-        Retourne :
-        ----------
-        list : Liste de tous les événements.
-        """
-        return self.session.query(Event).all()
-
-    @sentry_activate
-    @is_authenticated
     @requires_roles('ADM', 'COM', 'GES', 'Admin', 'Commercial', 'Gestion')
     def update_event(self, event_id, data):
         """

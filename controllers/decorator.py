@@ -13,8 +13,9 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-from config_init import SECRET_KEY
 from views.error_view import ErrorView
+from controllers.session import ALGORITHM, SECRET_KEY
+from models.entities import EpicUser
 
 
 def sentry_activate(f):
@@ -32,7 +33,7 @@ def is_commercial(f):
     @wraps(f)
     def decorator(*args, **kwargs):
         try:
-            role_code = decode_token(load_session(), SECRET_KEY).get('role')
+            role_code = decode_token(load_session(), SECRET_KEY, ALGORITHM).get('role')
             print(f"Rôle de l'utilisateur : {role_code}")  # Debugging
             if role_code in {'COM', 'ADM', 'Commercial', 'Admin'}:
                 return f(*args, **kwargs)
@@ -49,7 +50,7 @@ def is_support(f):
     @wraps(f)
     def decorator(*args, **kwargs):
         try:
-            role_code = decode_token(load_session(), SECRET_KEY).get('role')
+            role_code = decode_token(load_session(), SECRET_KEY, ALGORITHM).get('role')
             if role_code in {'SUP', 'ADM', 'Support', 'Admin'}:
                 return f(*args, **kwargs)
             else:
@@ -65,16 +66,40 @@ def is_authenticated(f):
     @wraps(f)
     def decorator(cls, session, *args, **kwargs):
         token = load_session()
-        if token is None:
+        if not token:
+            print("Erreur : Aucun jeton trouvé dans la session.")
             raise PermissionError("Token not found")
+
         try:
-            decoded = decode_token(token, SECRET_KEY)
-            if decoded:
-                return f(cls, session, *args, **kwargs)
-            else:
+            decoded = decode_token(token, SECRET_KEY, ALGORITHM)
+            if not decoded or 'username' not in decoded:
+                print("Erreur : Le jeton est invalide ou incomplet.")
                 raise PermissionError("Token invalid")
+
+            # Cherchez l'utilisateur dans la base de données
+            user = session.query(EpicUser).filter_by(username=decoded['username']).one_or_none()
+            if user is None:
+                print(f"Erreur : Utilisateur {decoded['username']} non trouvé.")
+                raise PermissionError("User not found")
+
+            if user.state != 'A':
+                print("Erreur : Utilisateur inactif.")
+                raise PermissionError("User inactive")
+
+            # Assurez-vous de définir self.current_user
+            cls.current_user = user
+            return f(cls, session, *args, **kwargs)
+        except jwt.ExpiredSignatureError:
+            print("Erreur : Le jeton a expiré.")
+            raise PermissionError("Token expired")
+        except jwt.InvalidTokenError as e:
+            print(f"Erreur : {e}")
+            raise PermissionError("Token invalid")
         except PermissionError as e:
-            print(e)
+            print(f"Erreur de permission : {e}")
+            raise
+        except Exception as e:
+            print(f"Erreur inattendue : {e}")
             raise
     return decorator
 
@@ -86,7 +111,7 @@ def is_admin(f):
         if token is None:
             raise PermissionError("Token not found")
         try:
-            decoded = decode_token(token, SECRET_KEY)
+            decoded = decode_token(token, SECRET_KEY, ALGORITHM)
             if decoded.get('role') in {'ADM', 'Admin'}:
                 return f(cls, session, *args, **kwargs)
             else:
@@ -104,7 +129,7 @@ def is_gestion(f):
         if token is None:
             raise PermissionError("Token not found")
         try:
-            decoded = decode_token(token, SECRET_KEY)
+            decoded = decode_token(token, SECRET_KEY, ALGORITHM)
             if decoded.get('role') in {'GES', 'ADM', 'Gestion', 'Admin'}:
                 return f(cls, session, *args, **kwargs)
             else:
@@ -127,7 +152,7 @@ def requires_roles(*roles):
                 raise PermissionError("Token not found")
 
             try:
-                decoded = decode_token(token, SECRET_KEY)
+                decoded = decode_token(token, SECRET_KEY, ALGORITHM)
                 user_role = decoded.get('role')
                 if user_role not in roles:
                     raise PermissionError(f"PermissionError: User role is {user_role}, required one of {roles}")
@@ -146,7 +171,7 @@ def token_required(f):
         if not token:
             raise ValueError("Token not found")
         try:
-            decoded = decode_token(token, SECRET_KEY)
+            decoded = decode_token(token, SECRET_KEY, ALGORITHM)
             return f(decoded, *args, **kwargs)
         except PermissionError as e:
             print(e)
@@ -168,7 +193,7 @@ def decorator(f):
                 raise ValueError("Token must be a string")
 
             # Décoder le token en utilisant jwt.decode
-            decoded_token = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+            decoded_token = decode_token(token, SECRET_KEY, ALGORITHM)
 
             # Vérification des permissions ici
             if decoded_token.get('role') not in ['ADM', 'GES', 'SUP', 'COM']:

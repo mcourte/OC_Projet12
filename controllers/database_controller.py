@@ -34,8 +34,7 @@ class EpicDatabase:
         self.url = f'postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}'
         self.engine = create_engine(self.url)
         self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
-        self.name = database
-        self.session = scoped_session(sessionmaker(bind=self.engine))
+        self.session = scoped_session(self.SessionLocal)  # Use scoped_session here
 
         if database_exists(self.url):
             text = f"Connexion à la base de données {database} réussie."
@@ -43,10 +42,8 @@ class EpicDatabase:
         else:
             text = 'Erreur de connexion à la base de données'
             console.print(text, style="bold red")
-
-        # Vous devez maintenant passer un utilisateur valide lors de l'instanciation
+        self.name = database
         self.current_user = None
-        # Passer self.engine et self.session correctement
         self.users = EpicTerminalUser(self.engine, self.session)
         self.customers = EpicTerminalCustomer(self.engine, self.session, self.current_user)
         self.contracts = EpicTerminalContract(self.engine, self.session)
@@ -98,7 +95,7 @@ class EpicDatabase:
         ----------
         EpicUser : L'utilisateur correspondant si la connexion est réussie.
         """
-        user = EpicUser.find_by_username(self.session, username)
+        user = self.session.query(EpicUser).filter_by(username=username).first()
         if user:
             try:
                 if user.check_password(password):
