@@ -1,3 +1,4 @@
+# Import générauw
 import os
 import sys
 
@@ -8,29 +9,36 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
+
+# Import Controllers
 from controllers.decorator import is_authenticated, requires_roles, sentry_activate
 from controllers.user_controller import EpicUserBase, EpicUser
 from controllers.customer_controller import CustomerBase
+
+# Import Modèles
+from models.entities import Customer, Commercial
+
+# Import Views
 from views.user_view import UserView
 from views.customer_view import CustomerView
-from models.entities import Customer, Commercial
 from views.console_view import console
 
 
 class EpicTerminalCustomer:
     """
     Classe pour gérer les clients depuis l'interface terminal.
+
+    Cette classe fournit des méthodes pour afficher, créer, mettre à jour les clients,
+    et gérer leur attribution aux commerciaux.
     """
 
     def __init__(self, base, session, current_user):
         """
         Initialise la classe EpicTerminalCustomer avec l'utilisateur et la base de données.
 
-        Paramètres :
-        ------------
-        base (EpicDatabase) : L'objet EpicDatabase pour accéder aux opérations de la base de données.
-        session (Session) : La session de base de données pour effectuer des requêtes.
-        current_user (EpicUser) : L'utilisateur actuellement connecté.
+        :param base: L'objet EpicDatabase pour accéder aux opérations de la base de données.
+        :param session: La session SQLAlchemy pour effectuer des requêtes.
+        :param current_user: L'utilisateur actuellement connecté.
         """
         self.epic = base
         self.session = session
@@ -40,14 +48,10 @@ class EpicTerminalCustomer:
         """
         Permet à l'utilisateur de choisir un client parmi ceux affectés au commercial sélectionné.
 
-        Arguments :
-        -----------
-        session (Session) : Session SQLAlchemy pour interagir avec la base de données.
-        commercial_username (str) : Nom d'utilisateur du commercial.
+        :param session: Session SQLAlchemy pour interagir avec la base de données.
+        :param commercial_username: Nom d'utilisateur du commercial.
 
-        Retourne :
-        -----------
-        str : Nom complet du client sélectionné ou None si aucun client n'est sélectionné.
+        :return: Nom complet du client sélectionné ou None si aucun client n'est sélectionné.
         """
         # Joindre le modèle Customer au modèle User et filtrer par le nom d'utilisateur du commercial
         customers = session.query(Customer).join(Customer.commercial).filter(EpicUser.username == commercial_username).all()
@@ -66,11 +70,13 @@ class EpicTerminalCustomer:
     @is_authenticated
     def list_of_customers(self, session) -> None:
         """
-        Affiche la liste des contrats en permettant de :
+        Affiche la liste des clients en permettant de :
         - Sélectionner un commercial
         - Sélectionner un client parmi ceux affectés au commercial
         - Sélectionner un état
-        - Lire la base de données et afficher les contrats.
+        - Lire la base de données et afficher les clients.
+
+        Cette méthode récupère tous les clients et les affiche.
         """
         customers = session.query(Customer).all()
         if not customers:
@@ -86,11 +92,13 @@ class EpicTerminalCustomer:
         """
         Met à jour le commercial attribué à un client.
 
-        Cette fonction permet de :
+        Cette méthode permet de :
         - Sélectionner un client.
         - Sélectionner un commercial.
         - Attribuer le commercial sélectionné au client sélectionné.
         - Mettre à jour la base de données.
+
+        :param session: Session SQLAlchemy pour interagir avec la base de données.
         """
         # Vérifiez si la session est correctement initialisée
         if session is None:
@@ -98,7 +106,7 @@ class EpicTerminalCustomer:
             console.print(text, style="bold red")
             return
 
-        # Récupérer tous les clients
+        # Récupérer tous les clients sans commercial
         customers = session.query(Customer).filter_by(commercial_id=None).all()
         customers_data = [{"name": f"{c.first_name} {c.last_name}", "value": c.customer_id} for c in customers]
 
@@ -141,6 +149,8 @@ class EpicTerminalCustomer:
         - Saisir les données du client
         - Sélectionner un gestionnaire aléatoire
         - Envoyer une tâche au gestionnaire pour créer le contrat.
+
+        :param session: Session SQLAlchemy pour interagir avec la base de données.
         """
         if not self.current_user:
             text = "Erreur : Utilisateur non connecté ou non valide."
@@ -164,11 +174,13 @@ class EpicTerminalCustomer:
     def update_customer(self, session):
         """
         Met à jour les informations d'un client en permettant de :
-        - Sélectionner un client parmi ceux de la liste de l'utilisateur
+        - Sélectionner un client parmi ceux associés à l'utilisateur
         - Afficher les informations du client
         - Saisir les nouvelles données
         - Mettre à jour la base de données
         - Afficher les nouvelles informations du client.
+
+        :param session: Session SQLAlchemy pour interagir avec la base de données.
         """
         # Vérifiez si la session est correctement initialisée
         if session is None:
@@ -220,16 +232,19 @@ class EpicTerminalCustomer:
 
     @sentry_activate
     @is_authenticated
-    @requires_roles('ADM', 'GES', 'Admin', 'Gestion', 'COM', 'Commerical')
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion', 'COM', 'Commercial')
     def add_customer_commercial(self, session, customer) -> None:
         """
         Met à jour le commercial attribué à un client.
 
-        Cette fonction permet de :
+        Cette méthode permet de :
         - Sélectionner un client.
         - Sélectionner un commercial.
         - Attribuer le commercial sélectionné au client sélectionné.
         - Mettre à jour la base de données.
+
+        :param session: Session SQLAlchemy pour interagir avec la base de données.
+        :param customer: L'objet client pour lequel le commercial doit être mis à jour.
         """
         # Vérifiez si la session est correctement initialisée
         if session is None:

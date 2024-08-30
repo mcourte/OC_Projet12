@@ -1,3 +1,4 @@
+# Import généraux
 import os
 import sys
 
@@ -9,10 +10,13 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-from controllers.epic_controller import EpicDatabase
 
+# Import Controllers
+from controllers.epic_controller import EpicDatabase
 from controllers.config import Config
 from controllers.session import clear_session
+
+# Import Views
 from views.authentication_view import AuthenticationView
 from views.menu_view import MenuView
 from views.console_view import console

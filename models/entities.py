@@ -12,6 +12,7 @@ from argon2.exceptions import VerifyMismatchError
 from datetime import datetime
 from sqlalchemy.orm import object_session
 from unidecode import unidecode
+
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
@@ -55,6 +56,8 @@ class EpicUser(Base):
         Liste des clients associés à l'utilisateur en tant que commercial.
     events : relationship
         Liste des événements associés à l'utilisateur en tant que support.
+    contracts : relationship
+        Liste des contrats associés à l'utilisateur en tant que gestionnaire.
     """
 
     __tablename__ = 'epic_users'
@@ -89,6 +92,8 @@ class EpicUser(Base):
     # Relation entre les classes
     customers = relationship('Customer', back_populates='commercial')
     events = relationship('Event', back_populates='support', primaryjoin="EpicUser.epicuser_id==Event.support_id")
+    contracts = relationship('Contract', foreign_keys='Contract.gestion_id', back_populates='gestionnaire')
+    commercial_contracts = relationship('Contract', foreign_keys='Contract.commercial_id', back_populates='commercial')
 
     def to_dict(self):
         """
@@ -263,7 +268,7 @@ class EpicUser(Base):
         self.notify_gestion("Réaffectation des contrats du gestionnaire inactif terminée.")
 
     def reassign_events(self):
-        """Réaffecte les contrats d'un support inactif à un autre support."""
+        """Réaffecte les événements d'un support inactif à un autre support."""
         new_support = self.find_alternate_support()
         for event in self.events:
             event.support_id = new_support.epicuser_id
@@ -271,11 +276,11 @@ class EpicUser(Base):
         session.commit()
 
         # Envoyer une notification au gestionnaire
-        self.notify_gestion("Réaffectation des évènements du support inactif terminée.")
+        self.notify_gestion("Réaffectation des événements du support inactif terminée.")
 
     def notify_gestion_to_reassign_user(self):
         """Notifier le gestionnaire pour réaffecter les événements du support inactif."""
-        message = f"L'user {self.username} est inactif. Veuillez réaffecter ses clients/contrats/évènement."
+        message = f"L'utilisateur {self.username} est inactif. Veuillez réaffecter ses clients/contrats/événements."
         self.notify_gestion(message)
 
     def find_alternate_commercial(self):
@@ -289,7 +294,7 @@ class EpicUser(Base):
         return session.query(EpicUser).filter_by(role='GES', state='A').first()
 
     def find_alternate_support(self):
-        """Trouver un autre support pour réaffecter les évènements."""
+        """Trouver un autre support pour réaffecter les événements."""
         session = object_session(self)
         return session.query(EpicUser).filter_by(role='SUP', state='A').first()
 
@@ -488,6 +493,8 @@ class Contract(Base):
     customer = relationship('Customer', back_populates='contracts')
     events = relationship('Event', back_populates='contract')
     paiements = relationship('Paiement', back_populates='contract', lazy='joined')
+    commercial = relationship('EpicUser', foreign_keys=[commercial_id], back_populates='commercial_contracts')
+    gestionnaire = relationship('EpicUser', foreign_keys=[gestion_id], back_populates='contracts')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

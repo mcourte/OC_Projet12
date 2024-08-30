@@ -14,7 +14,6 @@ sys.path.insert(0, parent_dir)
 
 from views.console_view import console
 from views.regexformat import regexformat
-from controllers.contract_controller import Contract
 
 
 class ContractView:
@@ -27,12 +26,11 @@ class ContractView:
         """
         Affiche la liste des contrats.
 
-        Paramètres :
-        ------------
-        all_contracts (list) : Liste des instances de contrat.
-        pager (bool, optionnel) : Indique si le pager est utilisé. Par défaut à True.
+        :param all_contracts: Liste des instances de contrat.
+        :type all_contracts: list
+        :param pager: Indique si le pager est utilisé. Par défaut à False.
+        :type pager: bool, optionnel
         """
-
         table = Table(
             title="Liste des Contrats",
             box=box.SQUARE,
@@ -54,11 +52,6 @@ class ContractView:
                 commercial_username = str(c.customer.commercial.username) if c.customer and c.customer.commercial else ""
                 gestion_id = str(c.gestion_id) if c.gestion_id is not None else ""
 
-                # Affichage des informations pour le débogage
-                print(f"Description: {c.description}, Client: {client_name}, Montant: {c.total_amount}, "
-                      "Reste dû: {remaining_amount}, Statut: {c.state.value}, Commercial: {commercial_username},"
-                      " Gestionnaire_id: {gestion_id}")
-
                 table.add_row(
                     c.description,
                     client_name,
@@ -69,9 +62,11 @@ class ContractView:
                     gestion_id
                 )
             except AttributeError as e:
-                print(f"Erreur d'attribut manquant pour un contrat : {e}")
+                text = f"Erreur d'attribut manquant pour un contrat : {e}"
+                console.print(text, style="bold red")
             except Exception as e:
-                print(f"Erreur inattendue lors du traitement des contrats : {e}")
+                text = f"Erreur inattendue lors du traitement des contrats : {e}"
+                console.print(text, style="bold red")
 
         if pager:
             with console.pager():
@@ -80,7 +75,8 @@ class ContractView:
             console.print(table)
 
         # Après l'affichage de la liste, demander à l'utilisateur de continuer
-        print("\nAppuyez sur Entrée pour continuer...")
+        text = "\nAppuyez sur Entrée pour continuer..."
+        console.print(text)
         input()
 
     @classmethod
@@ -88,9 +84,8 @@ class ContractView:
         """
         Affiche les informations d'un contrat spécifique.
 
-        Paramètres :
-        ------------
-        contract (Contract) : Instance du contrat à afficher.
+        :param contract: Instance du contrat à afficher.
+        :type contract: Contract
         """
         title = f"Données du contrat {contract.contract_id}"
         table = Table(title=title, box=box.SQUARE)
@@ -117,67 +112,19 @@ class ContractView:
         console.print(table)
 
     @classmethod
-    def prompt_confirm_contract(cls, **kwargs) -> bool:
-        """
-        Demande si un contrat doit être sélectionné.
-
-        Retourne :
-        -----------
-        bool : True si un contrat doit être sélectionné, sinon False.
-        """
-        return questionary.confirm(
-            "Souhaitez-vous sélectionner un contrat ?", **kwargs).ask()
-
-    @classmethod
-    def prompt_confirm_close_contract(cls, **kwargs) -> bool:
-        """
-        Demande si un contrat doit être clôturé.
-
-        Retourne :
-        -----------
-        bool : True si le contrat doit être clôturé, sinon False.
-        """
-        return questionary.confirm(
-            "Demander une clôture du contrat ?", **kwargs).ask()
-
-    @staticmethod
-    def prompt_select_statut() -> str:
-        """
-        Demande à l'utilisateur de sélectionner un statut parmi les états définis dans Contract.
-
-        Returns:
-            str: État sélectionné ou None si aucun état n'est sélectionné.
-        """
-        # Accéder directement aux états définis dans la classe Contract
-        statuts = Contract.CONTRACT_STATES
-        choices = [f"{code} {description}" for code, description in statuts]
-
-        selected_choice = questionary.select(
-            "Choix du statut:",
-            choices=choices,
-        ).ask()
-
-        if selected_choice:
-            code = selected_choice.split()[0]
-            return code
-        return None
-
-    @classmethod
     def prompt_data_contract(cls,
                              ref_required=True,
                              mt_required=True, **kwargs) -> dict:
         """
         Demande toutes les données nécessaires pour créer un contrat.
 
-        Paramètres :
-        ------------
-        ref_required (bool, optionnel) : Indique si la référence est requise. Par défaut à True.
-        mt_required (bool, optionnel) : Indique si le montant est requis. Par défaut à True.
-        **kwargs : Arguments supplémentaires pour la fonction questionary.text.
-
-        Retourne :
-        -----------
-        dict : Un dictionnaire contenant les données du contrat.
+        :param ref_required: Indique si la référence est requise. Par défaut à True.
+        :type ref_required: bool, optionnel
+        :param mt_required: Indique si le montant est requis. Par défaut à True.
+        :type mt_required: bool, optionnel
+        :param kwargs: Arguments supplémentaires pour la fonction questionary.text.
+        :return: Un dictionnaire contenant les données du contrat.
+        :rtype: dict
         """
         error_text = regexformat['3cn'][1]
         ref = questionary.text(
@@ -191,8 +138,8 @@ class ContractView:
         description = questionary.text(
             "Description:",
             validate=lambda text: True
-            if re.match(regexformat['alphanum'][0], text)
-            else regexformat['alphanum'][1], **kwargs).ask()
+            if re.match(regexformat['all_letters'][0], text)
+            else regexformat['all_letters'][1], **kwargs).ask()
 
         total_amount = questionary.text(
             "Montant:",
@@ -211,13 +158,9 @@ class ContractView:
         """
         Demande les données nécessaires pour un paiement.
 
-        Paramètres :
-        ------------
-        **kwargs : Arguments supplémentaires pour la fonction questionary.text.
-
-        Retourne :
-        -----------
-        dict : Un dictionnaire contenant la référence et le montant du paiement.
+        :param kwargs: Arguments supplémentaires pour la fonction questionary.text.
+        :return: Un dictionnaire contenant la référence et le montant du paiement.
+        :rtype: dict
         """
         ref = questionary.text(
             "Référence:",
@@ -239,23 +182,21 @@ class ContractView:
     @classmethod
     def prompt_confirm_contract_state(cls, **kwargs) -> bool:
         """
-        Demande si un contrat doit être sélectionné.
+        Demande si les contrats doivent être triés par statut.
 
-        Retourne :
-        -----------
-        bool : True si un contrat doit être sélectionné, sinon False.
+        :return: True si les contrats doivent être triés par statut, sinon False.
+        :rtype: bool
         """
         return questionary.confirm(
-            "Souhaitez-vous trier les contrats par statut?", **kwargs).ask()
+            "Souhaitez-vous trier les contrats par statut ?", **kwargs).ask()
 
     @classmethod
     def prompt_add_gestion(cls, **kwargs) -> bool:
         """
-        Demande si un contrat doit être sélectionné.
+        Demande si un gestionnaire doit être ajouté au contrat.
 
-        Retourne :
-        -----------
-        bool : True si un contrat doit être sélectionné, sinon False.
+        :return: True si un gestionnaire doit être ajouté, sinon False.
+        :rtype: bool
         """
         return questionary.confirm(
             "Souhaitez-vous ajouter un gestionnaire à ce contrat ?", **kwargs).ask()
@@ -263,25 +204,21 @@ class ContractView:
     @classmethod
     def prompt_confirm_contract_paiement(cls, **kwargs) -> bool:
         """
-        Demande si un contrat doit être sélectionné.
+        Demande si les contrats doivent être triés par solde.
 
-        Retourne :
-        -----------
-        bool : True si un contrat doit être sélectionné, sinon False.
+        :return: True si les contrats doivent être triés par solde, sinon False.
+        :rtype: bool
         """
         return questionary.confirm(
-            "Souhaitez-vous trier les contrats par solde?", **kwargs).ask()
+            "Souhaitez-vous trier les contrats par solde ?", **kwargs).ask()
 
     @classmethod
     def prompt_choose_paiement_state(cls) -> str:
         """
-        Demande à l'utilisateur de sélectionner un employé dans une liste.
+        Demande à l'utilisateur de sélectionner un état de paiement parmi les options disponibles.
 
-        Args:
-            all_users (list): Liste des noms d'employés.
-
-        Returns:
-            str: Nom de l'employé sélectionné.
+        :return: État de paiement sélectionné.
+        :rtype: str
         """
         paiement_state = ["Contrats soldés", "Contrats non soldés"]
         return questionary.select(
@@ -292,25 +229,21 @@ class ContractView:
     @classmethod
     def prompt_confirm_filtered_contract(cls, **kwargs) -> bool:
         """
-        Demande si un contrat doit être sélectionné.
+        Demande si l'utilisateur souhaite voir uniquement les contrats qui lui sont affectés.
 
-        Retourne :
-        -----------
-        bool : True si un contrat doit être sélectionné, sinon False.
+        :return: True si l'utilisateur souhaite voir uniquement les contrats qui lui sont affectés, sinon False.
+        :rtype: bool
         """
         return questionary.confirm(
-            "Souhaitez-vous voir uniquement les contrats qui vous sont affectés?", **kwargs).ask()
+            "Souhaitez-vous voir uniquement les contrats qui vous sont affectés ?", **kwargs).ask()
 
     @classmethod
     def prompt_choose_state(cls) -> str:
         """
-        Demande à l'utilisateur de sélectionner un employé dans une liste.
+        Demande à l'utilisateur de sélectionner un type de contrat parmi les options disponibles.
 
-        Args:
-            all_users (list): Liste des noms d'employés.
-
-        Returns:
-            str: Nom de l'employé sélectionné.
+        :return: Type de contrat sélectionné.
+        :rtype: str
         """
         paiement_state = ["Contrats signés", "Contrats non signés"]
         return questionary.select(
@@ -321,26 +254,23 @@ class ContractView:
     @classmethod
     def prompt_confirm_customer(cls, **kwargs) -> bool:
         """
-        Demande si un contrat doit être sélectionné.
+        Demande si l'utilisateur souhaite choisir un client.
 
-        Retourne :
-        -----------
-        bool : True si un contrat doit être sélectionné, sinon False.
+        :return: True si l'utilisateur souhaite choisir un client, sinon False.
+        :rtype: bool
         """
         return questionary.confirm(
-            "Souhaitez-vous choisir un client?", **kwargs).ask()
+            "Souhaitez-vous choisir un client ?", **kwargs).ask()
 
     @classmethod
     def menu_update_contract(cls, state):
         """
         Affiche le menu pour la mise à jour d'un contrat en fonction de son état et demande une sélection.
 
-        Args:
-            state (str): L'état actuel du contrat.
-
-        Returns:
-            int: L'index du choix sélectionné (1 pour "Enregistrer un paiement",
-            2 pour "Modifier les données du contrat", etc.).
+        :param state: L'état actuel du contrat.
+        :type state: str
+        :return: L'index du choix sélectionné (1 pour "Enregistrer un paiement", 2 pour "Modifier les données du contrat", etc.).
+        :rtype: int
         """
         menu_text = [
             'Modifier les données du contrat']

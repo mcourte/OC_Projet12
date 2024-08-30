@@ -1,10 +1,19 @@
+# Import Modèles
 from models.entities import Event
+
+# Import Controllers
 from controllers.decorator import is_authenticated, requires_roles, sentry_activate
+
+# Import Views
+from views.console_view import console
 
 
 class EventBase:
     """
     Classe pour gérer les opérations liées aux événements dans l'application.
+
+    Cette classe fournit des méthodes pour créer et mettre à jour des événements dans la base de données.
+    Elle utilise des décorateurs pour la gestion des sessions et des permissions.
     """
 
     def __init__(self, session):
@@ -75,10 +84,11 @@ class EventBase:
         """
         event = self.session.query(Event).filter_by(event_id=event_id).first()
         if not event:
-            raise ValueError("Il n'existe pas d'évènements avec cet ID")
+            raise ValueError("Il n'existe pas d'événements avec cet ID")
 
         for key, value in data.items():
             setattr(event, key, value)
 
         self.session.commit()
-        print("L'Evènement a bien été mis à jour.")
+        text = "L'événement a bien été mis à jour."
+        console.print(text, style="bold green")

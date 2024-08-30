@@ -1,3 +1,4 @@
+# Import généraux
 import os
 import sys
 
@@ -8,31 +9,39 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
+# Import Controllers
 from controllers.decorator import (is_authenticated, requires_roles, sentry_activate)
 from controllers.event_controller import EventBase, Event
 from controllers.user_controller import EpicUserBase
+
+# Import Modèles
 from models.entities import EpicUser, Commercial, Contract, Gestion, Support
+
+# Import Views
 from views.event_view import EventView
 from views.data_view import DataView
 from views.console_view import console
+from views.user_view import UserView
+
+# Import Terminaux
 from terminal.terminal_user import EpicTerminalUser
 from terminal.terminal_customer import EpicTerminalCustomer
-from views.user_view import UserView
 
 
 class EpicTerminalEvent:
     """
     Classe pour gérer les événements depuis l'interface terminal.
+
+    Cette classe fournit des méthodes pour mettre à jour, créer, afficher des événements,
+    et gérer les attributions de support.
     """
 
     def __init__(self, base, session):
         """
-        Initialise la classe EpicTerminalEvent avec l'utilisateur et la base de données.
+        Initialise la classe EpicTerminalEvent avec la base de données et la session.
 
-        Paramètres :
-        ------------
-        user (EpicUser) : L'utilisateur actuellement connecté.
-        base (EpicDatabase) : L'objet EpicDatabase pour accéder aux opérations de la base de données.
+        :param base: L'objet EpicDatabase pour accéder aux opérations de la base de données.
+        :param session: La session SQLAlchemy pour effectuer des requêtes.
         """
         self.epic = base
         self.session = session
@@ -50,13 +59,15 @@ class EpicTerminalEvent:
         - Sélectionner un contrat
         - Sélectionner un événement à mettre à jour
         - Appliquer les modifications dans la base de données.
+
+        :param session: Session SQLAlchemy pour interagir avec la base de données.
         """
         try:
-            # Récupérer tous les événements
+            # Récupérer tous les événements non attribués à un support
             events = session.query(Event).filter_by(support_id=None).all()
             if events:
                 event = EventView.prompt_select_event(events)
-                event_id = event.event_id  # Assurez-vous d'utiliser l'I
+                event_id = event.event_id  # Assurez-vous d'utiliser l'ID de l'événement
 
                 # Récupérer tous les supports
                 supports = session.query(EpicUser).filter_by(role='SUP').all()
@@ -85,6 +96,8 @@ class EpicTerminalEvent:
         - Saisir les données de l'événement
         - Ajouter l'événement à la base de données
         - Générer un workflow pour le nouvel événement.
+
+        :param session: Session SQLAlchemy pour interagir avec la base de données.
         """
         if not self.current_user:
             text = "Erreur : Utilisateur non connecté ou non valide."
@@ -130,6 +143,8 @@ class EpicTerminalEvent:
         - Sélectionner un contrat (si confirmé)
         - Sélectionner un support (si confirmé)
         - Lire la base de données et afficher les événements.
+
+        :param session: Session SQLAlchemy pour interagir avec la base de données.
         """
         roles = EpicUserBase.get_roles(self)
         self.roles = roles
@@ -160,12 +175,13 @@ class EpicTerminalEvent:
         """
         Met à jour un événement en permettant de :
         - Sélectionner un support
-        - Sélectionner un contrat
         - Sélectionner un événement à mettre à jour
         - Appliquer les modifications dans la base de données.
+
+        :param session: Session SQLAlchemy pour interagir avec la base de données.
+        :param event: L'objet événement à mettre à jour.
         """
         try:
-
             # Récupérer tous les supports
             supports = session.query(EpicUser).filter_by(role='SUP').all()
             supports_dict = {s.username: s.epicuser_id for s in supports}

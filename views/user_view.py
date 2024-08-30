@@ -18,31 +18,22 @@ from views.regexformat import regexformat
 
 
 class UserView:
-
-    @classmethod
-    def prompt_confirm_commercial(cls, **kwargs) -> bool:
-        """
-        Demande une confirmation pour sélectionner un commercial.
-
-        Args:
-            **kwargs: Arguments supplémentaires pour la fonction `questionary.confirm`.
-
-        Returns:
-            bool: `True` si l'utilisateur confirme la sélection, sinon `False`.
-        """
-        return questionary.confirm(
-            "Souhaitez-vous sélectionner un commercial ?", **kwargs).ask()
+    """
+    Classe pour gérer l'affichage et les interactions concernant les utilisateurs.
+    """
 
     @classmethod
     def prompt_commercial(cls, all_commercials) -> str:
         """
-        Demande à l'utilisateur de sélectionner un commercial dans une liste.
+        Demande à l'utilisateur de sélectionner un commercial parmi une liste.
 
-        Args:
-            all_commercials (list): Liste des noms d'utilisateur des commerciaux.
+        Paramètres :
+        ------------
+        all_commercials (list) : Liste des noms d'utilisateur des commerciaux.
 
-        Returns:
-            str: Nom d'utilisateur du commercial sélectionné.
+        Retourne :
+        -----------
+        str : Nom d'utilisateur du commercial sélectionné.
         """
         return questionary.select(
             "Choix du commercial:",
@@ -50,45 +41,17 @@ class UserView:
         ).ask()
 
     @classmethod
-    def prompt_confirm_support(cls, **kwargs) -> bool:
-        """
-        Demande une confirmation pour sélectionner un support.
-
-        Args:
-            **kwargs: Arguments supplémentaires pour la fonction `questionary.confirm`.
-
-        Returns:
-            bool: `True` si l'utilisateur confirme la sélection, sinon `False`.
-        """
-        return questionary.confirm(
-            "Souhaitez-vous sélectionner un support ?", **kwargs).ask()
-
-    @classmethod
-    def prompt_gestion(cls, alls) -> str:
-        """
-        Demande à l'utilisateur de sélectionner un gestionnaire dans une liste.
-
-        Args:
-            alls (list): Liste des noms d'utilisateur des gestionnaires.
-
-        Returns:
-            str: Nom d'utilisateur du gestionnaire sélectionné.
-        """
-        return questionary.select(
-            "Choix du gestionnaire:",
-            choices=alls
-        ).ask()
-
-    @classmethod
     def prompt_user(cls, all_users) -> str:
         """
-        Demande à l'utilisateur de sélectionner un employé dans une liste.
+        Demande à l'utilisateur de sélectionner un employé parmi une liste.
 
-        Args:
-            all_users (list): Liste des noms d'employés.
+        Paramètres :
+        ------------
+        all_users (list) : Liste des noms d'employés.
 
-        Returns:
-            str: Nom de l'employé sélectionné.
+        Retourne :
+        -----------
+        str : Nom de l'employé sélectionné.
         """
         return questionary.select(
             "Sélectionnez un employé:",
@@ -98,13 +61,15 @@ class UserView:
     @classmethod
     def prompt_select_support(cls, values) -> str:
         """
-        Demande à l'utilisateur de sélectionner un support dans une liste.
+        Demande à l'utilisateur de sélectionner un support parmi une liste.
 
-        Args:
-            values (list): Liste des noms d'utilisateur des supports.
+        Paramètres :
+        ------------
+        values (list) : Liste des noms d'utilisateur des supports.
 
-        Returns:
-            str: Nom d'utilisateur du support sélectionné.
+        Retourne :
+        -----------
+        str : Nom d'utilisateur du support sélectionné.
         """
         return PromptView.prompt_select(
             "Choix du support:", values)
@@ -112,13 +77,15 @@ class UserView:
     @classmethod
     def prompt_confirm_profil(cls, **kwargs) -> bool:
         """
-        Demande une confirmation pour modifier les données de l'utilisateur.
+        Demande une confirmation à l'utilisateur pour modifier ses données.
 
-        Args:
-            **kwargs: Arguments supplémentaires pour la fonction `questionary.confirm`.
+        Paramètres :
+        ------------
+        **kwargs : Arguments supplémentaires pour la fonction `questionary.confirm`.
 
-        Returns:
-            bool: `True` si l'utilisateur confirme la modification, sinon `False`.
+        Retourne :
+        -----------
+        bool : `True` si l'utilisateur confirme la modification, sinon `False`.
         """
         return questionary.confirm(
             "Souhaitez-vous modifier vos données ?", **kwargs).ask()
@@ -127,34 +94,37 @@ class UserView:
     def prompt_data_profil(
             cls, first_name=True, last_name=True) -> dict:
         """
-        Demande les données pour un employé.
+        Demande les informations de profil pour un employé.
 
-        Args:
-            password_required (bool, optional): Si le mot de passe est requis. Defaults to True.
-            email_required (bool, optional): Si l'email est requis. Defaults to True.
+        Paramètres :
+        ------------
+        first_name (bool, optional) : Si le prénom est requis. Defaults to True.
+        last_name (bool, optional) : Si le nom est requis. Defaults to True.
 
-        Raises:
-            KeyboardInterrupt: Si l'utilisateur interrompt la saisie avec Ctrl+C.
+        Lève :
+        -------
+        KeyboardInterrupt : Si l'utilisateur interrompt la saisie avec Ctrl+C.
 
-        Returns:
-            dict: Dictionnaire avec les données saisies, par exemple :
-            {'first_name': first_name, 'last_name': last_name, 'password': password, 'role': role, 'state': state}
+        Retourne :
+        -----------
+        dict : Dictionnaire avec les données saisies, par exemple :
+        {'first_name': first_name, 'last_name': last_name}
         """
-        # Validate regex formats (assuming these are defined somewhere)
+        # Valide les formats regex (supposant qu'ils sont définis quelque part)
 
         first_name = questionary.text(
             "Prénom:",
             validate=lambda text: True
-            if re.match(regexformat['alpha_nospace'][0], text)
-            else regexformat['alpha_nospace'][1]).ask()
+            if re.match(regexformat['all_nospace'][0], text)
+            else regexformat['all_nospace'][1]).ask()
         if first_name is None:
             raise KeyboardInterrupt
 
         last_name = questionary.text(
             "Nom:",
             validate=lambda text: True
-            if re.match(regexformat['alpha_nospace'][0], text)
-            else regexformat['alpha_nospace'][1]).ask()
+            if re.match(regexformat['all_letters'][0], text)
+            else regexformat['all_letters'][1]).ask()
         if last_name is None:
             raise KeyboardInterrupt
 
@@ -168,14 +138,17 @@ class UserView:
         """
         Demande un nouveau mot de passe et sa confirmation.
 
-        Args:
-            **kwargs: Arguments supplémentaires pour la fonction `questionary.password`.
+        Paramètres :
+        ------------
+        **kwargs : Arguments supplémentaires pour la fonction `questionary.password`.
 
-        Raises:
-            KeyboardInterrupt: Si l'utilisateur interrompt la saisie avec Ctrl+C.
+        Lève :
+        -------
+        KeyboardInterrupt : Si l'utilisateur interrompt la saisie avec Ctrl+C.
 
-        Returns:
-            str: Le nouveau mot de passe saisi.
+        Retourne :
+        -----------
+        str : Le nouveau mot de passe saisi.
         """
         password = questionary.password(
             "Mot de passe:",
@@ -199,13 +172,11 @@ class UserView:
     @classmethod
     def prompt_role(cls) -> str:
         """
-        Demande à l'utilisateur de sélectionner un rôle dans une liste.
+        Demande à l'utilisateur de sélectionner un rôle parmi une liste.
 
-        Args:
-            all_roles (list): Liste des noms de rôles.
-
-        Returns:
-            str: Nom du rôle sélectionné.
+        Retourne :
+        -----------
+        str : Nom du rôle sélectionné.
         """
         all_roles = ['Admin', 'Commercial', 'Gestion', 'Support']
         role = questionary.select(
@@ -217,15 +188,11 @@ class UserView:
     @classmethod
     def prompt_data_user(cls) -> dict:
         """
-        Demande les données pour un nouvel employé et son rôle.
+        Demande les informations nécessaires pour ajouter un nouvel employé.
 
-        Args:
-            all_roles (list): Liste des noms de rôles disponibles.
-
-        Returns:
-            dict: Dictionnaire avec les données saisies, par exemple :
-            {'username': username, 'password': password,
-            'email': email, 'role': "Manager"}
+        Retourne :
+        -----------
+        dict : Dictionnaire avec les données saisies pour le nouvel employé.
         """
         data = cls.prompt_data_profil()
         return data
@@ -233,15 +200,12 @@ class UserView:
     @classmethod
     def prompt_data_role(cls) -> dict:
         """
-        Demande les données pour un nouvel employé et son rôle.
+        Demande le rôle pour un nouvel employé.
 
-        Args:
-            all_roles (list): Liste des noms de rôles disponibles.
-
-        Returns:
-            dict: Dictionnaire avec les données saisies, par exemple :
-            {'username': username, 'password': password,
-            'email': email, 'role': "Manager"}
+        Retourne :
+        -----------
+        dict : Dictionnaire avec les données saisies, par exemple :
+        {'role': "Manager"}
         """
         data_role = cls.prompt_role()
         return {'role': data_role}
@@ -251,9 +215,14 @@ class UserView:
         """
         Affiche une liste des employés.
 
-        Args:
-            all_users (list): Liste des instances d'employés.
-            pager (bool, optional): Si la pagination est nécessaire. Defaults to True.
+        Paramètres :
+        ------------
+        all_users (list) : Liste des instances d'employés.
+        pager (bool, optional) : Si la pagination est nécessaire. Defaults to True.
+
+        Retourne :
+        -----------
+        None
         """
         table = Table(
             title="Liste des employés d'EpicEvent",
@@ -287,11 +256,16 @@ class UserView:
     @classmethod
     def prompt_update_user(cls, user):
         """
-        Affiche une vue de mise à jour pour les informations de l'utilisateur.
+        Affiche une vue pour mettre à jour les informations d'un utilisateur.
 
-        :param user: Instance de l'utilisateur à mettre à jour.
+        Paramètres :
+        ------------
+        user : Instance de l'utilisateur à mettre à jour.
+
+        Retourne :
+        -----------
+        tuple : Tuple contenant les nouvelles informations pour l'utilisateur.
         """
-
         # Demande des informations à mettre à jour
 
         new_first_name = questionary.text(
@@ -309,15 +283,17 @@ class UserView:
     @classmethod
     def prompt_select_gestion(cls, all_gestions):
         """
-        Demande à l'utilisateur de sélectionner un contrat dans une liste.
+        Demande à l'utilisateur de sélectionner un gestionnaire parmi une liste.
 
-        Args:
-            all_contracts (list): Liste des instances de contrats.
+        Paramètres :
+        ------------
+        all_gestions (list) : Liste des instances de gestionnaires.
 
-        Returns:
-            Contract: Instance du contrat sélectionné ou None si aucun contrat n'est sélectionné.
+        Retourne :
+        -----------
+        Instance de gestionnaire : Instance du gestionnaire sélectionné ou None si aucun gestionnaire n'est sélectionné.
         """
-        print(f"Gestionnaires du gestionnaire: {all_gestions}")
+        print(f"Gestionnaires disponibles : {all_gestions}")
         choices = [f"{gestion.first_name} {gestion.last_name}" for gestion in all_gestions]
 
         selected_choice = questionary.select(
@@ -329,29 +305,4 @@ class UserView:
             for gestion in all_gestions:
                 if f"{gestion.first_name} {gestion.last_name}" == selected_choice:
                     return gestion
-        return None
-
-    @classmethod
-    def prompt_select_commercial(cls, all_commercials):
-        """
-        Demande à l'utilisateur de sélectionner un contrat dans une liste.
-
-        Args:
-            all_contracts (list): Liste des instances de contrats.
-
-        Returns:
-            Contract: Instance du contrat sélectionné ou None si aucun contrat n'est sélectionné.
-        """
-        print(f"Gestionnaires du gestionnaire: {all_commercials}")
-        choices = [f"{commercial.first_name} {commercial.last_name}" for commercial in all_commercials]
-
-        selected_choice = questionary.select(
-            "Choix du Commercial:",
-            choices=choices,
-        ).ask()
-
-        if selected_choice:
-            for commercial in all_commercials:
-                if f"{commercial.first_name} {commercial.last_name}" == selected_choice:
-                    return commercial
         return None

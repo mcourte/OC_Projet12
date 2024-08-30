@@ -1,3 +1,4 @@
+# Import généraux
 import os
 import sys
 import sqlalchemy.orm
@@ -8,26 +9,31 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
+# Import Controllers
 from controllers.decorator import is_authenticated, requires_roles, sentry_activate
+from controllers.user_controller import EpicUserBase, EpicUser
+
+# Import Views
 from views.user_view import UserView
 from views.data_view import DataView
 from views.console_view import console
-from controllers.user_controller import EpicUserBase, EpicUser
 
 
 class EpicTerminalUser:
     """
     Classe pour gérer les utilisateurs depuis l'interface terminal.
+
+    Cette classe permet d'afficher, mettre à jour, créer, désactiver des utilisateurs,
+    et de rechercher des utilisateurs par nom d'utilisateur.
     """
 
     def __init__(self, base, session, current_user=None):
         """
-        Initialise la classe EpicTerminalUser avec l'utilisateur et la base de données.
+        Initialise la classe EpicTerminalUser avec la base de données et la session.
 
-        Paramètres :
-        ------------
-        user (EpicUser) : L'utilisateur actuellement connecté.
-        base (EpicDatabase) : L'objet EpicDatabase pour accéder aux opérations de la base de données.
+        :param base: L'objet EpicDatabase pour accéder aux opérations de la base de données.
+        :param session: La session SQLAlchemy pour effectuer des requêtes.
+        :param current_user: L'utilisateur actuellement connecté (par défaut None).
         """
         self.epic = base
         self.session = session
@@ -36,6 +42,14 @@ class EpicTerminalUser:
     @sentry_activate
     @is_authenticated
     def show_profil(self, session) -> None:
+        """
+        Affiche le profil de l'utilisateur actuellement connecté.
+
+        Si aucun utilisateur n'est connecté ou si l'utilisateur n'est pas trouvé dans la base de données,
+        un message d'erreur est affiché.
+
+        :param session: Session SQLAlchemy pour interagir avec la base de données.
+        """
         if self.current_user is None:
             text = "Erreur : Aucun utilisateur connecté."
             console.print(text, style="bold red")
@@ -51,7 +65,12 @@ class EpicTerminalUser:
     @is_authenticated
     def update_profil(self, session):
         """
-        Permet de mettre à jour le profil de l'utilisateur.
+        Permet de mettre à jour le profil de l'utilisateur connecté.
+
+        L'utilisateur peut modifier son prénom, son nom, et son mot de passe. Les modifications sont sauvegardées
+        dans la base de données.
+
+        :param session: Session SQLAlchemy pour interagir avec la base de données.
         """
         result = UserView.prompt_confirm_profil()
         if result:
@@ -60,21 +79,18 @@ class EpicTerminalUser:
 
             # Demander les nouvelles données de profil (retourne maintenant un tuple)
             new_first_name, new_last_name, new_password = UserView.prompt_update_user(self.current_user)
-            print(f"profil : {new_first_name}, {new_last_name}, {new_password}")
-            print(f"type profil : {type((new_first_name, new_last_name, new_password))}")
-            print(f"self.current_user : {type(self.current_user)}")
-            print(f"session: {session}")
-            print(f"type session: {type(session)}")
-
             try:
                 # Vérifiez que self.current_user est bien un objet EpicUser et pas un dict
                 if not isinstance(self.current_user, EpicUser):
-                    print("Erreur : l'utilisateur actuel n'est pas un objet EpicUser.")
+                    text = "Erreur : l'utilisateur actuel n'est pas un objet EpicUser."
+                    console.print(text, style="bold red")
                     return
 
                 # Vérifiez que session est bien une instance de SQLAlchemy scoped_session
                 if not isinstance(session, sqlalchemy.orm.scoping.scoped_session):
-                    raise ValueError("La session passée n'est pas une instance de SQLAlchemy scoped_session.")
+                    text = "La session passée n'est pas une instance de SQLAlchemy scoped_session."
+                    console.print(text, style="bold red")
+                    raise ValueError()
 
                 # Obtenez une instance réelle de la session
                 actual_session = session()
@@ -94,7 +110,8 @@ class EpicTerminalUser:
                 DataView.display_profil(self.current_user)
                 DataView.display_data_update()
             except Exception as e:
-                print(f"Erreur lors de la mise à jour du profil : {str(e)}")
+                text = f"Erreur lors de la mise à jour du profil : {str(e)}"
+                console.print(text, style="bold red")
                 session.rollback()
 
     @sentry_activate
@@ -105,8 +122,9 @@ class EpicTerminalUser:
 
         - Lit les données des utilisateurs dans la base de données.
         - Affiche la liste des utilisateurs.
-        """
 
+        :param session: Session SQLAlchemy pour interagir avec la base de données.
+        """
         users = self.session.query(EpicUser).all()
         UserView.display_list_users(users)
 
@@ -115,7 +133,12 @@ class EpicTerminalUser:
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def create_user(self, session) -> None:
         """
-        Crée un nouvel utilisateur en utilisant la session fournie.
+        Crée un nouvel utilisateur dans la base de données.
+
+        - Demande les données de rôle, de profil et de mot de passe de l'utilisateur.
+        - Ajoute le nouvel utilisateur à la base de données.
+
+        :param session: Session SQLAlchemy pour interagir avec la base de données.
         """
         roles = EpicUserBase.get_roles(self)
         self.roles = roles
@@ -130,7 +153,8 @@ class EpicTerminalUser:
                 epic = EpicUserBase.create_user(session, data_profil)  # Passez la session ici
                 self.epic = epic
             else:
-                print("data_profil et data_role doivent être des dictionnaires.")
+                text = "data_profil et data_role doivent être des dictionnaires."
+                console.print(text, style="bold red")
         except KeyboardInterrupt:
             DataView.display_interupt()
 
@@ -139,10 +163,12 @@ class EpicTerminalUser:
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def inactivate_user(self, session) -> None:
         """
-        Désactive un utilisateur.
+        Désactive un utilisateur sélectionné dans la base de données.
 
         - Demande de sélectionner un utilisateur.
         - Met à jour la base de données pour désactiver l'utilisateur sélectionné.
+
+        :param session: Session SQLAlchemy pour interagir avec la base de données.
         """
         if session is None:
             text = "Erreur : La session est non initialisée."
@@ -167,9 +193,8 @@ class EpicTerminalUser:
         - Lit la liste des utilisateurs de la base de données.
         - Demande de sélectionner un utilisateur.
 
-        Retourne :
-        -----------
-        str : Le nom d'utilisateur sélectionné.
+        :return: Le nom d'utilisateur sélectionné.
+        :rtype: str
         """
         users = self.epic.db_users.get_all_users()
         user_usernames = [e.username for e in users]

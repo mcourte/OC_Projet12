@@ -1,3 +1,4 @@
+# Import généraux
 import sys
 import os
 import json
@@ -14,6 +15,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
+# Import Modèles
 from models.entities import EpicUser
 
 # Configuration de la session SQLAlchemy

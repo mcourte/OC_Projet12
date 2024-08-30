@@ -28,9 +28,10 @@ class EventView:
         """
         Affiche la liste des évènements.
 
-        Args:
-            all_events (list): Liste d'instances d'évènements à afficher.
-            pager (bool, optional): Si la pagination est utilisée. Par défaut à True.
+        Paramètres :
+        ------------
+        all_events (list) : Liste d'instances d'évènements à afficher.
+        pager (bool, optionnel) : Indique si la pagination est utilisée. Par défaut à False.
         """
         table = Table(
             title="Liste des Evènements",
@@ -71,26 +72,21 @@ class EventView:
         else:
             console.print(table)
         # Après l'affichage de la liste, demander à l'utilisateur de continuer
-        print("\nAppuyez sur Entrée pour continuer...")
+        console.print("\nAppuyez sur Entrée pour continuer...")
         input()
-
-    @classmethod
-    def display_no_event(cls):
-        """
-        Affiche un message indiquant qu'il n'y a pas d'évènement pour les critères donnés.
-        """
-        console.print("Il n'y a pas d'évènement pour ces critères")
 
     @classmethod
     def prompt_data_event(cls, **kwargs):
         """
         Demande les informations nécessaires pour créer ou modifier un évènement.
 
-        Args:
-            **kwargs: Arguments supplémentaires pour la validation.
+        Paramètres :
+        ------------
+        **kwargs : Arguments supplémentaires pour la validation.
 
-        Returns:
-            dict: Dictionnaire contenant les données de l'évènement.
+        Retourne :
+        -----------
+        dict : Dictionnaire contenant les données de l'évènement.
         """
         title = questionary.text(
             "Titre:",
@@ -145,28 +141,20 @@ class EventView:
                 'date_started': start, 'date_ended': end}
 
     @classmethod
-    def select_event(cls):
-        """
-        Retourne le texte pour le choix d'un évènement.
-
-        Returns:
-            str: Texte pour le choix d'un évènement.
-        """
-        return "Choix de l'évènement:"
-
-    @classmethod
     def prompt_select_event(cls, all_events):
         """
         Demande à l'utilisateur de sélectionner un évènement parmi une liste de valeurs.
 
-        Args:
-            values (list): Liste des références d'évènements.
+        Paramètres :
+        ------------
+        all_events (list) : Liste des instances d'évènements.
 
-        Returns:
-            str: La référence de l'évènement sélectionné.
+        Retourne :
+        -----------
+        str : La référence de l'évènement sélectionné.
         """
         text = (f"Evènements disponibles: {all_events}")
-        console.print(text, justify="cente", style="bold blue")
+        console.print(text, justify="center", style="bold blue")
         choices = [f"{event.event_id} {event.title}" for event in all_events]
 
         selected_choice = questionary.select(
@@ -181,82 +169,20 @@ class EventView:
         return None
 
     @classmethod
-    def workflow_affect(cls, event_title):
-        """
-        Retourne un message indiquant que l'utilisateur a été affecté à un évènement.
-
-        Args:
-            event_title (str): Titre de l'évènement.
-
-        Returns:
-            str: Message de confirmation d'affectation.
-        """
-        return f"Vous avez été affecté à l'évènement {event_title}"
-
-    @classmethod
-    def workflow_ask_affect(cls, event_title):
-        """
-        Retourne un message demandant d'affecter un support à un évènement.
-
-        Args:
-            event_title (str): Titre de l'évènement.
-
-        Returns:
-            str: Message demandant l'affectation d'un support.
-        """
-        return f"Affecter un support pour l'évènement {event_title}"
-
-    @classmethod
-    def no_event(cls):
-        """
-        Retourne un message indiquant qu'il n'y a pas d'évènement sélectionnable.
-
-        Returns:
-            str: Message indiquant l'absence d'évènements sélectionnables.
-        """
-        return "Il n'y a pas d'évènement sélectionnable"
-
-    @classmethod
-    def no_support(cls):
-        """
-        Retourne une chaîne indiquant qu'aucun support n'est assigné.
-
-        Returns:
-            str: Texte indiquant l'absence de support.
-        """
-        return "-- sans support --"
-
-    @classmethod
-    def prompt_rapport(cls, **kwargs):
-        """
-        Demande à l'utilisateur de fournir un rapport.
-
-        Args:
-            **kwargs: Arguments supplémentaires pour la validation.
-
-        Returns:
-            str: Le texte du rapport fourni par l'utilisateur.
-        """
-        rapport = questionary.text(
-            "Votre rapport:",
-            validate=lambda text: True
-            if re.match(regexformat['alpha'][0], text)
-            else regexformat['alpha'][1], **kwargs).ask()
-        return rapport
-
-    @classmethod
     def prompt_select_contract(cls, all_contracts) -> Contract:
         """
         Demande à l'utilisateur de sélectionner un contrat dans une liste.
 
-        Args:
-            all_contracts (list): Liste des instances de contrats.
+        Paramètres :
+        ------------
+        all_contracts (list) : Liste des instances de contrats.
 
-        Returns:
-            Contract: Instance du contrat sélectionné ou None si aucun contrat n'est sélectionné.
+        Retourne :
+        -----------
+        Contract : Instance du contrat sélectionné ou None si aucun contrat n'est sélectionné.
         """
         text = (f"Contrats disponibles: {all_contracts}")
-        console.print(text, justify="cente", style="bold blue")
+        console.print(text, justify="center", style="bold blue")
         choices = [f"{contract.contract_id} {contract.description}" for contract in all_contracts]
 
         selected_choice = questionary.select(
@@ -270,12 +196,14 @@ class EventView:
                     return contract
         return None
 
+    @classmethod
     def prompt_select_statut(cls) -> str:
         """
         Demande à l'utilisateur de sélectionner un statut parmi les états définis.
 
-        Returns:
-            str: État sélectionné ou None si aucun état n'est sélectionné.
+        Retourne :
+        -----------
+        str : État sélectionné ou None si aucun état n'est sélectionné.
         """
         statuts = cls.CONTRACT_STATES
         choices = [f"{code} {description}" for code, description in statuts]
@@ -293,23 +221,23 @@ class EventView:
     @classmethod
     def prompt_add_support(cls, **kwargs) -> bool:
         """
-        Demande si un contrat doit être sélectionné.
+        Demande si un support doit être ajouté à l'évènement.
 
         Retourne :
         -----------
-        bool : True si un contrat doit être sélectionné, sinon False.
+        bool : True si un support doit être ajouté, sinon False.
         """
         return questionary.confirm(
-            "Souhaitez-vous ajouter un support à cet évenènement ?", **kwargs).ask()
+            "Souhaitez-vous ajouter un support à cet évènement ?", **kwargs).ask()
 
     @classmethod
     def prompt_filtered_events_gestion(cls, **kwargs) -> bool:
         """
-        Demande si un contrat doit être sélectionné.
+        Demande si la liste des évènements doit inclure tous les évènements ou uniquement ceux sans support associé.
 
         Retourne :
         -----------
-        bool : True si un contrat doit être sélectionné, sinon False.
+        bool : True si tous les évènements doivent être affichés, sinon False pour uniquement ceux sans support.
         """
         return questionary.confirm(
             "Souhaitez-vous voir la totalité des évènements (Y) ou "
@@ -318,11 +246,11 @@ class EventView:
     @classmethod
     def prompt_filtered_events_support(cls, **kwargs) -> bool:
         """
-        Demande si un contrat doit être sélectionné.
+        Demande si la liste des évènements doit inclure tous les évènements ou uniquement ceux associés à l'utilisateur.
 
         Retourne :
         -----------
-        bool : True si un contrat doit être sélectionné, sinon False.
+        bool : True si tous les évènements doivent être affichés, sinon False pour uniquement ceux associés.
         """
         return questionary.confirm(
             "Souhaitez-vous voir la totalité des évènements (Y) ou "

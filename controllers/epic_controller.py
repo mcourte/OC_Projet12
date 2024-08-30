@@ -1,27 +1,44 @@
+# Import généraux
 import jwt
 import os
 import sys
-from controllers.config import Config, Environ
-from controllers.database_controller import EpicDatabase
-from terminal.terminal_user import EpicTerminalUser, EpicUser
-from controllers.session import load_session, clear_session, create_session, save_session, get_current_user
-from controllers.session import create_token
+
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
+
+# Import des Views
 from views.authentication_view import AuthenticationView
 from views.console_view import console
+
+# Import des Controllers
+from controllers.config import Config, Environ
+from controllers.database_controller import EpicDatabase
+from controllers.session import load_session, clear_session, create_session, save_session, get_current_user
+from controllers.session import create_token
+
+# Import des Terminaux
+from terminal.terminal_user import EpicTerminalUser, EpicUser
 
 
 class EpicBase:
     """
     Classe principale pour gérer l'application CRM EPIC EVENTS.
-    Elle initialise l'environnement, la base de données, et gère la session utilisateur.
+
+    Cette classe initialise l'environnement, la base de données, et gère la session utilisateur.
+    Elle fournit également des méthodes pour la connexion, la vérification et le rafraîchissement de la session utilisateur.
     """
+
     def __init__(self) -> None:
+        """
+        Initialise une instance de EpicBase.
+
+        Configure l'environnement, la base de données, et la session utilisateur.
+        Affiche les informations de débogage sur l'utilisateur actuel.
+        """
         text = "Initialisation de EpicBase..."
         console.print(text, style="bold green")
         self.env = Environ()
@@ -32,7 +49,7 @@ class EpicBase:
         self.current_user = None
         self.epic.users = EpicTerminalUser(self.epic, self.epic.session, self.current_user)
 
-        # Obtenez et affichez le utilisateur actuel pour débogage
+        # Obtenez et affichez l'utilisateur actuel pour débogage
         self.current_user = get_current_user()
         if self.current_user:
             text = f"Utilisateur actuel dans EpicBase : {self.current_user}"
@@ -62,6 +79,9 @@ class EpicBase:
     def login(self, **kwargs) -> bool:
         """
         Gère le processus de connexion de l'utilisateur.
+
+        Cette méthode demande les informations d'identification de l'utilisateur,
+        vérifie leur validité, crée un jeton de session, et initialise la session de l'utilisateur.
 
         Paramètres :
         ------------
@@ -102,6 +122,14 @@ class EpicBase:
     def check_session(self):
         """
         Vérifie la session en cours.
+
+        Cette méthode décode le jeton JWT pour valider la session en cours,
+        et authentifie l'utilisateur si le jeton est valide. Affiche des messages
+        d'erreur si le jeton est invalide ou expiré.
+
+        Retourne :
+        ----------
+        EpicUser : L'utilisateur actuellement authentifié, ou None si la session est invalide.
         """
         token = load_session()
         if token:
@@ -136,7 +164,8 @@ class EpicBase:
         """
         Rafraîchit la session en créant un nouveau jeton et en le stockant.
 
-        Si aucun utilisateur n'est connecté, une erreur est affichée.
+        Cette méthode crée un nouveau jeton pour l'utilisateur actuel, si un utilisateur est connecté.
+        Affiche un message d'erreur si aucun utilisateur n'est connecté.
         """
         if self.current_user:
             new_token = create_token(self.current_user)
@@ -150,8 +179,10 @@ class EpicBase:
         """
         Initialise la base de données et crée un fichier de configuration.
 
-        Demande à l'utilisateur de saisir les informations nécessaires pour la configuration,
-        puis crée la base de données et la configure.
+        Cette méthode demande à l'utilisateur de saisir les informations nécessaires
+        pour la configuration de la base de données, puis crée et configure la base de données.
+
+        Affiche les informations de connexion à la base de données après configuration.
         """
         clear_session()
         values = AuthenticationView.prompt_baseinit()  # Suppose (database, username, password, port)
@@ -161,7 +192,26 @@ class EpicBase:
         AuthenticationView.display_database_connection(values[0])
 
     def authenticate_user(self, session, username, password):
-        # Logique pour authentifier un utilisateur et définir self.user
+        """
+        Authentifie un utilisateur en vérifiant son nom d'utilisateur et son mot de passe.
+
+        Cette méthode recherche l'utilisateur dans la base de données et vérifie
+        son mot de passe. Si l'utilisateur est trouvé et authentifié, il est défini
+        comme l'utilisateur actuel.
+
+        Paramètres :
+        ------------
+        session : SQLAlchemy Session
+            La session de base de données pour exécuter la requête.
+        username : str
+            Le nom d'utilisateur de l'utilisateur à authentifier.
+        password : str
+            Le mot de passe de l'utilisateur à authentifier.
+
+        Retourne :
+        ----------
+        bool : True si l'utilisateur est authentifié avec succès, sinon False.
+        """
         user = session.query(EpicUser).filter_by(username=username).first()
         if user and user.check_password(password):
             self.user = user

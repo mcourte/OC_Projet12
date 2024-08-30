@@ -29,6 +29,18 @@ regexformat = {
         r"^[a-zA-Z ']+$",
         "Seul des caractères alpha sont autorisés"
     ),
+    'all_nospace' : (
+        r"^[\p{L}-]+$"
+        "Seules les lettres et '-' sont autorisées"
+    ),
+    'all_letters' : (
+        r"^[\p{L} ]+$"
+        "Seules les lettres sont autorisées"
+    ),
+    'all_space_union' : (
+        r"^[\p{L} \-]+$"
+        "Seules les lettres et '-' sont autorisées"
+    ),
     'email': (regex_email, "Le format de l'email est invalide"),
     'phone': (regex_phone, "Ce n'est pas un numéro de téléphone valide"),
     'password': (regex_password, "Le format du mot de passe est invalide")

@@ -1,12 +1,17 @@
-from models.entities import Customer
+# Import généraux
 from datetime import datetime
-from controllers.decorator import is_authenticated, requires_roles, sentry_activate
+# Import des Views
 from views.customer_view import CustomerView
+from views.console_view import console
+# Import des Modèles
+from models.entities import Customer
+# Import des Controllers
+from controllers.decorator import is_authenticated, requires_roles, sentry_activate
 
 
 class CustomerBase:
     """
-    Classe de base pour la gestion des clients, permettant de créer, récupérer,
+    Classe de base pour la gestion des clients. Permet de créer, récupérer,
     mettre à jour et trouver des clients sans contrat associé.
     """
 
@@ -26,16 +31,21 @@ class CustomerBase:
     @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def create_customer(self, session, customer_data):
         """
-        Permet de créer un client.
+        Crée un nouveau client avec les informations fournies.
 
         Paramètres :
         ------------
+        session : Session
+            La session SQLAlchemy pour interagir avec la base de données.
         customer_data : dict
-            Un dictionnaire contenant les informations du client à créer.
+            Un dictionnaire contenant les informations du client à créer, telles que
+            'first_name', 'last_name', 'email', 'phone', 'company_name' et
+            'commercial_id'. La clé 'commercial_id' peut être absente.
 
         Retourne :
         ----------
-        Customer : Le client créé.
+        Customer
+            Le client nouvellement créé.
         """
         # Utilisation de .get() pour gérer les clés manquantes
         customer = Customer(
@@ -57,18 +67,18 @@ class CustomerBase:
     @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
     def update_customer(self, session, customer_id):
         """
-        Permet de mettre à jour le profil d'un client via son ID.
+        Met à jour le profil d'un client existant en utilisant son ID.
 
         Paramètres :
         ------------
+        session : Session
+            La session SQLAlchemy pour interagir avec la base de données.
         customer_id : int
             L'ID du client à mettre à jour.
-        data : dict
-            Un dictionnaire contenant les nouvelles valeurs pour les attributs du client.
 
         Exceptions :
         ------------
-        ValueError :
+        ValueError
             Levée si aucun client n'est trouvé avec l'ID spécifié.
         """
         data = CustomerView.prompt_data_customer(customer_id)
@@ -91,10 +101,12 @@ class CustomerBase:
 
         Paramètres :
         ------------
+        cls : type
+            La classe CustomerBase.
         current_user : EpicUser
             L'utilisateur actuel effectuant la mise à jour.
-        session : SQLAlchemy Session
-            La session utilisée pour effectuer les opérations de base de données.
+        session : Session
+            La session SQLAlchemy utilisée pour effectuer les opérations de base de données.
         customer_id : int
             L'ID du client à mettre à jour.
         commercial_id : int
@@ -102,7 +114,7 @@ class CustomerBase:
 
         Exceptions :
         ------------
-        ValueError :
+        ValueError
             Levée si aucun client n'est trouvé avec l'ID spécifié.
         """
         customer = session.query(Customer).filter_by(customer_id=customer_id).first()
@@ -112,4 +124,5 @@ class CustomerBase:
         # Mise à jour du commercial
         customer.commercial_id = commercial_id
         session.commit()
-        print(f"Commercial ID {commercial_id} attribué au client ID {customer_id}.")
+        text = f"Commercial ID {commercial_id} attribué au client ID {customer_id}."
+        console.print(text, style="bold green")

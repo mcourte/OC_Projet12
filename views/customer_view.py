@@ -12,7 +12,6 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-
 from views.console_view import console
 from views.prompt_view import PromptView
 from views.regexformat import regexformat
@@ -24,75 +23,40 @@ class CustomerView:
     """
 
     @classmethod
-    def prompt_confirm_customer(cls, **kwargs) -> bool:
-        """
-        Demande confirmation pour la sélection d'un client.
-
-        Retourne :
-        -----------
-        bool : True si l'utilisateur souhaite sélectionner un client, sinon False.
-        """
-        return questionary.confirm(
-            "Souhaitez-vous sélectionner un client ?", **kwargs).ask()
-
-    @classmethod
     def prompt_client(cls, all_customers, **kwargs) -> str:
         """
         Demande à l'utilisateur de sélectionner un client parmi une liste de noms complets.
 
-        Paramètres :
-        ------------
-        all_customers (list) : Liste des noms complets des clients.
-
-        Retourne :
-        -----------
-        str : Le nom complet du client sélectionné.
+        :param all_customers: Liste des noms complets des clients.
+        :type all_customers: list
+        :param kwargs: Arguments supplémentaires pour la fonction `PromptView.prompt_select`.
+        :return: Le nom complet du client sélectionné.
+        :rtype: str
         """
         return PromptView.prompt_select("Choix du client:", all_customers, **kwargs)
-
-    @classmethod
-    def prompt_full_name(cls) -> str:
-        """
-        Demande à l'utilisateur de saisir un nom complet.
-
-        Retourne :
-        -----------
-        str : Le nom complet saisi par l'utilisateur.
-        """
-        return questionary.text(
-            "Nom complet:",
-            validate=lambda text: True
-            if re.match(regexformat['alpha'][0], text)
-            else regexformat['alpha'][1]).ask()
 
     @classmethod
     def prompt_data_customer(cls, full_name_required=True) -> dict:
         """
         Demande les informations d'un client.
 
-        Paramètres :
-        ------------
-        full_name_required (bool, optionnel) : Indique si le nom complet est requis. Par défaut à True.
-
-        Lève :
-        ------
-        KeyboardInterrupt : Si l'utilisateur appuie sur Ctrl+C.
-
-        Retourne :
-        -----------
-        dict : Un dictionnaire contenant les informations du client.
+        :param full_name_required: Indique si le nom complet est requis. Par défaut à True.
+        :type full_name_required: bool, optionnel
+        :return: Un dictionnaire contenant les informations du client.
+        :rtype: dict
+        :raises KeyboardInterrupt: Si l'utilisateur appuie sur Ctrl+C.
         """
         first_name = questionary.text(
             "Nom :",
             validate=lambda text: True
-            if re.match(regexformat['alpha'][0], text)
-            else regexformat['alpha'][1]).ask()
+            if re.match(regexformat['all_nospace'][0], text)
+            else regexformat['all_nospace'][1]).ask()
 
         last_name = questionary.text(
             "Prénom:",
             validate=lambda text: True
-            if re.match(regexformat['alpha'][0], text)
-            else regexformat['alpha'][1]).ask()
+            if re.match(regexformat['all_letters'][0], text)
+            else regexformat['all_letters'][1]).ask()
 
         email = questionary.text(
             "Email:",
@@ -109,8 +73,9 @@ class CustomerView:
         company_name = questionary.text(
             "Entreprise:",
             validate=lambda text: True
-            if re.match(regexformat['alpha'][0], text)
-            else regexformat['alpha'][1]).ask()
+            if re.match(regexformat['all_space_union'][0], text)
+            else regexformat['all_space_union'][1]).ask()
+
         return {'first_name': first_name, 'last_name': last_name, 'email': email, 'phone': phone,
                 'company_name': company_name}
 
@@ -119,10 +84,10 @@ class CustomerView:
         """
         Affiche la liste des clients.
 
-        Paramètres :
-        ------------
-        all_customers (list) : Liste des instances de client.
-        pager (bool, optionnel) : Indique si le pager est utilisé. Par défaut à True.
+        :param all_customers: Liste des instances de client.
+        :type all_customers: list
+        :param pager: Indique si le pager est utilisé. Par défaut à False.
+        :type pager: bool, optionnel
         """
         table = Table(
             title="Liste des Clients",
@@ -135,6 +100,7 @@ class CustomerView:
         table.add_column("Téléphone", justify="center", style="cyan", header_style="bold cyan")
         table.add_column("Email", justify="center", style="cyan", header_style="bold cyan")
         table.add_column("Commercial associé", justify="center", style="cyan", header_style="bold cyan")
+
         for c in all_customers:
             table.add_row(
                 f"{c.first_name} {c.last_name}", c.company_name, c.phone, c.email,
@@ -146,39 +112,9 @@ class CustomerView:
                 console.print(table)
         else:
             console.print(table)
+
         # Après l'affichage de la liste, demander à l'utilisateur de continuer
-        print("\nAppuyez sur Entrée pour continuer...")
-        input()
-
-    @classmethod
-    def display_customer_info(cls, customer) -> None:
-        """
-        Affiche les informations d'un client spécifique.
-
-        Paramètres :
-        ------------
-        customer (Client) : Instance du client à afficher.
-        """
-        table = Table(
-            title="Information du Client",
-            box=box.SQUARE,
-            title_justify="center",
-            title_style="bold blue"
-        )
-        table.add_column("Nom", justify="center", style="cyan", header_style="bold cyan")
-        table.add_column("Prénom", justify="center", style="cyan", header_style="bold cyan")
-        table.add_column("Email", justify="center", style="cyan", header_style="bold cyan")
-        table.add_column("Téléphone", justify="center", style="cyan", header_style="bold cyan")
-        table.add_column("Entreprise", justify="center", style="cyan", header_style="bold cyan")
-        table.add_column("Commercial", justify="center", style="cyan", header_style="bold cyan")
-        table.add_column("Nb contrats", justify="center", style="cyan", header_style="bold cyan")
-        table.add_row(customer.first_name, customer.last_name, customer.email,
-                      customer.phone, customer.company_name,
-                      str(customer.commercial),
-                      str(len(customer.contracts)),
-                      )
-        console.print(table)
-        print("\nAppuyez sur Entrée pour continuer...")
+        console.print("\nAppuyez sur Entrée pour continuer...")
         input()
 
     @classmethod
@@ -186,11 +122,10 @@ class CustomerView:
         """
         Demande à l'utilisateur de sélectionner un client dans une liste.
 
-        Args:
-            all_customers (list): Liste des instances de clients.
-
-        Returns:
-            str: Nom complet du client sélectionné ou None si aucun client n'est sélectionné.
+        :param all_customers: Liste des instances de clients.
+        :type all_customers: list
+        :return: Nom complet du client sélectionné ou None si aucun client n'est sélectionné.
+        :rtype: str
         """
         choices = [f"{c.first_name} {c.last_name}" for c in all_customers]
         selected_name = questionary.select(
@@ -208,11 +143,11 @@ class CustomerView:
     @classmethod
     def prompt_confirm_commercial(cls, **kwargs) -> bool:
         """
-        Demande confirmation pour la sélection d'un client.
+        Demande confirmation pour l'ajout d'un commercial associé à un client.
 
-        Retourne :
-        -----------
-        bool : True si l'utilisateur souhaite sélectionner un client, sinon False.
+        :param kwargs: Arguments supplémentaires pour la fonction `questionary.confirm`.
+        :return: True si l'utilisateur souhaite ajouter un commercial associé, sinon False.
+        :rtype: bool
         """
         return questionary.confirm(
             "Souhaitez-vous ajouter un commercial associé à ce client ?", **kwargs).ask()

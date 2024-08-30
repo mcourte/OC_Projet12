@@ -1,6 +1,8 @@
+# Import généraux
 import os
 import sys
 from typing import Optional
+
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
@@ -8,12 +10,19 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
+# Import Controllers
 from controllers.decorator import (is_authenticated, requires_roles, sentry_activate)
 from controllers.contract_controller import ContractBase
+from controllers.user_controller import EpicUserBase
+
+# Import Modèles
+from models.entities import Customer, Contract, Commercial, EpicUser
+
+# Import Terminaux
 from terminal.terminal_customer import EpicTerminalCustomer
 from terminal.terminal_user import EpicTerminalUser
-from models.entities import Customer, Contract, Commercial, EpicUser
-from controllers.user_controller import EpicUserBase
+
+# Import Views
 from views.contract_view import ContractView
 from views.customer_view import CustomerView
 from views.event_view import EventView
@@ -25,16 +34,17 @@ from views.console_view import console
 class EpicTerminalContract:
     """
     Classe pour gérer les contrats depuis l'interface terminal.
+
+    Cette classe fournit des méthodes pour afficher, créer, mettre à jour les contrats,
+    ainsi que pour attribuer des gestionnaires aux contrats et ajouter des paiements.
     """
 
     def __init__(self, base, session):
         """
         Initialise la classe EpicTerminalContract avec l'utilisateur et la base de données.
 
-        Paramètres :
-        ------------
-        user (EpicUser) : L'utilisateur actuellement connecté.
-        base (EpicDatabase) : L'objet EpicDatabase pour accéder aux opérations de la base de données.
+        :param base: L'objet EpicDatabase pour accéder aux opérations de la base de données.
+        :param session: La session SQLAlchemy utilisée pour interagir avec la base de données.
         """
         self.epic = base
         self.session = session
@@ -46,11 +56,13 @@ class EpicTerminalContract:
     @is_authenticated
     def list_of_contracts(self, session) -> None:
         """
-        Affiche la liste des contrats en permettant de :
-        - Sélectionner un commercial
-        - Sélectionner un client parmi ceux affectés au commercial
-        - Sélectionner un état
-        - Lire la base de données et afficher les contrats.
+        Affiche la liste des contrats en permettant de filtrer par :
+        - Commercial
+        - Client
+        - État du contrat
+        - État du paiement
+
+        Les contrats sont affichés en fonction des filtres appliqués.
         """
         roles = EpicUserBase.get_roles(self)
         self.roles = roles
@@ -126,24 +138,26 @@ class EpicTerminalContract:
         - Saisir les données du contrat
         - Mettre à jour la base de données
         - Générer une tâche en attente de signature.
-        """
 
-        clients = self.session.query(Customer).all()
+        Cette méthode demande les informations nécessaires pour créer un contrat,
+        y compris la sélection d'un client et l'ajout des données du contrat.
+        """
+        customers = self.session.query(Customer).all()
 
         # Assurez-vous que 'client_data' contient des identifiants corrects
-        client_data = [{"name": f"{c.first_name} {c.last_name} {c.customer_id}", "value": c.customer_id}
-                       for c in clients]
+        customer_data = [{"name": f"{c.first_name} {c.last_name} {c.customer_id}", "value": c.customer_id}
+                         for c in customers]
 
         # Récupérer l'identifiant du client sélectionné
-        client_id = CustomerView.prompt_client(client_data)
+        customer_id = CustomerView.prompt_client(customer_data)
 
         try:
             data = ContractView.prompt_data_contract()
 
             # Ajouter l'identifiant du client sélectionné au dictionnaire data
-            data['customer_id'] = client_id
-            client = session.query(Customer).filter_by(customer_id=client_id).first()
-            commercial_id = client.commercial_id
+            data['customer_id'] = customer_id
+            customer = session.query(Customer).filter_by(customer_id=customer_id).first()
+            commercial_id = customer.commercial_id
             data['commercial_id'] = commercial_id
             # Appeler la fonction pour créer le contrat
             contract = ContractBase.create_contract(session, data)
@@ -160,6 +174,14 @@ class EpicTerminalContract:
     @is_authenticated
     @requires_roles('ADM', 'GES', 'COM', 'Admin', 'Gestion', 'Commercial')
     def update_contract(self, session):
+        """
+        Met à jour un contrat existant en permettant de :
+        - Sélectionner un contrat à mettre à jour
+        - Modifier les informations du contrat
+        - Marquer le contrat comme signé
+
+        Cette méthode gère la mise à jour des informations du contrat et le changement de son état.
+        """
         # Vérifiez si self.current_user est défini
         if not self.current_user:
             text = "Erreur : Utilisateur non connecté ou non valide."
@@ -199,7 +221,6 @@ class EpicTerminalContract:
                 case 2:
                     try:
                         ContractBase.signed(session, contract_id)
-                        DataView.display_workflow()
                     except KeyboardInterrupt:
                         DataView.display_interupt()
         except KeyboardInterrupt:
@@ -210,20 +231,19 @@ class EpicTerminalContract:
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def update_contract_gestion(self, session) -> None:
         """
-        Met à jour le commercial attribué à un client.
+        Met à jour le gestionnaire attribué à un contrat en permettant de :
+        - Sélectionner un contrat sans gestionnaire
+        - Sélectionner un gestionnaire
+        - Attribuer le gestionnaire sélectionné au contrat
 
-        Cette fonction permet de :
-        - Sélectionner un client.
-        - Sélectionner un commercial.
-        - Attribuer le commercial sélectionné au client sélectionné.
-        - Mettre à jour la base de données.
+        Cette méthode met à jour le gestionnaire pour un contrat en fonction des sélections faites.
         """
         # Vérifiez si la session est correctement initialisée
         if session is None:
             text = "Erreur : La session est non initialisée."
             console.print(text, style="bold red")
             return
-        # Récupérer tous les contrat
+        # Récupérer tous les contrats sans gestionnaire
         contracts = session.query(Contract).filter_by(gestion_id=None).all()
         ref = EventView.prompt_select_contract(contracts)
         selected_contract = session.query(Contract).filter_by(contract_id=ref.contract_id).first()
@@ -238,7 +258,7 @@ class EpicTerminalContract:
             console.print(text, style="bold red")
             return
 
-        # Mettre à jour le commercial du client
+        # Mettre à jour le gestionnaire du contrat
         ContractBase.update_gestion_contract(self.current_user, session, selected_contract_id, selected_gestion.epicuser_id)
         text = f"Le gestionnaire {selected_gestion.username} a été attribué au contrat {selected_contract_id} avec succès."
         console.print(text, style="cyan")
@@ -249,13 +269,11 @@ class EpicTerminalContract:
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def update_contract_choose(self, session, contract) -> None:
         """
-        Met à jour le commercial attribué à un client.
+        Met à jour le gestionnaire attribué à un contrat spécifique en permettant de :
+        - Sélectionner un gestionnaire
+        - Attribuer le gestionnaire sélectionné au contrat donné
 
-        Cette fonction permet de :
-        - Sélectionner un client.
-        - Sélectionner un commercial.
-        - Attribuer le commercial sélectionné au client sélectionné.
-        - Mettre à jour la base de données.
+        Cette méthode met à jour le gestionnaire pour un contrat spécifique en fonction des sélections faites.
         """
         # Vérifiez si la session est correctement initialisée
         if session is None:
@@ -271,7 +289,7 @@ class EpicTerminalContract:
             text = "Erreur : Aucun contrat sélectionné."
             console.print(text, style="bold red")
             return
-        # Mettre à jour le commercial du client
+        # Mettre à jour le gestionnaire du contrat
         ContractBase.update_gestion_contract(self.current_user, session, contract.contract_id, selected_gestion.epicuser_id)
         text = f"Le gestionnaire {selected_gestion.username} a été attribué au contrat {contract} avec succès."
         console.print(text, style="cyan")
@@ -281,6 +299,13 @@ class EpicTerminalContract:
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def add_paiement_contract(self, session):
+        """
+        Ajoute un paiement à un contrat en permettant de :
+        - Sélectionner un contrat
+        - Saisir les informations de paiement
+
+        Cette méthode ajoute les détails du paiement à un contrat spécifique.
+        """
         contracts = session.query(Contract).all()
         ref = EventView.prompt_select_contract(contracts)
 

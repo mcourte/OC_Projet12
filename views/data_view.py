@@ -40,41 +40,6 @@ class DataView:
         console.print('Opération abandonnée')
 
     @classmethod
-    def display_error_contract_amount(cls):
-        """
-        Affiche un message d'erreur indiquant que le montant est supérieur au restant dû.
-        """
-        console.print('Ce montant est supérieur au restant dû')
-
-    @classmethod
-    def display_commercial_with_contracts(cls):
-        """
-        Affiche un message indiquant que le commercial gère des contrats actifs.
-        """
-        console.print('Ce commercial gère des contrats actifs')
-
-    @classmethod
-    def display_need_one_manager(cls):
-        """
-        Affiche un message indiquant que la base doit contenir au moins un manager.
-        """
-        console.print('La base doit contenir au moins un manager')
-
-    @classmethod
-    def display_error_unique(cls):
-        """
-        Affiche un message d'erreur indiquant qu'un enregistrement existe déjà.
-        """
-        console.print('Impossible: cet enregistrement existe déjà')
-
-    @classmethod
-    def display_error_contract_need_c(cls):
-        """
-        Affiche un message d'erreur indiquant que le contrat doit être à l'état créé.
-        """
-        console.print("Le contrat doit être à l'état créé")
-
-    @classmethod
     def display_data_update(cls):
         """
         Affiche un message indiquant que les modifications ont été enregistrées.
@@ -86,9 +51,8 @@ class DataView:
         """
         Affiche les informations de profil d'un utilisateur.
 
-        Paramètres :
-        ------------
-        e (User) : Instance de l'utilisateur dont les informations doivent être affichées.
+        :param e: Instance de l'utilisateur dont les informations doivent être affichées.
+        :type e: User
         """
         text = f'Prénom: {e.first_name}\n'
         text += f'Nom: {e.last_name}\n'

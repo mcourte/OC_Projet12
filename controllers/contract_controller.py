@@ -1,3 +1,4 @@
+# Import généraux
 import os
 import sys
 from decimal import Decimal
@@ -8,8 +9,13 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
+
+# Import des Views
 from views.data_view import DataView
+from views.console_view import console
+# Import des Modèles
 from models.entities import Contract, Paiement
+# Import des Controllers
 from controllers.decorator import is_authenticated, requires_roles, sentry_activate
 
 
@@ -38,16 +44,21 @@ class ContractBase:
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def create_contract(session, data):
         """
-        Permet de créer un contrat.
+        Crée un nouveau contrat avec les informations fournies.
 
         Paramètres :
         ------------
+        session : Session
+            La session SQLAlchemy pour interagir avec la base de données.
         data : dict
-            Un dictionnaire contenant les informations du contrat à créer.
+            Un dictionnaire contenant les informations du contrat à créer,
+            telles que 'description', 'total_amount', 'remaining_amount',
+            'state', 'customer_id', 'paiement_state' et 'commercial_id'.
 
         Retourne :
         ----------
-        Contract : Le contrat créé.
+        Contract
+            Le contrat nouvellement créé.
         """
         # Créez l'instance du contrat
         contract = Contract(
@@ -65,13 +76,12 @@ class ContractBase:
         session.commit()
         return contract
 
-
     @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'COM', 'Admin', 'Gestion', 'Commercial')
     def update_contract(contract_id, data, session):
         """
-        Permet de mettre à jour un contrat existant.
+        Met à jour un contrat existant avec les nouvelles valeurs fournies.
 
         Paramètres :
         ------------
@@ -82,10 +92,9 @@ class ContractBase:
 
         Exceptions :
         ------------
-        ValueError :
+        ValueError
             Levée si aucun contrat n'est trouvé avec l'ID spécifié.
         """
-        print(f"data du controller: {data}")
         contract = session.query(Contract).filter_by(contract_id=contract_id).first()
         if not contract:
             raise ValueError("Il n'existe pas de contrat avec cet ID")
@@ -99,7 +108,21 @@ class ContractBase:
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def add_paiement(self, session, contract_id, data) -> None:
         """
-        Ajoute un nouveau paiement au contrat dans la base de données.
+        Ajoute un nouveau paiement à un contrat dans la base de données.
+
+        Paramètres :
+        ------------
+        session : Session
+            La session SQLAlchemy pour interagir avec la base de données.
+        contract_id : int
+            L'ID du contrat auquel ajouter le paiement.
+        data : dict
+            Un dictionnaire contenant les informations du paiement, y compris 'paiement_id' et 'amount'.
+
+        Exceptions :
+        ------------
+        ValueError
+            Levée si le paiement existe déjà pour le contrat ou si le montant du paiement dépasse le montant restant dû.
         """
         try:
             amount = Decimal(data['amount'])
@@ -115,12 +138,11 @@ class ContractBase:
             if not contract:
                 raise ValueError("Contrat introuvable")
 
-            # Log de la valeur du montant restant avant mise à jour
-            print(f"Montant restant avant mise à jour : {contract.remaining_amount}")
-
             # Vérifier si le montant du paiement dépasse le restant dû
             if contract.remaining_amount is not None and amount > contract.remaining_amount:
-                raise ValueError("Le montant du paiement dépasse le restant dû du contrat.")
+                text = "Le montant du paiement dépasse le restant dû du contrat."
+                console.print(text, style="bold red")
+                raise ValueError
 
             # Créer le paiement
             paiement = Paiement(
@@ -136,9 +158,6 @@ class ContractBase:
                 if contract.remaining_amount < 0:
                     contract.remaining_amount = 0
 
-                # Log de la valeur du montant restant après mise à jour
-                print(f"Montant restant après mise à jour : {contract.remaining_amount}")
-
             # Mettre à jour l'état du paiement du contrat
             if contract.remaining_amount == 0:
                 contract.paiement_state = 'P'  # Soldé
@@ -149,13 +168,15 @@ class ContractBase:
             session.add(contract)
 
             session.commit()
-            print(f"Paiement enregistré avec succès : {paiement.paiement_id}")
-            print(f"Contrat mis à jour: ID={contract.contract_id}, Remaining Amount={contract.remaining_amount}")
+            text = f"Paiement enregistré avec succès : {paiement.paiement_id}"
+            console.print(text, style="bold green")
+            text = f"Contrat mis à jour: ID={contract.contract_id}, Montant restant={contract.remaining_amount}"
+            console.print(text, style="cyan")
             return paiement
 
         except Exception as e:
             session.rollback()
-            print(f"Erreur lors de l'enregistrement du paiement : {e}")
+            text = f"Erreur lors de l'enregistrement du paiement : {e}"
             raise
 
     @staticmethod
@@ -163,6 +184,21 @@ class ContractBase:
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def signed(session, contract_id):
+        """
+        Met à jour l'état d'un contrat pour le marquer comme signé.
+
+        Paramètres :
+        ------------
+        session : Session
+            La session SQLAlchemy pour interagir avec la base de données.
+        contract_id : int
+            L'ID du contrat à mettre à jour.
+
+        Exceptions :
+        ------------
+        ValueError
+            Levée si aucun contrat n'est trouvé avec l'ID spécifié.
+        """
         contract = session.query(Contract).filter_by(contract_id=contract_id).first()
         if not contract:
             raise ValueError(f"Aucun contrat trouvé avec l'ID {contract_id}")
@@ -177,23 +213,25 @@ class ContractBase:
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def update_gestion_contract(cls, current_user, session, contract_id, gestion_id):
         """
-        Met à jour le commercial attribué à un client.
+        Met à jour le commercial attribué à un contrat.
 
         Paramètres :
         ------------
+        cls : type
+            La classe ContractBase.
         current_user : EpicUser
             L'utilisateur actuel effectuant la mise à jour.
-        session : SQLAlchemy Session
-            La session utilisée pour effectuer les opérations de base de données.
-        customer_id : int
-            L'ID du client à mettre à jour.
-        commercial_id : int
-            L'ID du nouveau commercial à attribuer au client.
+        session : Session
+            La session SQLAlchemy utilisée pour effectuer les opérations de base de données.
+        contract_id : int
+            L'ID du contrat à mettre à jour.
+        gestion_id : int
+            L'ID du nouveau commercial à attribuer au contrat.
 
         Exceptions :
         ------------
-        ValueError :
-            Levée si aucun client n'est trouvé avec l'ID spécifié.
+        ValueError
+            Levée si aucun contrat n'est trouvé avec l'ID spécifié.
         """
         contract = session.query(Contract).filter_by(contract_id=contract_id).first()
         if not contract:
@@ -202,4 +240,5 @@ class ContractBase:
         # Mise à jour du commercial
         contract.gestion_id = gestion_id
         session.commit()
-        print(f"Gestionnaire ID {gestion_id} attribué au contrat ID {contract_id}.")
+        text = f"Gestionnaire ID {gestion_id} attribué au contrat ID {contract_id}."
+        console.print(text, style="cyan")

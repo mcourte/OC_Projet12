@@ -1,14 +1,23 @@
+# Import généraux
+from sqlalchemy.orm import Session, scoped_session
+
+# Import Modèles
 from models.entities import EpicUser
+
+# Import Controllers
 from controllers.decorator import is_authenticated, requires_roles, sentry_activate
-import logging
-import sqlalchemy.orm
-# Obtenez le logger configuré
-logger = logging.getLogger(__name__)
+
+# Import Views
+from views.console_view import console
 
 
 class EpicUserBase:
     """
     Classe de base pour la gestion des utilisateurs EpicUser.
+
+    Cette classe fournit des méthodes pour créer, mettre à jour et gérer les utilisateurs dans la base de données.
+    Elle inclut également des fonctionnalités pour réaffecter les clients,
+    contrats et événements lorsque des utilisateurs changent de statut.
     """
 
     def __init__(self, session, user=None):
@@ -16,12 +25,33 @@ class EpicUserBase:
         Initialise une instance de EpicUserBase avec une session de base de données.
 
         :param session: Session de base de données utilisée pour interagir avec les utilisateurs.
+        :param user: Instance d'EpicUser, si disponible, représentant l'utilisateur courant.
         """
         self.session = session
         self.user = user
 
     @staticmethod
     def create_user(session, data_profil):
+        """
+        Crée un nouvel utilisateur avec les données fournies.
+
+        Paramètres :
+        ------------
+        session (Session) : La session SQLAlchemy pour interagir avec la base de données.
+        data_profil (dict) : Dictionnaire contenant les informations de profil de l'utilisateur, telles que :
+                             - first_name : Prénom de l'utilisateur.
+                             - last_name : Nom de famille de l'utilisateur.
+                             - password : Mot de passe de l'utilisateur.
+                             - role : Rôle de l'utilisateur (Gestion, Commercial, Support, Admin).
+
+        Retourne :
+        ----------
+        EpicUser : L'utilisateur créé.
+
+        Lève :
+        ------
+        ValueError : Si le rôle est invalide ou si le nom d'utilisateur existe déjà.
+        """
         role_name = data_profil.get('role')
         if role_name == 'Gestion':
             role_code = 'GES'
@@ -32,15 +62,15 @@ class EpicUserBase:
         elif role_name == 'Admin':
             role_code = 'ADM'
         else:
-            raise ValueError("Invalid role code")
+            raise ValueError("Code de rôle invalide")
+
         username = EpicUser.generate_unique_username(session, data_profil['first_name'], data_profil['last_name'])
         username_dict = {'username': username}
         data_profil.update(username_dict)
-        print(data_profil)
         email = EpicUser.generate_unique_email(session, data_profil['username'])
 
         if session.query(EpicUser).filter_by(username=username).first():
-            raise ValueError("L'username existe déjà")
+            raise ValueError("Le nom d'utilisateur existe déjà")
 
         user = EpicUser(
             first_name=data_profil['first_name'],
@@ -61,18 +91,27 @@ class EpicUserBase:
     def update_user(self, session, name, password=None, role=None, state=None):
         """
         Met à jour les informations d'un utilisateur existant.
-        """
 
+        Paramètres :
+        ------------
+        session (Session) : La session SQLAlchemy pour interagir avec la base de données.
+        name (str) : Nom d'utilisateur de l'utilisateur à mettre à jour.
+        password (str, optionnel) : Nouveau mot de passe de l'utilisateur.
+        role (str, optionnel) : Nouveau rôle de l'utilisateur.
+        state (str, optionnel) : Nouveau statut de l'utilisateur.
+
+        Lève :
+        ------
+        ValueError : Si la session n'est pas valide, si le nom d'utilisateur n'est pas une chaîne,
+        ou si l'utilisateur n'est pas trouvé.
+        """
         # Vérifiez que session est bien une instance de SQLAlchemy Session
-        if not isinstance(session, sqlalchemy.orm.Session):
+        if not isinstance(session, Session):
             raise ValueError("La session passée n'est pas une instance de SQLAlchemy Session.")
 
         # Vérifiez que name est une chaîne de caractères
         if not isinstance(name, str):
             raise ValueError("Le nom d'utilisateur doit être une chaîne de caractères.")
-
-        print(f"session: {session}")
-        print(f"type session: {type(session)}")
 
         # Requête pour trouver l'utilisateur
         user = session.query(EpicUser).filter_by(username=name).first()
@@ -86,7 +125,7 @@ class EpicUserBase:
         session.commit()
 
     @staticmethod
-    def get_roles(self):
+    def get_roles():
         """
         Récupère la liste des rôles disponibles.
 
@@ -95,12 +134,17 @@ class EpicUserBase:
         return ["Commercial", "Support", "Gestion", "Admin"]
 
     @staticmethod
-    def get_rolecode(self, role_name):
+    def get_rolecode(role_name):
         """
         Récupère le code associé à un rôle donné.
 
-        :param role_name: Le nom du rôle.
-        :return: Le code du rôle correspondant, ou None si le rôle n'est pas trouvé.
+        Paramètres :
+        ------------
+        role_name (str) : Le nom du rôle.
+
+        Retourne :
+        ----------
+        str ou None : Le code du rôle correspondant, ou None si le rôle n'est pas trouvé.
         """
         role_map = {
             "Commercial": "COM",
@@ -121,35 +165,32 @@ class EpicUserBase:
         :param username: Nom d'utilisateur à activer ou désactiver
         """
         try:
-            # Vérification que la session est une instance de SQLAlchemy Session
-            if not isinstance(session, sqlalchemy.orm.session):
-                print("Erreur: l'objet session n'est pas une instance SQLAlchemy Session.")
+            # Vérifiez que session est une instance de SQLAlchemy Session ou scoped_session
+            if not isinstance(session, (Session, scoped_session)):
+                print(f"Erreur  Type trouvé : {type(session)}")
                 return
 
             user = session.query(EpicUser).filter_by(username=username).first()
 
-            # Vérification que l'utilisateur existe
             if not user:
                 print(f"Utilisateur avec le nom {username} non trouvé.")
                 return
 
             print(f"Le statut actuel de {username} est {user.state}")
 
-            # Vérification et changement de l'état de l'utilisateur
             if user.state == 'A':
                 user.state = 'I'
                 print(f"{user.username} est Inactif")
 
-                # Gestion des réaffectations et notifications basées sur le rôle de l'utilisateur
                 if user.role == 'COM':
                     self.notify_gestion_to_reassign_user(user)
-                    self.reassign_customers(session)  # Ajout de la session comme argument
+                    self.reassign_customers(session)
                 elif user.role == 'GES':
                     self.notify_gestion_to_reassign_user(user)
                     self.reassign_contracts(session)
                 elif user.role == 'SUP':
                     self.notify_gestion_to_reassign_user(user)
-                    self.reassign_events(session)  # Ajout de la session comme argument
+                    self.reassign_events(session)
                 session.commit()
 
             elif user.state == 'I':
@@ -167,19 +208,23 @@ class EpicUserBase:
         """
         Réaffecte les clients d'un commercial inactif à un autre commercial.
 
-        :param session: SQLAlchemy session instance
+        Paramètres :
+        ------------
+        session (Session) : La session SQLAlchemy pour interagir avec la base de données.
         """
         try:
             # Sélection d'un nouveau commercial actif pour les réaffectations
             new_commercial = session.query(EpicUser).filter_by(role='COM', state='A').first()
 
             if not new_commercial:
-                print("Aucun commercial actif trouvé pour la réaffectation.")
+                text = "Aucun commercial actif trouvé pour la réaffectation."
+                console.print(text, style="bold")
                 return
 
             # Réaffectation des clients
             if not hasattr(self, 'customers'):
-                print("Erreur: L'objet ne contient pas d'attribut 'customers'.")
+                text = "Erreur: L'objet ne contient pas d'attribut 'customers'."
+                console.print(text, style="bold red")
                 return
 
             for customer in self.customers:
@@ -189,7 +234,8 @@ class EpicUserBase:
             self.notify_gestion("Réaffectation des clients du commercial inactif terminée.")
 
         except Exception as e:
-            print(f"Erreur inattendue lors de la réaffectation des clients: {e}")
+            text = f"Erreur inattendue lors de la réaffectation des clients: {e}"
+            console.print(text, style="bold red")
 
     @sentry_activate
     @is_authenticated
@@ -198,24 +244,29 @@ class EpicUserBase:
         """
         Réaffecte les contrats d'un gestionnaire inactif à un autre gestionnaire.
 
-        :param session: SQLAlchemy session instance
+        Paramètres :
+        ------------
+        session (Session) : La session SQLAlchemy pour interagir avec la base de données.
         """
         try:
             # Vérification que la session est une instance de SQLAlchemy Session
-            if not isinstance(session, sqlalchemy.orm.session):
-                print("Erreur: l'objet session n'est pas une instance SQLAlchemy Session.")
+            if not isinstance(session, (Session, scoped_session)):
+                text = "Erreur: l'objet session n'est pas une instance SQLAlchemy Session."
+                console.print(text, style="bold red")
                 return
 
             # Sélection du nouveau gestionnaire actif pour les réaffectations
             new_gestion = session.query(EpicUser).filter_by(role='SUP', state='A').first()
 
             if not new_gestion:
-                print("Aucun gestionnaire actif trouvé pour la réaffectation.")
+                text = "Aucun gestionnaire actif trouvé pour la réaffectation."
+                console.print(text, style="bold")
                 return
 
             # Réaffectation des contrats
             if not hasattr(self, 'contracts'):
-                print("Erreur: L'objet ne contient pas d'attribut 'contracts'.")
+                text = "Erreur: L'objet ne contient pas d'attribut 'contracts'."
+                console.print(text, style="bold red")
                 return
 
             for contract in self.contracts:
@@ -225,7 +276,48 @@ class EpicUserBase:
             self.notify_gestion("Réaffectation des contrats du gestionnaire inactif terminée.")
 
         except Exception as e:
-            print(f"Erreur inattendue lors de la réaffectation des contrats: {e}")
+            text = f"Erreur inattendue lors de la réaffectation des contrats: {e}"
+            console.print(text, style="bold red")
+
+    @sentry_activate
+    @is_authenticated
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
+    def notify_gestion_to_reassign_user(self, user):
+        """
+        Notifie le gestionnaire pour réaffecter les clients, contrats ou événements d'un utilisateur inactif.
+
+        Paramètres :
+        ------------
+        user (EpicUser) : Instance de l'utilisateur à réaffecter.
+        """
+        try:
+            # Vérifier si l'utilisateur est passé en paramètre
+            if not user:
+                text = "Aucun utilisateur sélectionné pour la notification de réaffectation."
+                console.print(text, style="bold red")
+                return
+
+            message = f"L'utilisateur {user.username} est inactif. Veuillez réaffecter ses clients/contrats/événements."
+            self.notify_gestion(message)
+
+        except Exception as e:
+            text = f"Erreur inattendue lors de la notification du gestionnaire: {e}"
+            console.print(text, style="bold red")
+
+    @sentry_activate
+    @is_authenticated
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
+    def notify_gestion(self, message):
+        """
+        Envoie un message au gestionnaire pour des actions manuelles.
+
+        Paramètres :
+        ------------
+        message (str) : Message à envoyer au gestionnaire.
+        """
+        # Implémentation de l'envoi du message (par email, notification système, etc.)
+        text = f"Notification pour le gestionnaire: {message}"
+        console.print(text, style="bold green")
 
     @sentry_activate
     @is_authenticated
@@ -257,33 +349,3 @@ class EpicUserBase:
 
         except Exception as e:
             print(f"Erreur inattendue lors de la réaffectation des événements: {e}")
-
-    @sentry_activate
-    @is_authenticated
-    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
-    def notify_gestion_to_reassign_user(self, user):
-        """
-        Notifier le gestionnaire pour réaffecter les événements du support inactif.
-
-        :param user: Instance de l'utilisateur à réaffecter
-        """
-        try:
-            # Vérifier si l'utilisateur est passé en paramètre
-            if not user:
-                print("Aucun utilisateur sélectionné pour la notification de réaffectation.")
-                return
-
-            print(user)
-            message = f"L'utilisateur {user.username} est inactif. Veuillez réaffecter ses clients/contrats/événements."
-            self.notify_gestion(message)
-
-        except Exception as e:
-            print(f"Erreur inattendue lors de la notification du gestionnaire: {e}")
-
-    @sentry_activate
-    @is_authenticated
-    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
-    def notify_gestion(self, message):
-        """Envoyer un message au gestionnaire pour des actions manuelles."""
-        # Implémentation de l'envoi du message (par email, notification système, etc.)
-        print(f"Notification pour le gestionnaire: {message}")
