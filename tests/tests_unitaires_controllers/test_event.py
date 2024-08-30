@@ -69,6 +69,7 @@ def valid_token():
 def expired_token():
     return generate_token({"epicuser_id": 18, "role": "ADM", "exp": 0})
 
+
 @pytest.fixture
 def invalid_token():
     return "thisisnotavalidtoken"
