@@ -1,11 +1,5 @@
 # Projet 12 : Développez une architecture back-end sécurisée avec Python et SQL
 
-[Principe de l'application](https://lucid.app/lucidspark/d6c8cb09-ff0c-4db7-9156-109788b2f91c/edit?invitationId=inv_281a3599-9bf7-44d1-9bc1-95479b0af692)  
-[Diagramme UML + Schéma BD](https://lucid.app/lucidchart/2c4e5e0c-ad01-4265-8327-6438fd94c11d/edit?invitationId=inv_7c81b882-90bf-4509-9fde-282f0e67e9c4)
-  
-
-Nota : il est OBLIGATOIRE de créer un compte sur LucidApp pour avoir accès aux différents fichiers.  
-  
 
 
 ## Etape 1 : Télécharger le code
