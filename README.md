@@ -47,3 +47,32 @@ source env/bin/activate
 > ``` env\Scripts\activate.bat ```
 
 ## Etape 4 : Télécharger les packages nécessaires au bon fonctionnement du programme
+
+
+Installez ensuite les packages requis:  
+```
+pipenv install -r requirements.txt
+```
+
+## Etape 5 : Lancer le programme
+
+
+Depuis le terminal de commande, tapez la commande suivante :
+```
+python3 main.py start
+```
+Des identifiants de connexion vous seront demandés:  
+Plusieurs possibilités s'offrent à vous suivant le rôle que vous souhaitez avoir 
+
+|   Nom d'utilisateur   |   Mot de passe |   Rôle |
+|---    |:-:    |:-:    |:-:    |--:    |
+|   mcourte |   password   |   Admin |
+|   jcourte   |   password |   Commercial|
+|   mthomas   |   password   |   Gestion 
+|   idavid   |   password  |   Support |
+
+
+## Etape 6 : L'application
+
+* Le menu varie en fonction du rôle de l'utilisateur
+* La base de données contient déjà quelques clients, contrats & évenèments pour que vous puissez tester chaque fonction
