@@ -65,7 +65,7 @@ Des identifiants de connexion vous seront demandés:
 Plusieurs possibilités s'offrent à vous suivant le rôle que vous souhaitez avoir 
 
 |   Nom d'utilisateur   |   Mot de passe |   Rôle |
-|---    |:-:    |:-:    |:-:    |--:    |
+|---    |:-:    |:-:    |
 |   mcourte |   password   |   Admin |
 |   jcourte   |   password |   Commercial|
 |   mthomas   |   password   |   Gestion 
