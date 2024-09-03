@@ -186,17 +186,24 @@ class EpicTerminalUser:
     @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
-    def find_by_username(self):
+    def delete_user(self, session) -> None:
         """
-        Trouve un utilisateur par son nom d'utilisateur.
+        Supprimer un utilisateur sélectionné dans la base de données.
 
-        - Lit la liste des utilisateurs de la base de données.
         - Demande de sélectionner un utilisateur.
+        - Met à jour la base de données pour supprimer l'utilisateur sélectionné.
 
-        :return: Le nom d'utilisateur sélectionné.
-        :rtype: str
+        :param session: Session SQLAlchemy pour interagir avec la base de données.
         """
-        users = self.epic.db_users.get_all_users()
+        if session is None:
+            text = "Erreur : La session est non initialisée."
+            console.print(text, style="bold red")
+            return
+
+        users = session.query(EpicUser).all()
         user_usernames = [e.username for e in users]
         username = UserView.prompt_user(user_usernames)
-        return username
+
+        # Utiliser l'instance de EpicUserBase pour appeler set_inactivate
+        epic_user_base = EpicUserBase(session)
+        epic_user_base.delete_user(session, username)

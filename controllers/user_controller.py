@@ -2,13 +2,14 @@
 from sqlalchemy.orm import Session, scoped_session
 
 # Import Modèles
-from models.entities import EpicUser
+from models.entities import EpicUser, Contract, Event, Customer
 
 # Import Controllers
 from controllers.decorator import is_authenticated, requires_roles, sentry_activate
 
 # Import Views
 from views.console_view import console
+from views.user_view import UserView
 
 
 class EpicUserBase:
@@ -125,7 +126,7 @@ class EpicUserBase:
         session.commit()
 
     @staticmethod
-    def get_roles():
+    def get_roles(self):
         """
         Récupère la liste des rôles disponibles.
 
@@ -167,9 +168,9 @@ class EpicUserBase:
         try:
             # Vérifiez que session est une instance de SQLAlchemy Session ou scoped_session
             if not isinstance(session, (Session, scoped_session)):
-                print(f"Erreur  Type trouvé : {type(session)}")
+                print(f"Erreur : Type trouvé : {type(session)}")
                 return
-
+            print(f"Type de session reçu : {type(session)}")
             user = session.query(EpicUser).filter_by(username=username).first()
 
             if not user:
@@ -180,17 +181,17 @@ class EpicUserBase:
 
             if user.state == 'A':
                 user.state = 'I'
-                print(f"{user.username} est Inactif")
-
+                text = f"{user.username} est Inactif.Veuillez réaffecter les Contrats/Clients/Evènement qui lui sont associés"
+                console.print(text)
                 if user.role == 'COM':
-                    self.notify_gestion_to_reassign_user(user)
-                    self.reassign_customers(session)
+                    print(f"réaffectation rôle {user.role}")
+                    self.reassign_customers(session, user)
                 elif user.role == 'GES':
-                    self.notify_gestion_to_reassign_user(user)
-                    self.reassign_contracts(session)
+                    print(f"réaffectation rôle {user.role}")
+                    self.reassign_contracts(session, user)
                 elif user.role == 'SUP':
-                    self.notify_gestion_to_reassign_user(user)
-                    self.reassign_events(session)
+                    print(f"réaffectation rôle {user.role}")
+                    self.reassign_events(session, user)
                 session.commit()
 
             elif user.state == 'I':
@@ -204,7 +205,7 @@ class EpicUserBase:
     @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
-    def reassign_customers(self, session):
+    def reassign_customers(self, session, user):
         """
         Réaffecte les clients d'un commercial inactif à un autre commercial.
 
@@ -213,25 +214,41 @@ class EpicUserBase:
         session (Session) : La session SQLAlchemy pour interagir avec la base de données.
         """
         try:
-            # Sélection d'un nouveau commercial actif pour les réaffectations
-            new_commercial = session.query(EpicUser).filter_by(role='COM', state='A').first()
+            # Vérification que la session est une instance de SQLAlchemy Session
+            if not isinstance(session, (Session, scoped_session)):
+                text = "Erreur: l'objet session n'est pas une instance SQLAlchemy Session."
+                console.print(text, style="bold red")
+                return
 
-            if not new_commercial:
+            # Sélection du nouveau commercial actif pour les réaffectations
+            new_commercial = session.query(EpicUser).filter_by(role='COM', state='A').all()
+
+            # Assurez-vous que prompt_user retourne un utilisateur valide
+            choice = UserView.prompt_user([g.username for g in new_commercial])  # assuming prompt_user returns the username
+            if choice == user.username:
+                texte = f"Erreur: L'utilisateur sélectionné '{choice}' est l'utilisateur que vous souhaitez "
+                texte_l2 = "supprimer/rendre inactif. Veuillez sélectionner un autre utilisateur."
+                text = texte + texte_l2
+                console.print(text, style="bold red")
+                return  # Vous pouvez également lever une exception ou afficher un message d'erreur
+            if not choice:
                 text = "Aucun commercial actif trouvé pour la réaffectation."
                 console.print(text, style="bold")
                 return
 
-            # Réaffectation des clients
-            if not hasattr(self, 'customers'):
-                text = "Erreur: L'objet ne contient pas d'attribut 'customers'."
+            # Obtenez l'objet EpicUser correspondant au choix
+            chosen_user = session.query(EpicUser).filter_by(username=choice).first()
+            if not chosen_user:
+                text = "Le commercial sélectionné pour la réaffectation n'existe pas."
                 console.print(text, style="bold red")
                 return
 
-            for customer in self.customers:
-                customer.commercial_id = new_commercial.epicuser_id
-
+            customers = session.query(Customer).filter_by(commercial_id=user.epicuser_id).all()
+            for customer in customers:
+                customer.commercial_id = chosen_user.epicuser_id
             session.commit()
-            self.notify_gestion("Réaffectation des clients du commercial inactif terminée.")
+            text = "Réaffectation des clients du commercial inactif terminée."
+            console.print(text, style="bold green")
 
         except Exception as e:
             text = f"Erreur inattendue lors de la réaffectation des clients: {e}"
@@ -240,7 +257,7 @@ class EpicUserBase:
     @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
-    def reassign_contracts(self, session):
+    def reassign_contracts(self, session, user):
         """
         Réaffecte les contrats d'un gestionnaire inactif à un autre gestionnaire.
 
@@ -256,24 +273,34 @@ class EpicUserBase:
                 return
 
             # Sélection du nouveau gestionnaire actif pour les réaffectations
-            new_gestion = session.query(EpicUser).filter_by(role='SUP', state='A').first()
+            new_gestion = session.query(EpicUser).filter_by(role='GES', state='A').all()
 
-            if not new_gestion:
+            # Assurez-vous que prompt_user retourne un utilisateur valide
+            choice = UserView.prompt_user([g.username for g in new_gestion])  # assuming prompt_user returns the username
+            if choice == user.username:
+                texte = f"Erreur: L'utilisateur sélectionné '{choice}' est l'utilisateur que vous souhaitez "
+                texte_l2 = "supprimer/rendre inactif. Veuillez sélectionner un autre utilisateur."
+                text = texte + texte_l2
+                console.print(text, style="bold red")
+            if not choice:
                 text = "Aucun gestionnaire actif trouvé pour la réaffectation."
                 console.print(text, style="bold")
                 return
 
-            # Réaffectation des contrats
-            if not hasattr(self, 'contracts'):
-                text = "Erreur: L'objet ne contient pas d'attribut 'contracts'."
+            # Obtenez l'objet EpicUser correspondant au choix
+            chosen_user = session.query(EpicUser).filter_by(username=choice).first()
+            if not chosen_user:
+                text = "Le gestionnaire sélectionné pour la réaffectation n'existe pas."
                 console.print(text, style="bold red")
                 return
 
-            for contract in self.contracts:
-                contract.gestion_id = new_gestion.epicuser_id
+            contracts = session.query(Contract).filter_by(commercial_id=user.epicuser_id).all()
+            for contract in contracts:
+                contract.gestion_id = chosen_user.epicuser_id
 
             session.commit()
-            self.notify_gestion("Réaffectation des contrats du gestionnaire inactif terminée.")
+            text = "Réaffectation des contrats du gestionnaire inactif terminée."
+            console.print(text)
 
         except Exception as e:
             text = f"Erreur inattendue lors de la réaffectation des contrats: {e}"
@@ -282,47 +309,7 @@ class EpicUserBase:
     @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
-    def notify_gestion_to_reassign_user(self, user):
-        """
-        Notifie le gestionnaire pour réaffecter les clients, contrats ou événements d'un utilisateur inactif.
-
-        Paramètres :
-        ------------
-        user (EpicUser) : Instance de l'utilisateur à réaffecter.
-        """
-        try:
-            # Vérifier si l'utilisateur est passé en paramètre
-            if not user:
-                text = "Aucun utilisateur sélectionné pour la notification de réaffectation."
-                console.print(text, style="bold red")
-                return
-
-            message = f"L'utilisateur {user.username} est inactif. Veuillez réaffecter ses clients/contrats/événements."
-            self.notify_gestion(message)
-
-        except Exception as e:
-            text = f"Erreur inattendue lors de la notification du gestionnaire: {e}"
-            console.print(text, style="bold red")
-
-    @sentry_activate
-    @is_authenticated
-    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
-    def notify_gestion(self, message):
-        """
-        Envoie un message au gestionnaire pour des actions manuelles.
-
-        Paramètres :
-        ------------
-        message (str) : Message à envoyer au gestionnaire.
-        """
-        # Implémentation de l'envoi du message (par email, notification système, etc.)
-        text = f"Notification pour le gestionnaire: {message}"
-        console.print(text, style="bold green")
-
-    @sentry_activate
-    @is_authenticated
-    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
-    def reassign_events(self, session):
+    def reassign_events(self, session, user):
         """
         Réaffecte les événements d'un support inactif à un autre support.
 
@@ -330,22 +317,91 @@ class EpicUserBase:
         """
         try:
             # Sélection d'un nouveau support actif pour les réaffectations
-            new_support = session.query(EpicUser).filter_by(role='SUP', state='A').first()
-
-            if not new_support:
-                print("Aucun support actif trouvé pour la réaffectation.")
+            new_support = session.query(EpicUser).filter_by(role='SUP', state='A').all()
+            choice = UserView.prompt_user([g.username for g in new_support])  # assuming prompt_user returns the username
+            if choice == user.username:
+                texte = f"Erreur: L'utilisateur sélectionné '{choice}' est l'utilisateur que vous souhaitez "
+                texte_l2 = "supprimer/rendre inactif. Veuillez sélectionner un autre utilisateur."
+                text = texte + texte_l2
+                console.print(text, style="bold red")
+            if not choice:
+                text = "Aucun support actif trouvé pour la réaffectation."
+                console.print(text, style="bold")
                 return
 
-            # Réaffectation des événements
-            if not hasattr(self, 'events'):
-                print("Erreur: L'objet ne contient pas d'attribut 'events'.")
+            # Obtenez l'objet EpicUser correspondant au choix
+            choosen_user = session.query(EpicUser).filter_by(username=choice).first()
+            if not choosen_user:
+                text = "Le support sélectionné pour la réaffectation n'existe pas."
+                console.print(text, style="bold red")
                 return
 
-            for event in self.events:
-                event.support_id = new_support.epicuser_id
+            events = session.query(Event).filter_by(support_id=user.epicuser_id).all()
+            for event in events:
+                event.support_id = choosen_user.epicuser_id
 
             session.commit()
-            self.notify_gestion("Réaffectation des événements du support inactif terminée.")
+            text = "Réaffectation des évènements du gestionnaire inactif terminée."
+            console.print(text)
 
         except Exception as e:
-            print(f"Erreur inattendue lors de la réaffectation des événements: {e}")
+            text = f"Erreur inattendue lors de la réaffectation des événements: {e}"
+            console.print(text, style="bold red")
+
+    @sentry_activate
+    @is_authenticated
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
+    def delete_user(self, session, choosen_user):
+        """
+        Supprime un utilisateur de la base de données.
+
+        Paramètres :
+        ------------
+        choosen_user : str
+            Le nom d'utilisateur de l'utilisateur à supprimer.
+        session : Session
+            La session de la base de données en cours.
+
+        Retourne :
+        ----------
+        bool : True si la suppression a réussi, False sinon.
+        """
+        try:
+            # Vérifiez que session est une instance de SQLAlchemy Session ou scoped_session
+            if not isinstance(session, (Session, scoped_session)):
+                print(f"Erreur : Type trouvé : {type(session)}")
+                return False
+            print(f"Type de session reçu : {type(session)}")
+
+            user = session.query(EpicUser).filter_by(username=choosen_user).first()
+
+            if not user:
+                print(f"Utilisateur avec le nom {choosen_user} non trouvé.")
+                return False
+
+            text = f"L'utilisateur : {user.username} va être supprimé de la base de donnée."
+            text_l2 = "Veuillez réaffecter les Contrats/Clients/Evènement qui lui sont associés"
+            message = text + text_l2
+            console.print(message, style="bold red")
+
+            if user.role.code == 'COM':
+                self.reassign_customers(session, user)
+            elif user.role.code == 'GES':
+                self.reassign_contracts(session, user)
+            elif user.role.code == 'SUP':
+                self.reassign_events(session, user)
+
+            # Suppression de l'utilisateur
+            session.delete(user)
+
+            # Validation de la transaction
+            session.commit()
+            text = f"L'utilisateur '{user.username}' (ID {user.epicuser_id}) a été supprimé avec succès."
+            console.print(text, style="bold green")
+            return True
+        except Exception as e:
+            # Annulation de la transaction en cas d'erreur
+            if isinstance(session, Session):  # Vérification supplémentaire
+                session.rollback()
+            print(f"Erreur lors de la suppression de l'utilisateur '{choosen_user}': {e}")
+            return False

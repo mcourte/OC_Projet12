@@ -56,7 +56,8 @@ class MenuView:
         menu_text += "    11-Ajouter un paiement à un contrat\n"
         menu_text += "    12-Affecter un commercial à un client\n"
         menu_text += "    13-Affecter un gestionnaire à un contrat\n"
-        menu_text += "    14-Affecter un support à un évènement"
+        menu_text += "    14-Affecter un support à un évènement\n"
+        menu_text += "    15-Supprimer un utilisateur"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
@@ -80,10 +81,11 @@ class MenuView:
         menu_text += "    12-Affecter un commercial à un client\n"
         menu_text += "    13-Affecter un gestionnaire à un contrat\n"
         menu_text += "    14-Affecter un support à un évènement\n"
-        menu_text += "    15-Modifier les données d'un client\n"
+        menu_text += "    15-Supprimer un utilisateur\n"
         menu_text += "    16-Créer un évènement\n"
         menu_text += "    17-Modifier un évènement\n"
         menu_text += "    18-Créer un utilisateur\n"
+        menu_text += "    19-Modifier les données d'un client\n"
         p = Panel(
             Align.left(menu_text, vertical='top'),
             box=box.ROUNDED,
@@ -221,8 +223,8 @@ class MenuView:
                 bool: True si le choix est valide, sinon False.
             """
             match role:
-                case 'GES': max_menu_idx = 14
-                case 'ADM': max_menu_idx = 18
+                case 'GES': max_menu_idx = 15
+                case 'ADM': max_menu_idx = 19
                 case 'COM': max_menu_idx = 10
                 case 'SUP': max_menu_idx = 7
             if result == 'Q':

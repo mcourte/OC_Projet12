@@ -94,8 +94,8 @@ class EpicDashboard:
                 if self.gestion.current_user.role.code in {'GES', 'ADM'}:
                     self.database.events.update_event_support(self.session)
             case '15':
-                if self.gestion.current_user.role.code in {'ADM'}:
-                    self.database.customers.update_customer(self.session)
+                if self.gestion.current_user.role.code in {'GES', 'ADM'}:
+                    self.database.users.delete_user(self.session)
             case '16':
                 if self.gestion.current_user.role.code in {'ADM'}:
                     self.database.events.create_event(self.session)
@@ -105,6 +105,9 @@ class EpicDashboard:
             case '18':
                 if self.gestion.current_user.role.code in {'ADM'}:
                     self.database.users.create_user(self.session)
+            case '19':
+                if self.gestion.current_user.role.code in {'ADM'}:
+                    self.database.customers.update_customer(self.session)
             case 'D':
                 clear_session()
                 return False
