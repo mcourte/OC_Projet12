@@ -1,10 +1,5 @@
-from rich import print
 from rich.console import Console
-from rich.tree import Tree
-from time import sleep
 from rich.progress import Progress
-from rich.live import Live
-from rich.table import Table
 import time
 
 console = Console(width=160)
