@@ -1,188 +1,112 @@
 import pytest
-import jwt
-from sqlalchemy import create_engine, inspect
-from sqlalchemy.orm import sessionmaker, scoped_session
 import sys
 import os
-from datetime import datetime, timedelta
-import json
+from unittest.mock import patch, MagicMock
+import unittest
+
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
-print(parent_dir)
 
-from models.entities import EpicUser, Base
+from models.entities import Event
 from controllers.event_controller import EventBase
-from config_init import SECRET_KEY
 
 
-def generate_token(payload):
-    return jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+class TestEventBase(unittest.TestCase):
 
+    @patch('views.console_view.console')
+    @patch('models.entities.Event')
+    def test_create_event(self, mock_event, mock_console):
+        session_mock = MagicMock()
+        event_base = EventBase(session_mock)
 
-@pytest.fixture(scope='session')
-def engine():
-    engine = create_engine('sqlite:///:memory:')
-    Base.metadata.create_all(engine)
-    yield engine
-    Base.metadata.drop_all(engine)
+        # Simule les données de l'événement
+        data = {
+            'title': 'New Event',
+            'description': 'Event Description',
+            'location': 'Event Location',
+            'attendees': 100,
+            'date_started': '2024-09-10',
+            'date_ended': '2024-09-11',
+            'contract_id': 1,
+            'customer_id': 2,
+            'support_id': 3
+        }
 
+        # Crée un mock pour l'événement
+        event_mock = MagicMock()
+        mock_event.return_value = event_mock
 
-@pytest.fixture(scope='function')
-def session(engine):
-    connection = engine.connect()
-    transaction = connection.begin()
-    session_factory = sessionmaker(bind=connection)
-    session = scoped_session(session_factory)
-    yield session
-    session.remove()
-    transaction.rollback()
-    connection.close()
+        # Appelle la méthode create_event
+        result = event_base.create_event(data, session_mock)
 
+        # Vérifie que l'événement a été créé avec les bonnes valeurs
+        mock_event.assert_called_once_with(
+            title='New Event',
+            description='Event Description',
+            location='Event Location',
+            attendees=100,
+            date_started='2024-09-10',
+            date_ended='2024-09-11',
+            contract_id=1,
+            customer_id=2,
+            support_id=3
+        )
 
-@pytest.fixture
-def login_user(session):
-    admin_user = EpicUser(
-        first_name="Admin",
-        last_name="Test",
-        username="atest",
-        role="ADM",
-        password="password",
-        email="atest@epic.com",
-        epicuser_id="18"
-    )
-    admin_user.set_password("password")
-    session.add(admin_user)
-    session.commit()
-    yield admin_user
+        # Vérifie que l'événement a été ajouté à la session et commit
+        session_mock.add.assert_called_once_with(event_mock)
+        session_mock.commit.assert_called_once()
 
+        # Vérifie que le résultat est bien l'événement créé
+        self.assertEqual(result, event_mock)
 
-@pytest.fixture
-def valid_token():
-    return generate_token({"epicuser_id": 18, "role": "ADM"})
+    @patch('views.console_view.console')
+    @patch('models.entities.Event')
+    def test_update_event_success(self, mock_event, mock_console):
+        session_mock = MagicMock()
+        event_base = EventBase(session_mock)
 
+        # Simule l'événement existant
+        existing_event_mock = MagicMock()
+        session_mock.query().filter_by().first.return_value = existing_event_mock
 
-@pytest.fixture
-def expired_token():
-    return generate_token({"epicuser_id": 18, "role": "ADM", "exp": 0})
+        # Simule les nouvelles données de l'événement
+        data = {
+            'title': 'Updated Event',
+            'description': 'Updated Description',
+            'location': 'Updated Location',
+            'attendees': 150
+        }
 
+        # Appelle la méthode update_event
+        event_base.update_event(1, data)
 
-@pytest.fixture
-def invalid_token():
-    return "thisisnotavalidtoken"
+        # Vérifie que les attributs de l'événement ont été mis à jour
+        self.assertEqual(existing_event_mock.title, 'Updated Event')
+        self.assertEqual(existing_event_mock.description, 'Updated Description')
+        self.assertEqual(existing_event_mock.location, 'Updated Location')
+        self.assertEqual(existing_event_mock.attendees, 150)
 
+        # Vérifie que la session a été commit
+        session_mock.commit.assert_called_once()
 
-@pytest.fixture(scope='session')
-def create_session_file():
-    token = jwt.encode(
-        {"epicuser_id": 15, "role": "ADM", "exp": datetime.utcnow() + timedelta(hours=1)},
-        SECRET_KEY,
-        algorithm='HS256'
-    )
+        # Vérifie que le message de succès a été imprimé
+        mock_console.print.assert_called_once_with("L'événement a bien été mis à jour.", style="bold green")
 
-    with open('session.json', 'w') as f:
-        json.dump({'token': token}, f)
+    @patch('models.entities.Event')
+    def test_update_event_not_found(self, mock_event):
+        session_mock = MagicMock()
+        event_base = EventBase(session_mock)
 
-    yield token
+        # Simule qu'aucun événement n'a été trouvé
+        session_mock.query().filter_by().first.return_value = None
 
-    import os
-    if os.path.exists('session.json'):
-        os.remove('session.json')
+        # Vérifie que l'appel de update_event avec un ID inexistant lève une ValueError
+        with self.assertRaises(ValueError):
+            event_base.update_event(999, {'title': 'Nonexistent Event'})
 
-
-@pytest.fixture(scope='function')
-def session_with_token(create_session_file, session):
-    return session
-
-
-def test_database_structure(session):
-    inspector = inspect(session.bind)
-    tables = inspector.get_table_names()
-    print("Tables in the database:", tables)
-    for table_name in tables:
-        columns = inspector.get_columns(table_name)
-        print(f"Columns in {table_name}:", [column['name'] for column in columns])
-
-
-@pytest.fixture
-def unique_username():
-    return lambda first_name, last_name: f"{first_name[0]}{last_name}"
-
-
-@pytest.fixture
-def unique_email():
-    return lambda first_name, last_name: f"{first_name[0]}{last_name}@epic.com"
-
-
-def test_create_event(session):
-    event_controller = EventBase(session)
-    create_data = {
-        'title': 'Company Meeting',
-        'date_started': datetime(2023, 1, 1, 10, 0, 0),
-        'date_ended': datetime(2023, 1, 1, 12, 0, 0),
-        'description': 'Annual meeting',
-        'location': 'Conference Room',
-        'attendees': 10,
-        'report': 'Summary Report',
-        'customer_id': None,
-        'support_id': None,
-        'contract_id': None
-    }
-    event = event_controller.create_event(create_data)
-    assert event.title == 'Company Meeting'
-    assert event.event_id is not None
-
-
-def test_get_event(session):
-    event_controller = EventBase(session)
-
-    create_data = {
-        'title': 'Company Meeting',
-        'date_started': datetime(2023, 1, 1, 10, 0, 0),
-        'date_ended': datetime(2023, 1, 1, 12, 0, 0),
-        'description': 'Annual meeting',
-        'location': 'Conference Room',
-        'attendees': 10,
-        'report': 'Summary Report',
-        'customer_id': None,
-        'support_id': None,
-        'contract_id': None
-    }
-    created_event = event_controller.create_event(create_data)
-
-    event = event_controller.get_event(created_event.event_id)
-
-    assert event is not None
-    assert event.title == 'Company Meeting'
-
-
-def test_update_event(session):
-    event_controller = EventBase(session)
-
-    create_data = {
-        'title': 'Company Meeting',
-        'date_started': datetime(2023, 1, 1, 10, 0, 0),
-        'date_ended': datetime(2023, 1, 1, 12, 0, 0),
-        'description': 'Annual meeting',
-        'location': 'Conference Room',
-        'attendees': 10,
-        'report': 'Summary Report',
-        'customer_id': None,
-        'support_id': None,
-        'contract_id': None
-    }
-    created_event = event_controller.create_event(create_data)
-
-    update_data = {
-        'title': 'Updated Meeting',
-        'date_started': datetime(2023, 1, 1, 10, 0, 0),
-        'date_ended': datetime(2023, 1, 1, 12, 0, 0),
-    }
-    event_controller.update_event(created_event.event_id, update_data)
-
-    updated_event = event_controller.get_event(created_event.event_id)
-
-    assert updated_event.title == 'Updated Meeting'
+        # Vérifie que la session n'a pas été commit en cas d'erreur
+        session_mock.commit.assert_not_called()

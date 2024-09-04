@@ -2,6 +2,8 @@ import pytest
 from unittest.mock import patch
 import os
 import sys
+import unittest
+
 
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
@@ -13,17 +15,45 @@ sys.path.insert(0, parent_dir)
 from views.prompt_view import PromptView
 
 
-# Test de `prompt_confirm_statut`
-def test_prompt_confirm_statut():
-    with patch('questionary.confirm') as mock_confirm:
-        mock_confirm.return_value.ask.return_value = True
-        result = PromptView.prompt_confirm_statut()
-        assert result is True
+class TestPromptView(unittest.TestCase):
 
+    @patch('views.prompt_view.questionary.select')
+    def test_prompt_select_success(self, mock_select):
+        # Configuration du mock pour simuler une sélection réussie
+        mock_select.return_value.ask.return_value = 'Option 1'
 
-# Test de `prompt_select`
-def test_prompt_select():
-    with patch('questionary.select') as mock_select:
-        mock_select.return_value.ask.return_value = 'Option1'
-        result = PromptView.prompt_select('Select an option', ['Option1', 'Option2'])
-        assert result == 'Option1'
+        # Appel de la méthode avec des paramètres de test
+        result = PromptView.prompt_select('Choisissez une option:', ['Option 1', 'Option 2'])
+
+        # Vérifications
+        mock_select.assert_called_once_with(
+            'Choisissez une option:', choices=['Option 1', 'Option 2']
+        )
+        self.assertEqual(result, 'Option 1')
+
+    @patch('views.prompt_view.questionary.select')
+    def test_prompt_select_interrupt(self, mock_select):
+        # Configuration du mock pour simuler une interruption par l'utilisateur
+        mock_select.return_value.ask.return_value = None
+
+        # Test pour vérifier que KeyboardInterrupt est levé
+        with self.assertRaises(KeyboardInterrupt):
+            PromptView.prompt_select('Choisissez une option:', ['Option 1', 'Option 2'])
+
+    @patch('views.prompt_view.questionary.select')
+    def test_prompt_select_with_kwargs(self, mock_select):
+        # Configuration du mock pour simuler une sélection réussie avec des kwargs
+        mock_select.return_value.ask.return_value = 'Option 2'
+
+        # Appel de la méthode avec des paramètres de test et des kwargs
+        result = PromptView.prompt_select(
+            'Choisissez une option:',
+            ['Option 1', 'Option 2'],
+            style='bold blue'
+        )
+
+        # Vérifications
+        mock_select.assert_called_once_with(
+            'Choisissez une option:', choices=['Option 1', 'Option 2'], style='bold blue'
+        )
+        self.assertEqual(result, 'Option 2')

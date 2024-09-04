@@ -1,10 +1,8 @@
 import pytest
-import jwt
-from sqlalchemy import create_engine, inspect
-from sqlalchemy.orm import sessionmaker, scoped_session
 import sys
 import os
-import json
+from unittest.mock import patch, MagicMock
+import unittest
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
@@ -12,171 +10,136 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-from models.entities import EpicUser, Base
+from models.entities import Customer
 from controllers.customer_controller import CustomerBase
-from config_init import SECRET_KEY
+from views.customer_view import CustomerView
 
 
-def generate_token(payload):
-    return jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+class TestCustomerBase(unittest.TestCase):
 
+    @patch('views.console_view.console')
+    @patch('models.entities.Customer')
+    def test_create_customer(self, mock_customer, mock_console):
+        session_mock = MagicMock()
+        customer_base = CustomerBase(session_mock)
 
-@pytest.fixture(scope='session')
-def engine():
-    engine = create_engine('sqlite:///:memory:')
-    Base.metadata.create_all(engine)
-    yield engine
-    Base.metadata.drop_all(engine)
+        # Simule les données du client
+        customer_data = {
+            'first_name': 'John',
+            'last_name': 'Doe',
+            'email': 'john.doe@example.com',
+            'phone': '1234567890',
+            'company_name': 'Doe Inc.',
+            'commercial_id': 1
+        }
 
+        # Crée un mock pour le client
+        customer_mock = MagicMock()
+        mock_customer.return_value = customer_mock
 
-@pytest.fixture(scope='function')
-def session(engine):
-    connection = engine.connect()
-    transaction = connection.begin()
-    session_factory = sessionmaker(bind=connection)
-    session = scoped_session(session_factory)
-    yield session
-    session.remove()
-    transaction.rollback()
-    connection.close()
+        # Appelle la méthode create_customer
+        result = customer_base.create_customer(session_mock, customer_data)
 
+        # Vérifie que le client a été créé avec les bonnes valeurs
+        mock_customer.assert_called_once_with(
+            first_name='John',
+            last_name='Doe',
+            email='john.doe@example.com',
+            phone='1234567890',
+            company_name='Doe Inc.',
+            creation_time=mock_customer.return_value.creation_time,
+            update_time=mock_customer.return_value.update_time,
+            commercial_id=1
+        )
 
-@pytest.fixture
-def login_user(session):
-    admin_user = EpicUser(
-        first_name="Admin",
-        last_name="Test",
-        username="atest",
-        role="ADM",
-        password="password",
-        email="atest@epic.com",
-        epicuser_id="18"
-    )
-    admin_user.set_password("password")
-    session.add(admin_user)
-    session.commit()
-    yield admin_user
+        # Vérifie que le client a été ajouté à la session et commit
+        session_mock.add.assert_called_once_with(customer_mock)
+        session_mock.commit.assert_called_once()
 
+        # Vérifie que le résultat est bien le client créé
+        self.assertEqual(result, customer_mock)
 
-@pytest.fixture
-def valid_token():
-    return generate_token({"epicuser_id": 18, "role": "ADM"})
+    @patch('views.console_view.console')
+    @patch('views.customer_view.CustomerView')
+    @patch('models.entities.Customer')
+    def test_update_customer_success(self, mock_customer, mock_customer_view, mock_console):
+        session_mock = MagicMock()
+        customer_base = CustomerBase(session_mock)
 
+        # Simule les données mises à jour
+        updated_data = {
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': 'jane.doe@example.com',
+            'phone': '0987654321',
+            'company_name': 'Doe Enterprises'
+        }
+        mock_customer_view.prompt_data_customer.return_value = updated_data
 
-@pytest.fixture
-def expired_token():
-    return generate_token({"epicuser_id": 18, "role": "ADM", "exp": 0})
+        # Simule le client existant
+        existing_customer_mock = MagicMock()
+        session_mock.query().filter_by().first.return_value = existing_customer_mock
 
+        # Appelle la méthode update_customer
+        customer_base.update_customer(session_mock, 1)
 
-@pytest.fixture
-def invalid_token():
-    return "thisisnotavalidtoken"
+        # Vérifie que les attributs du client ont été mis à jour
+        for key, value in updated_data.items():
+            self.assertEqual(getattr(existing_customer_mock, key), value)
 
+        # Vérifie que la session a été commit
+        session_mock.commit.assert_called_once()
 
-@pytest.fixture(scope='session')
-def create_session_file():
-    token = jwt.encode({"epicuser_id": 18, "role": "ADM"}, SECRET_KEY, algorithm='HS256')
-    with open('session.json', 'w') as f:
-        json.dump({'token': token}, f)
-    yield
-    import os
-    if os.path.exists('session.json'):
-        os.remove('session.json')
+    @patch('views.console_view.console')
+    @patch('models.entities.Customer')
+    def test_update_customer_not_found(self, mock_customer, mock_console):
+        session_mock = MagicMock()
+        customer_base = CustomerBase(session_mock)
 
+        # Simule qu'aucun client n'a été trouvé
+        session_mock.query().filter_by().first.return_value = None
 
-@pytest.fixture(scope='function')
-def session_with_token(create_session_file, session):
-    return session
+        # Vérifie que l'appel de update_customer avec un ID inexistant lève une ValueError
+        with self.assertRaises(ValueError):
+            customer_base.update_customer(session_mock, 999)
 
+        # Vérifie que la session n'a pas été commit en cas d'erreur
+        session_mock.commit.assert_not_called()
 
-def test_database_structure(session):
-    inspector = inspect(session.bind)
-    tables = inspector.get_table_names()
-    print("Tables in the database:", tables)
-    for table_name in tables:
-        columns = inspector.get_columns(table_name)
-        print(f"Columns in {table_name}:", [column['name'] for column in columns])
+    @patch('views.console_view.console')
+    @patch('models.entities.Customer')
+    def test_update_commercial_customer_success(self, mock_customer, mock_console):
+        session_mock = MagicMock()
+        current_user_mock = MagicMock()
 
+        # Simule le client existant
+        existing_customer_mock = MagicMock()
+        session_mock.query().filter_by().first.return_value = existing_customer_mock
 
-@pytest.fixture
-def unique_username():
-    return lambda first_name, last_name: f"{first_name[0]}{last_name}"
+        # Appelle la méthode update_commercial_customer
+        CustomerBase.update_commercial_customer(current_user_mock, session_mock, 1, 2)
 
+        # Vérifie que le commercial_id du client a été mis à jour
+        self.assertEqual(existing_customer_mock.commercial_id, 2)
 
-@pytest.fixture
-def unique_email():
-    return lambda first_name, last_name: f"{first_name[0]}{last_name}@epic.com"
+        # Vérifie que la session a été commit
+        session_mock.commit.assert_called_once()
 
+        # Vérifie que le message de succès a été imprimé
+        mock_console.print.assert_called_once_with("Commercial ID 2 attribué au client ID 1.", style="bold green")
 
-def test_create_customer(session, login_user):
-    customer_data = {
-        'first_name': 'John',
-        'last_name': 'Doe',
-        'email': 'johndoe@example.com',
-        'phone': '1234567890',
-        'company_name': 'Doe Inc.',
-        'commercial_id': login_user.epicuser_id
-    }
-    customer_controller = CustomerBase(session)
-    customer = customer_controller.create_customer(customer_data)
+    @patch('views.console_view.console')
+    @patch('models.entities.Customer')
+    def test_update_commercial_customer_not_found(self, mock_customer, mock_console):
+        session_mock = MagicMock()
+        current_user_mock = MagicMock()
 
-    assert customer.customer_id is not None
-    assert customer.email == 'johndoe@example.com'
+        # Simule qu'aucun client n'a été trouvé
+        session_mock.query().filter_by().first.return_value = None
 
+        # Vérifie que l'appel de update_commercial_customer avec un ID inexistant lève une ValueError
+        with self.assertRaises(ValueError):
+            CustomerBase.update_commercial_customer(current_user_mock, session_mock, 999, 2)
 
-def test_get_customer(session, login_user):
-    customer_data = {
-        'first_name': 'John',
-        'last_name': 'Doe',
-        'email': 'johndoe@example.com',
-        'phone': '1234567890',
-        'company_name': 'Doe Inc.',
-        'commercial_id': login_user.epicuser_id
-    }
-    customer_controller = CustomerBase(session)
-    created_customer = customer_controller.create_customer(customer_data)
-
-    customer = customer_controller.get_customer(created_customer.customer_id)
-
-    assert customer is not None
-    assert customer.first_name == 'John'
-
-
-def test_update_customer(session, login_user):
-
-    customer_data = {
-        'first_name': 'John',
-        'last_name': 'Doe',
-        'email': 'johndoe@example.com',
-        'phone': '1234567890',
-        'company_name': 'Doe Inc.',
-        'commercial_id': login_user.epicuser_id
-    }
-    customer_controller = CustomerBase(session)
-    created_customer = customer_controller.create_customer(customer_data)
-
-    update_data = {
-        'first_name': 'Jane',
-        'last_name': 'Doe'
-    }
-    customer_controller.update_customer(created_customer.customer_id, update_data)
-
-    updated_customer = customer_controller.get_customer(created_customer.customer_id)
-
-    assert updated_customer.first_name == 'Jane'
-
-
-def test_find_without_contract(session, login_user):
-    customer_data = {
-        'first_name': 'John',
-        'last_name': 'Doe',
-        'email': 'johndoe@example.com',
-        'phone': '1234567890',
-        'company_name': 'Doe Inc.',
-        'commercial_id': login_user.epicuser_id
-    }
-    customer_controller = CustomerBase(session)
-    customer_controller.create_customer(customer_data)
-
-    customers_without_contract = customer_controller.find_without_contract()
-    assert len(customers_without_contract) > 0
+        # Vérifie que la session n'a pas été commit en cas d'erreur
+        session_mock.commit.assert_not_called()
