@@ -61,7 +61,7 @@ class EpicTerminalEvent:
             if not self.current_user:
                 raise ValueError("Utilisateur non connecté ou non valide.")
 
-            # Ne réaffectez pas la session ici, elle est déjà passée en paramètre
+            session = session()
             events = session.query(Event).all()
 
             if events:
@@ -109,9 +109,10 @@ class EpicTerminalEvent:
             if contracts:
                 contract = EventView.prompt_select_contract(contracts)
                 data = EventView.prompt_data_event()
-                event = EventBase.create_event(contract, data, session)
+                data['contract_id'] = contract.contract_id
+                EventBase.create_event(data, session)
                 if EventView.prompt_add_support():
-                    EpicTerminalEvent.update_event_support(self, session, event)
+                    EpicTerminalEvent.update_event_support(self, session)
             else:
                 DataView.display_nocontracts()
 

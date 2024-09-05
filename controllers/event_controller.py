@@ -27,9 +27,8 @@ class EventBase:
         self.session = session
 
     @sentry_activate
-    @is_authenticated
     @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
-    def create_event(contract, data, session):
+    def create_event(data, session):
         """
         Crée un nouvel événement avec les données fournies.
 
@@ -58,7 +57,7 @@ class EventBase:
             attendees=data.get('attendees', 0),
             date_started=data.get('date_started'),
             date_ended=data.get('date_ended'),
-            contract_id=str(contract.contract_id),
+            contract_id=data.get('contract_id'),
             customer_id=data.get('customer_id'),
             support_id=data.get('support_id')
         )
@@ -68,7 +67,6 @@ class EventBase:
 
     @staticmethod
     @sentry_activate
-    @is_authenticated
     @requires_roles('ADM', 'COM', 'GES', 'Admin', 'Commercial', 'Gestion')
     def update_event(event_id, data, session):
         """
