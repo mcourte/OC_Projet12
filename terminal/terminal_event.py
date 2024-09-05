@@ -67,10 +67,6 @@ class EpicTerminalEvent:
             if events:
                 event = EventView.prompt_select_event(events)  # Sélection de l'événement
                 data = EventView.prompt_data_event()  # Récupération des nouvelles données de l'événement
-                print(f"data type : {type(data)}")
-                print(f"event_id : {event.event_id}, type - {type(event.event_id)}")
-                print(f"session type : {type(session)}")
-
                 # Passez directement la session à la méthode update_event
                 EventBase.update_event(event.event_id, data, session)
 
