@@ -25,15 +25,10 @@ from cli import epic_cli
 
 
 def sentry_activate():
-    dsn = "https://8d035592443a8c8d8bcef25a1b7fe5df@o4505946318635008"
-    dsn += ".ingest.sentry.io/4505946331086848"
     sentry_sdk.init(
-        dsn=dsn,
-        integrations=[
-            SqlalchemyIntegration(),
-        ],
+        dsn="https://f005574ea1d1b9036d974ac1ef6eacd1@o4507899769389056.ingest.de.sentry.io/4507899813757008",
         # Set traces_sample_rate to 1.0 to capture 100%
-        # of transactions for performance monitoring.
+        # of transactions for tracing.
         traces_sample_rate=1.0,
         # Set profiles_sample_rate to 1.0 to profile 100%
         # of sampled transactions.
