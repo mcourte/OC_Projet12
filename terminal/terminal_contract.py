@@ -208,11 +208,10 @@ class EpicTerminalContract:
                 raise ValueError("Contrat introuvable")
 
             choice = ContractView.menu_update_contract(contract)
+
             match choice:
                 case 1:
                     data = ContractView.prompt_data_contract()
-                    print(f"data : {data} - type {type(data)}")
-                    print(f"contract_id , type : {type(contract_id)}")
                     print(f"session type : {type(session)}")
                     ContractBase.update_contract(contract_id, data, session)
                     ContractView.display_contract_info(contract)

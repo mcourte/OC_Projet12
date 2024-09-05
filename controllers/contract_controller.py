@@ -69,9 +69,8 @@ class ContractBase:
         return contract
 
     @sentry_activate
-    @is_authenticated
     @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
-    def update_contract(self, contract_id, session, data):
+    def update_contract(contract_id, data, session):
         """
         Met à jour un contrat existant avec les nouvelles données.
 
@@ -181,9 +180,7 @@ class ContractBase:
             text = f"Erreur lors de l'enregistrement du paiement : {e}"
             raise
 
-    @staticmethod
     @sentry_activate
-    @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def signed(contract_id, session):
         """
