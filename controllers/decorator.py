@@ -160,8 +160,6 @@ def is_authenticated(f):
             if user.state != 'A':
                 print("Erreur : Utilisateur inactif.")
                 raise PermissionError("User inactive")
-            print("Inside is_authenticated decorator")
-            print(f"Arguments passed: {args}, {kwargs}")
             # Assurez-vous de définir self.current_user
             cls.current_user = user
             return f(cls, session, *args, **kwargs)
