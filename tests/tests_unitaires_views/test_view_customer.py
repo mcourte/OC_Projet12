@@ -8,7 +8,7 @@ class TestCustomerView(unittest.TestCase):
 
     @patch('views.prompt_view.PromptView.prompt_select')
     def test_prompt_client(self, mock_prompt_select):
-        # Mock data
+        # Mock des données
         all_customers = ["John Doe", "Jane Smith"]
         mock_prompt_select.return_value = "John Doe"
 
@@ -19,7 +19,7 @@ class TestCustomerView(unittest.TestCase):
 
     @patch("questionary.text")
     def test_prompt_data_customer(self, mock_text):
-        # Mock inputs
+        # Mock des inputs
         mock_text.side_effect = [
             "John",  # first_name
             "Doe",   # last_name
@@ -44,11 +44,11 @@ class TestCustomerView(unittest.TestCase):
             'phone': '1234567890',
             'company_name': 'Company Inc.'
         })
-        mock_text.assert_called()
+        self.assertEqual(mock_text.call_count, 5)  # Assure que tous les appels mock ont été effectués
 
     @patch.object(Console, 'print')
     def test_display_list_customers(self, mock_print):
-        # Mock data
+        # Mock des données du client
         mock_customer = MagicMock()
         mock_customer.first_name = "John"
         mock_customer.last_name = "Doe"
@@ -59,12 +59,13 @@ class TestCustomerView(unittest.TestCase):
         mock_customer.commercial.username = "JaneDoe"
 
         CustomerView.display_list_customers([mock_customer])
-        mock_print.assert_called()
-        # Additional assertions can be made based on how your data is formatted
+        mock_print.assert_called_once()  # Vérifie qu'un seul appel print est fait
+
+        # Ajout d'assertions supplémentaires si besoin, par exemple vérifier les détails exacts de l'affichage
 
     @patch("questionary.select")
     def test_prompt_customers(self, mock_select):
-        # Mock data
+        # Mock des données du client
         mock_customer = MagicMock()
         mock_customer.first_name = "John"
         mock_customer.last_name = "Doe"
@@ -81,7 +82,7 @@ class TestCustomerView(unittest.TestCase):
 
     @patch("questionary.confirm")
     def test_prompt_confirm_commercial(self, mock_confirm):
-        # Mock confirmation response
+        # Mock de la réponse de confirmation
         mock_confirm.return_value.ask.return_value = True
 
         result = CustomerView.prompt_confirm_commercial()

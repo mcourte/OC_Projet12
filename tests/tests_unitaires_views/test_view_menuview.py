@@ -1,5 +1,3 @@
-
-import pytest
 import os
 import sys
 import unittest
@@ -37,25 +35,25 @@ class TestMenuView(unittest.TestCase):
         panel = MenuView.menu_gestion()
         self.assertIsInstance(panel, Panel)
         self.assertIn('Menu Gestion', panel.title)
-        self.assertIn('07-Créer un nouvel employé', panel.renderable.plain)
+        self.assertIn('07-Créer un nouvel employé', str(panel.renderable))
 
     def test_menu_admin(self):
         panel = MenuView.menu_admin()
         self.assertIsInstance(panel, Panel)
         self.assertIn('Menu Admin', panel.title)
-        self.assertIn('07-Changer le statut actif/inactif d\'un employé', panel.renderable.plain)
+        self.assertIn('07-Changer le statut actif/inactif d\'un employé', str(panel.renderable))
 
     def test_menu_commercial(self):
         panel = MenuView.menu_commercial()
         self.assertIsInstance(panel, Panel)
         self.assertIn('Menu Commercial', panel.title)
-        self.assertIn('07-Créer un nouveau client', panel.renderable.plain)
+        self.assertIn('07-Créer un nouveau client', str(panel.renderable))
 
     def test_menu_support(self):
         panel = MenuView.menu_support()
         self.assertIsInstance(panel, Panel)
         self.assertIn('Menu Support', panel.title)
-        self.assertIn('07-Modifier un évènement', panel.renderable.plain)
+        self.assertIn('07-Modifier un évènement', str(panel.renderable))
 
     def test_menu_role(self):
         roles = {
@@ -73,10 +71,9 @@ class TestMenuView(unittest.TestCase):
         # Test un rôle non reconnu
         panel = MenuView.menu_role('UNKNOWN')
         self.assertIsInstance(panel, Panel)
-        self.assertIn('Menu non trouvé', panel.renderable.plain)
+        self.assertIn('Menu non trouvé', str(panel.renderable))
 
     @patch('views.menu_view.questionary.text')
-    @patch('views.menu_view.console.print')
     @patch('views.menu_view.console.print')
     @patch('views.menu_view.Columns')
     def test_menu_choice(self, mock_columns, mock_print, mock_text):
@@ -89,7 +86,6 @@ class TestMenuView(unittest.TestCase):
         mock_print.assert_called()  # Vérifie que la méthode print a été appelée
 
     @patch('views.menu_view.questionary.text')
-    @patch('views.menu_view.console.print')
     @patch('views.menu_view.console.print')
     @patch('views.menu_view.Columns')
     def test_menu_choice_invalid_input(self, mock_columns, mock_print, mock_text):

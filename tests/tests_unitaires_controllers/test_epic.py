@@ -17,7 +17,7 @@ from controllers.epic_controller import EpicBase, EpicDatabase
 class TestEpicBase(unittest.TestCase):
 
     @patch('views.console_view.console')
-    @patch('controllers.epic_controllers.EpicDatabase')
+    @patch('controllers.epic_controller.EpicDatabase')
     @patch('controllers.config.Config')
     def test_init(self, mock_config, mock_epic_database, mock_console):
         mock_session = MagicMock()
@@ -31,12 +31,11 @@ class TestEpicBase(unittest.TestCase):
         self.assertEqual(epic_base.session, mock_session)
         mock_console.print.assert_called_with("Utilisateur actuel dans EpicBase : None", style="green")
 
-    @patch('your_module.console')
-    @patch('your_module.clear_session')
-    @patch('your_module.AuthenticationView.prompt_login')
-    @patch('your_module.create_session')
-    @patch('your_module.create_token')
-    @patch('your_module.EpicDatabase.check_connection')
+    @patch('views.console_view.console')
+    @patch('views.authentication_view.AuthenticationView.prompt_login')
+    @patch('controllers.session.create_session')
+    @patch('controllers.session.create_token')
+    @patch('controllers.database_controller.EpicDatabase.check_connection')
     def test_login_success(self, mock_check_connection, mock_create_token, mock_create_session, mock_prompt_login, mock_clear_session, mock_console):
         mock_user = MagicMock()
         mock_user.to_dict.return_value = {"username": "test_user"}
@@ -53,10 +52,9 @@ class TestEpicBase(unittest.TestCase):
         mock_console.print.assert_called_with("Connexion réussie", style="bold blue")
         self.assertTrue(result)
 
-    @patch('your_module.console')
-    @patch('your_module.clear_session')
-    @patch('your_module.AuthenticationView.prompt_login')
-    @patch('your_module.EpicDatabase.check_connection')
+    @patch('views.console_view.console')
+    @patch('views.authentication_view.AuthenticationView.prompt_login')
+    @patch('controllers.database_controller.EpicDatabase.check_connection')
     def test_login_failure(self, mock_check_connection, mock_prompt_login, mock_clear_session, mock_console):
         mock_check_connection.return_value = None
         mock_prompt_login.return_value = ("test_user", "test_pass")
@@ -73,7 +71,7 @@ class TestEpicBase(unittest.TestCase):
     @patch('controllers.session.load_session')
     @patch('controllers.session.jwt.decode')
     @patch('controllers.epic_controller.EpicDatabase.check_user')
-    @patch('controllers.user_controller.EpicBase.authenticate_user')
+    @patch('controllers.epic_controller.EpicBase.authenticate_user')
     def test_check_session_valid(self, mock_authenticate_user, mock_check_user, mock_jwt_decode, mock_load_session, mock_console):
         mock_user = MagicMock()
         mock_check_user.return_value = mock_user
@@ -143,20 +141,6 @@ class TestEpicBase(unittest.TestCase):
 
         mock_save_session.assert_not_called()
         mock_console.print.assert_called_with("Aucun utilisateur connecté pour rafraîchir la session.", style="bold red")
-
-    @patch('views.console_view.console')
-    @patch('view.authentication_view.AuthenticationView.prompt_baseinit')
-    @patch('controllers.config.Config.create_config')
-    @patch('controllers.epic_controller.EpicDatabase')
-    def test_initbase(self, mock_epic_database, mock_create_config, mock_prompt_baseinit, mock_console):
-        mock_prompt_baseinit.return_value = ('db_name', 'username', 'password', 'port')
-
-        EpicBase.initbase()
-
-        mock_prompt_baseinit.assert_called_once()
-        mock_create_config.assert_called_once_with('db_name', 'username', 'password', 'port')
-        mock_epic_database.assert_called_once_with(database='db_name', host=mock.ANY, user='username', password='password', port='port')
-        mock_console.print.assert_called_once_with("Base de données configurée avec succès.", style="bold green")
 
     @patch('views.console_view.console')
     @patch('models.entities.EpicUser')

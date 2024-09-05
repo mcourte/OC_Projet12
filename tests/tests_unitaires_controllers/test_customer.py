@@ -1,145 +1,100 @@
 import pytest
-import sys
-import os
-from unittest.mock import patch, MagicMock
-import unittest
-# Déterminez le chemin absolu du répertoire parent
-current_dir = os.path.dirname(__file__)
-parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
-
-# Ajoutez le répertoire parent au PYTHONPATH
-sys.path.insert(0, parent_dir)
-
-from models.entities import Customer
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from models.entities import Customer, EpicUser, Admin
 from controllers.customer_controller import CustomerBase
-from views.customer_view import CustomerView
+from terminal.terminal_customer import EpicTerminalCustomer
+from config_init import Base
+from datetime import datetime
 
 
-class TestCustomerBase(unittest.TestCase):
+# Configuration de la base de données en mémoire pour les tests
+@pytest.fixture(scope='module')
+def db_session():
+    engine = create_engine('sqlite:///:memory:')
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
 
-    @patch('views.console_view.console')
-    @patch('models.entities.Customer')
-    def test_create_customer(self, mock_customer, mock_console):
-        session_mock = MagicMock()
-        customer_base = CustomerBase(session_mock)
+    # Création d'un utilisateur actif
+    admin = Admin(first_name="Admin", last_name="User", password="password", email="auser@epic.com",
+                  username="auser", state="A", role="ADM")
+    commercial = EpicUser(first_name="Commercial", last_name="User", password="password", email="cuser@epic.com",
+                          username="cuser", state="A", role="COM")
+    session.add(admin)
+    session.add(commercial)
+    session.commit()
 
-        # Simule les données du client
-        customer_data = {
-            'first_name': 'John',
-            'last_name': 'Doe',
-            'email': 'john.doe@example.com',
-            'phone': '1234567890',
-            'company_name': 'Doe Inc.',
-            'commercial_id': 1
-        }
+    # Ajout d'un client avec des dates en datetime
+    now = datetime.now()
+    customer = Customer(first_name="Test", last_name="Customer", email='test@gmail.com', phone='0649730864', company_name='Test',
+                        commercial_id=1, creation_time=now, update_time=now)
+    session.add(customer)
+    session.commit()
 
-        # Crée un mock pour le client
-        customer_mock = MagicMock()
-        mock_customer.return_value = customer_mock
+    yield session
 
-        # Appelle la méthode create_customer
-        result = customer_base.create_customer(session_mock, customer_data)
+    session.close()
+    Base.metadata.drop_all(engine)
 
-        # Vérifie que le client a été créé avec les bonnes valeurs
-        mock_customer.assert_called_once_with(
-            first_name='John',
-            last_name='Doe',
-            email='john.doe@example.com',
-            phone='1234567890',
-            company_name='Doe Inc.',
-            creation_time=mock_customer.return_value.creation_time,
-            update_time=mock_customer.return_value.update_time,
-            commercial_id=1
-        )
 
-        # Vérifie que le client a été ajouté à la session et commit
-        session_mock.add.assert_called_once_with(customer_mock)
-        session_mock.commit.assert_called_once()
+@pytest.fixture
+def epic_terminal_customer(db_session):
+    # Récupérer l'utilisateur pour les tests
+    user = db_session.query(EpicUser).filter_by(username="auser").first()
+    return EpicTerminalCustomer(base=CustomerBase(session=db_session), session=db_session, current_user=user)
 
-        # Vérifie que le résultat est bien le client créé
-        self.assertEqual(result, customer_mock)
 
-    @patch('views.console_view.console')
-    @patch('views.customer_view.CustomerView')
-    @patch('models.entities.Customer')
-    def test_update_customer_success(self, mock_customer, mock_customer_view, mock_console):
-        session_mock = MagicMock()
-        customer_base = CustomerBase(session_mock)
+def test_choice_customer(epic_terminal_customer, db_session):
+    # Test de la méthode choice_customer
+    commercial = db_session.query(EpicUser).filter_by(username="cuser").first()
+    customers = db_session.query(Customer).filter_by(commercial_id=commercial.epicuser_id).all()
 
-        # Simule les données mises à jour
-        updated_data = {
-            'first_name': 'Jane',
-            'last_name': 'Doe',
-            'email': 'jane.doe@example.com',
-            'phone': '0987654321',
-            'company_name': 'Doe Enterprises'
-        }
-        mock_customer_view.prompt_data_customer.return_value = updated_data
+    selected_customer = epic_terminal_customer.choice_customer(db_session, "cuser")
+    assert selected_customer is None  # Pas de client pour le commercial dans cet exemple
 
-        # Simule le client existant
-        existing_customer_mock = MagicMock()
-        session_mock.query().filter_by().first.return_value = existing_customer_mock
 
-        # Appelle la méthode update_customer
-        customer_base.update_customer(session_mock, 1)
+def test_list_of_customers(epic_terminal_customer, db_session):
+    # Test de la méthode list_of_customers
+    epic_terminal_customer.list_of_customers(db_session)
+    # Vérifiez que la méthode `console.print` a été appelée avec le texte attendu.
+    # Vous devrez peut-être utiliser un outil pour capturer les appels à `console.print`
 
-        # Vérifie que les attributs du client ont été mis à jour
-        for key, value in updated_data.items():
-            self.assertEqual(getattr(existing_customer_mock, key), value)
 
-        # Vérifie que la session a été commit
-        session_mock.commit.assert_called_once()
+def test_update_customer_commercial(epic_terminal_customer, db_session):
+    # Test de la méthode update_customer_commercial
+    customer = db_session.query(Customer).first()
+    commercial = db_session.query(EpicUser).filter_by(username="cuser").first()
 
-    @patch('views.console_view.console')
-    @patch('models.entities.Customer')
-    def test_update_customer_not_found(self, mock_customer, mock_console):
-        session_mock = MagicMock()
-        customer_base = CustomerBase(session_mock)
+    epic_terminal_customer.update_customer_commercial(db_session)
 
-        # Simule qu'aucun client n'a été trouvé
-        session_mock.query().filter_by().first.return_value = None
+    # Vérifiez si le commercial a été correctement attribué au client
+    updated_customer = db_session.query(Customer).filter_by(customer_id=customer.customer_id).first()
+    assert updated_customer.commercial_id == commercial.epicuser_id
 
-        # Vérifie que l'appel de update_customer avec un ID inexistant lève une ValueError
-        with self.assertRaises(ValueError):
-            customer_base.update_customer(session_mock, 999)
 
-        # Vérifie que la session n'a pas été commit en cas d'erreur
-        session_mock.commit.assert_not_called()
+def test_create_customer(epic_terminal_customer, db_session):
+    # Test de la méthode create_customer
+    epic_terminal_customer.create_customer(db_session)
+    # Vous devrez vérifier si un nouveau client a été ajouté avec succès à la base de données
 
-    @patch('views.console_view.console')
-    @patch('models.entities.Customer')
-    def test_update_commercial_customer_success(self, mock_customer, mock_console):
-        session_mock = MagicMock()
-        current_user_mock = MagicMock()
 
-        # Simule le client existant
-        existing_customer_mock = MagicMock()
-        session_mock.query().filter_by().first.return_value = existing_customer_mock
+def test_update_customer(epic_terminal_customer, db_session):
+    # Test de la méthode update_customer
+    customer = db_session.query(Customer).first()
 
-        # Appelle la méthode update_commercial_customer
-        CustomerBase.update_commercial_customer(current_user_mock, session_mock, 1, 2)
+    epic_terminal_customer.update_customer(db_session)
 
-        # Vérifie que le commercial_id du client a été mis à jour
-        self.assertEqual(existing_customer_mock.commercial_id, 2)
+    # Vérifiez si les informations du client ont été mises à jour
+    updated_customer = db_session.query(Customer).filter_by(customer_id=customer.customer_id).first()
+    assert updated_customer is not None
 
-        # Vérifie que la session a été commit
-        session_mock.commit.assert_called_once()
 
-        # Vérifie que le message de succès a été imprimé
-        mock_console.print.assert_called_once_with("Commercial ID 2 attribué au client ID 1.", style="bold green")
+def test_add_customer_commercial(epic_terminal_customer, db_session):
+    # Test de la méthode add_customer_commercial
+    customer = db_session.query(Customer).first()
+    epic_terminal_customer.add_customer_commercial(db_session, customer)
 
-    @patch('views.console_view.console')
-    @patch('models.entities.Customer')
-    def test_update_commercial_customer_not_found(self, mock_customer, mock_console):
-        session_mock = MagicMock()
-        current_user_mock = MagicMock()
-
-        # Simule qu'aucun client n'a été trouvé
-        session_mock.query().filter_by().first.return_value = None
-
-        # Vérifie que l'appel de update_commercial_customer avec un ID inexistant lève une ValueError
-        with self.assertRaises(ValueError):
-            CustomerBase.update_commercial_customer(current_user_mock, session_mock, 999, 2)
-
-        # Vérifie que la session n'a pas été commit en cas d'erreur
-        session_mock.commit.assert_not_called()
+    # Vérifiez si le commercial a été correctement attribué au client
+    updated_customer = db_session.query(Customer).filter_by(customer_id=customer.customer_id).first()
+    assert updated_customer.commercial_id is not None

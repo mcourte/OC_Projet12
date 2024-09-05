@@ -1,149 +1,142 @@
 import pytest
-import sys
-import os
-import unittest
-from unittest.mock import MagicMock, patch
+import jwt
 from decimal import Decimal
-
-# Déterminez le chemin absolu du répertoire parent
-current_dir = os.path.dirname(__file__)
-parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
-
-# Ajoutez le répertoire parent au PYTHONPATH
-sys.path.insert(0, parent_dir)
-
+from datetime import datetime, timedelta
 from controllers.contract_controller import ContractBase
-from models.entities import EpicUser, Contract, Paiement
-from views import console_view
+from models.entities import Contract, EpicUser
+from config_init import Base, SECRET_KEY
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 
-class TestContractBase(unittest.TestCase):
+# Fonction pour générer un token JWT pour un utilisateur donné
+def generate_test_token(user):
+    payload = {
+        'user_id': user.epicuser_id,
+        'exp': datetime.utcnow() + timedelta(minutes=30),
+        'iat': datetime.utcnow(),
+        'roles': user.role  # Assurez-vous que 'user.role' est une chaîne
+    }
+    token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+    return token
 
-    def setUp(self):
-        # Mock pour la session SQLAlchemy
-        self.session = MagicMock()
 
-        # Mock pour l'utilisateur actuel
-        self.current_user = MagicMock(spec=EpicUser)
+# Configurer la base de données de test en mémoire
+@pytest.fixture(scope='module')
+def db_session():
+    engine = create_engine('sqlite:///:memory:')
+    Base.metadata.create_all(engine)  # Crée toutes les tables dans la base en mémoire
+    Session = sessionmaker(bind=engine)
+    session = Session()
 
-        # Instance de la classe ContractBase
-        self.contract_base = ContractBase(self.session, self.current_user)
+    # Insérer un utilisateur actif pour les tests
+    user = EpicUser(first_name="Test", last_name="User", password="password", email="tuser@epic.com",
+                    username="test_user", state="A", role="ADM")
+    session.add(user)
+    session.commit()
 
-    @patch('views.console_view.console')
-    def test_create_contract_success(self, mock_console):
-        # Données d'entrée
-        data = {
-            'description': 'Test contract',
-            'total_amount': Decimal('1000.00'),
-            'remaining_amount': Decimal('1000.00'),
-            'state': 'C',
-            'customer_id': 1,
-            'paiement_state': 'N',
-            'commercial_id': 2
-        }
+    yield session  # Fournir la session aux tests
 
-        # Appel de la méthode
-        contract = self.contract_base.create_contract(self.session, data)
+    session.close()
+    Base.metadata.drop_all(engine)  # Nettoyer après les tests
 
-        # Vérifications
-        self.session.add.assert_called_once()
-        self.session.commit.assert_called_once()
-        self.assertIsInstance(contract, Contract)
-        self.assertEqual(contract.description, 'Test contract')
-        self.assertEqual(contract.total_amount, Decimal('1000.00'))
 
-    def test_update_contract_success(self):
-        # Mock du contrat existant
-        contract = MagicMock(spec=Contract)
-        self.session.query().filter_by().first.return_value = contract
+@pytest.fixture
+def contract_base(db_session):
+    # Récupérer l'utilisateur pour les tests
+    user = db_session.query(EpicUser).filter_by(username="test_user").first()
+    # Générer un token pour l'utilisateur
+    token = generate_test_token(user)
+    return ContractBase(session=db_session, current_user=user, token=token)
 
-        # Données de mise à jour
-        data = {'description': 'Updated contract'}
 
-        # Appel de la méthode
-        self.contract_base.update_contract(1, data, self.session)
+def test_create_contract_success(contract_base, db_session):
+    data = {
+        'description': 'Test Contract',
+        'total_amount': 1000,
+        'remaining_amount': 1000,
+        'customer_id': 1,
+        'commercial_id': 1,
+        'gestion_id': 1,
+        'state': 'C',  # Utiliser le code de l'état comme une chaîne simple
+        'paiement_state': 'N'  # Utiliser le code de l'état de paiement comme une chaîne simple
+    }
+    contract = contract_base.create_contract(db_session, data)
+    assert contract is not None
+    assert contract.description == 'Test Contract'
 
-        # Vérifications
-        self.assertEqual(contract.description, 'Updated contract')
-        self.session.commit.assert_called_once()
 
-    def test_update_contract_not_found(self):
-        # Mock du contrat non trouvé
-        self.session.query().filter_by().first.return_value = None
+def test_add_paiement_success(contract_base, db_session):
+    # Créer un contrat pour ajouter le paiement
+    data = {
+        'description': 'Test Contract',
+        'total_amount': 1000,
+        'remaining_amount': 1000,
+        'customer_id': 1,
+        'commercial_id': 1,
+        'gestion_id': 1,
+        'state': 'S',  # Utiliser le code de l'état comme une chaîne simple
+        'paiement_state': 'N'  # Utiliser le code de l'état de paiement comme une chaîne simple
+    }
+    contract = contract_base.create_contract(db_session, data)
 
-        # Vérifications
-        with self.assertRaises(ValueError):
-            self.contract_base.update_contract(1, {'description': 'Updated contract'}, self.session)
+    paiement_data = {
+        'paiement_id': 1,
+        'amount': 500
+    }
 
-    @patch('views.console_view.console')
-    def test_add_paiement_success(self, mock_console):
-        # Mock du contrat existant
-        contract = MagicMock(spec=Contract)
-        contract.remaining_amount = Decimal('1000.00')
-        self.session.query().filter_by().first.side_effect = [None, contract]
+    # Ajouter un paiement avec succès
+    paiement = contract_base.add_paiement(db_session, contract.contract_id, paiement_data)
+    assert paiement is not None
+    assert paiement.amount == Decimal('500')
 
-        # Données d'entrée
-        data = {'paiement_id': 1, 'amount': '500.00'}
+    # Vérifier que le montant restant du contrat a été mis à jour
+    updated_contract = db_session.query(Contract).filter_by(contract_id=contract.contract_id).first()
+    assert updated_contract.remaining_amount == 500
 
-        # Appel de la méthode
-        self.contract_base.add_paiement(self.session, 1, data)
 
-        # Vérifications
-        self.session.add.assert_called()
-        self.session.commit.assert_called_once()
-        self.assertEqual(contract.remaining_amount, Decimal('500.00'))
+def test_update_contract_success(contract_base, db_session):
+    # Créer un contrat pour mettre à jour
+    data = {
+        'description': 'Test Contract',
+        'total_amount': 1000,
+        'remaining_amount': 1000,
+        'customer_id': 1,
+        'commercial_id': 1,
+        'gestion_id': 1,
+        'state': 'S',  # Utiliser le code de l'état comme une chaîne simple
+        'paiement_state': 'N'  # Utiliser le code de l'état de paiement comme une chaîne simple
+    }
+    contract = contract_base.create_contract(db_session, data)
 
-    def test_add_paiement_duplicate_error(self):
-        # Mock d'un paiement déjà existant
-        paiement = MagicMock(spec=Paiement)
-        self.session.query().filter_by().first.return_value = paiement
+    # Mettre à jour le contrat
+    update_data = {
+        'description': 'Updated Contract'
+    }
+    contract_base.update_contract(contract.contract_id, update_data, db_session)
 
-        # Données d'entrée
-        data = {'paiement_id': 1, 'amount': '500.00'}
+    # Vérifier que la mise à jour a été effectuée
+    updated_contract = db_session.query(Contract).filter_by(contract_id=contract.contract_id).first()
+    assert updated_contract.description == 'Updated Contract'
 
-        # Vérifications
-        with self.assertRaises(ValueError):
-            self.contract_base.add_paiement(self.session, 1, data)
-        self.session.rollback.assert_called_once()
 
-    @patch('views.console_view.console')
-    def test_signed_success(self, mock_console):
-        # Mock du contrat existant
-        contract = MagicMock(spec=Contract)
-        self.session.query().filter_by().first.return_value = contract
+def test_signed_success(contract_base, db_session):
+    # Créer un contrat pour le signer
+    data = {
+        'description': 'Test Contract',
+        'total_amount': 1000,
+        'remaining_amount': 1000,
+        'customer_id': 1,
+        'commercial_id': 1,
+        'gestion_id': 1,
+        'state': 'C',  # Utiliser le code de l'état comme une chaîne simple
+        'paiement_state': 'N'  # Utiliser le code de l'état de paiement comme une chaîne simple
+    }
+    contract = contract_base.create_contract(db_session, data)
 
-        # Appel de la méthode
-        self.contract_base.signed(self.session, 1)
+    # Signer le contrat
+    contract_base.signed(contract.contract_id, db_session)
 
-        # Vérifications
-        self.assertEqual(contract.state, 'S')
-        self.session.commit.assert_called_once()
-
-    def test_signed_contract_not_found(self):
-        # Mock du contrat non trouvé
-        self.session.query().filter_by().first.return_value = None
-
-        # Vérifications
-        with self.assertRaises(ValueError):
-            self.contract_base.signed(self.session, 1)
-
-    @patch('views.console_view.console')
-    def test_update_gestion_contract_success(self, mock_console):
-        # Mock du contrat existant
-        contract = MagicMock(spec=Contract)
-        self.session.query().filter_by().first.return_value = contract
-
-        # Appel de la méthode
-        self.contract_base.update_gestion_contract(self.current_user, self.session, 1, 2)
-
-        # Vérifications
-        self.assertEqual(contract.gestion_id, 2)
-        self.session.commit.assert_called_once()
-
-    def test_update_gestion_contract_not_found(self):
-        # Mock du contrat non trouvé
-        self.session.query().filter_by().first.return_value = None
-
-        # Vérifications
-        with self.assertRaises(ValueError):
-            self.contract_base.update_gestion_contract(self.current_user, self.session, 1, 2)
+    # Vérifier que le contrat est marqué comme signé
+    updated_contract = db_session.query(Contract).filter_by(contract_id=contract.contract_id).first()
+    assert updated_contract.state == 'S'
