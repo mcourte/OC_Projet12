@@ -174,23 +174,6 @@ class EpicBase:
             text = "Aucun utilisateur connecté pour rafraîchir la session."
             console.print(text, style="bold red")
 
-    @classmethod
-    def initbase(cls):
-        """
-        Initialise la base de données et crée un fichier de configuration.
-
-        Cette méthode demande à l'utilisateur de saisir les informations nécessaires
-        pour la configuration de la base de données, puis crée et configure la base de données.
-
-        Affiche les informations de connexion à la base de données après configuration.
-        """
-        clear_session()
-        values = AuthenticationView.prompt_baseinit()  # Suppose (database, username, password, port)
-        Config().create_config(*values)  # Appelle create_config avec les arguments appropriés
-        db = Config()  # Charge la configuration
-        EpicDatabase(database=db.database, host=db.host, user=db.user, password=db.password, port=db.port)
-        AuthenticationView.display_database_connection(values[0])
-
     def authenticate_user(self, session, username, password):
         """
         Authentifie un utilisateur en vérifiant son nom d'utilisateur et son mot de passe.
