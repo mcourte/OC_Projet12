@@ -212,7 +212,7 @@ class EpicTerminalContract:
             match choice:
                 case 1:
                     data = ContractView.prompt_data_contract()
-                    print(f"session type : {type(session)}")
+                    data['remaining_amount'] = data.get('total_amount')
                     ContractBase.update_contract(contract_id, data, session)
                     ContractView.display_contract_info(contract)
                 case 2:

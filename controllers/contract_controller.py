@@ -93,8 +93,6 @@ class ContractBase:
             for key, value in data.items():
                 if hasattr(contract, key):
                     setattr(contract, key, value)
-                else:
-                    console.print(f"Le contrat n'a pas d'attribut '{key}'.", style="bold red")
 
             # Sauvegarder les modifications
             session.commit()
