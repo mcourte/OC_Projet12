@@ -49,4 +49,5 @@ main.add_command(epic_cli.logout)
 main.add_command(epic_cli.initbase)
 
 if __name__ == '__main__':
+    sentry_activate()
     main()
