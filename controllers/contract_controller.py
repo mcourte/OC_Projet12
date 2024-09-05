@@ -39,74 +39,71 @@ class ContractBase:
         self.session = session
         self.current_user = current_user
 
-    @sentry_activate
-    @is_authenticated
-    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
+    @staticmethod
     def create_contract(session, data):
-        print(f"Type de 'data' : {type(data)}")
-        print(f"Type de 'session' : {type(session)}")
-        print(f"session object: {session}")
+        """
+        Crée un nouveau contrat avec les données fournies.
 
-        # Ajoutez cette vérification
-        if not hasattr(session, 'query'):
-            raise TypeError("L'objet 'session' n'a pas d'attribut 'query'. Session passée: {session}")
+        Paramètres :
+        ------------
+        session (Session) : La session SQLAlchemy pour interagir avec la base de données.
+        data (dict) : Dictionnaire contenant les informations du contrat.
 
+        Retourne :
+        ----------
+        Contract : Le contrat créé.
+        """
         contract = Contract(
-            description=data['description'],
-            total_amount=data['total_amount'],
-            remaining_amount=data['remaining_amount'],
-            state=data.get('state', 'C'),
-            customer_id=data['customer_id'],
-            paiement_state=data.get('paiement_state', 'N'),
-            commercial_id=data['commercial_id'],
+            description=data.get('description'),
+            total_amount=data.get('total_amount'),
+            remaining_amount=data.get('remaining_amount'),
+            state="C",
+            customer_id=data.get('customer_id'),
+            paiement_state="N",
+            commercial_id=data.get('commercial_id'),
             gestion_id=data.get('gestion_id')
         )
-
-        print(contract)
-
-        # Ajout du contrat à la session
         session.add(contract)
         session.commit()
-
+        console.print(f"Le contrat {contract.contract_id} à été crée avec succès.")
         return contract
 
     @sentry_activate
     @is_authenticated
-    @requires_roles('ADM', 'GES', 'COM', 'Admin', 'Gestion', 'Commercial')
-    def update_contract(contract_id, data, session):
+    @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
+    def update_contract(self, contract_id, session, data):
         """
-        Met à jour un contrat existant avec les nouvelles valeurs fournies.
+        Met à jour un contrat existant avec les nouvelles données.
 
-        Paramètres :
-        ------------
-        contract_id : int
-            L'ID du contrat à mettre à jour.
-        data : dict
-            Un dictionnaire contenant les nouvelles valeurs pour les attributs du contrat.
-
-        Exceptions :
-        ------------
-        ValueError
-            Levée si aucun contrat n'est trouvé avec l'ID spécifié.
+        :param contract_id: ID du contrat à mettre à jour.
+        :param session: Session SQLAlchemy pour interagir avec la base de données.
+        :param data: Dictionnaire contenant les nouvelles informations du contrat (référence, description, montant).
         """
-        print("Entrée dans la fonction update_contract")
+        try:
+            # Vérifiez que session est bien une instance de SQLAlchemy Session
+            if not isinstance(session, Session):
+                raise ValueError("La session passée n'est pas une instance de SQLAlchemy Session.")
 
-        # Vérification de la session
-        if not isinstance(session, Session):
-            raise TypeError(f"La session n'est pas valide. Type attendu : Session, obtenu : {type(session)}")
+            # Rechercher le contrat par son ID
+            contract = session.query(Contract).filter_by(contract_id=contract_id).first()
 
-        # Débogage pour traquer l'erreur
-        print(f"Type de session avant query : {type(session)}")
-        contract = session.query(Contract).filter_by(contract_id=contract_id).first()
+            if not contract:
+                raise ValueError(f"Le contrat avec l'ID {contract_id} n'a pas été trouvé.")
 
-        if not contract:
-            raise ValueError(f"Aucun contrat trouvé avec l'ID {contract_id}")
+            # Mise à jour des données du contrat
+            for key, value in data.items():
+                if hasattr(contract, key):
+                    setattr(contract, key, value)
+                else:
+                    console.print(f"Le contrat n'a pas d'attribut '{key}'.", style="bold red")
 
-        # Mise à jour du contrat
-        for key, value in data.items():
-            setattr(contract, key, value)
+            # Sauvegarder les modifications
+            session.commit()
 
-        session.commit()
+            console.print(f"Le contrat {contract_id} a été mis à jour avec succès.", style="bold green")
+        except Exception as e:
+            console.print(f"Erreur inattendue : {str(e)}", style="bold red")
+            session.rollback()
 
     @sentry_activate
     @is_authenticated

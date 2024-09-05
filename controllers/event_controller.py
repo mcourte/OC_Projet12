@@ -4,6 +4,9 @@ from models.entities import Event
 # Import Controllers
 from controllers.decorator import is_authenticated, requires_roles, sentry_activate
 
+# Import Views
+from views.console_view import console
+
 
 class EventBase:
     """
@@ -63,33 +66,39 @@ class EventBase:
         session.commit()
         return event
 
+    @staticmethod
     @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'COM', 'GES', 'Admin', 'Commercial', 'Gestion')
-    def update_event(event_id, session, data):
+    def update_event(event_id, data, session):
         """
-            Met à jour un événement existant avec les nouvelles données.
+        Met à jour un événement existant avec les nouvelles données.
 
-            Paramètres :
-            ------------
-            event_id (int) : ID de l'événement à mettre à jour.
-            session : Session SQLAlchemy.
-            data (dict) : Dictionnaire contenant les nouvelles informations de l'événement.
+        :param event_id: ID de l'événement à mettre à jour.
+        :param data: Dictionnaire contenant les nouvelles informations de l'événement.
+        :param session: Session SQLAlchemy pour interagir avec la base de données.
+        :raises ValueError: Si l'événement avec l'ID fourni n'existe pas.
+        """
+        try:
+            # Rechercher l'événement dans la base de données
+            event = session.query(Event).filter_by(event_id=event_id).first()
 
-            Lève :
-            ------
-            ValueError : Si l'événement avec l'ID fourni n'existe pas.
-            """
-        # Rechercher l'événement
-        event = session.query(Event).filter_by(event_id=event_id).first()
+            if not event:
+                raise ValueError(f"Événement avec l'ID {event_id} non trouvé.")
 
-        if not event:
-            raise ValueError("Il n'existe pas d'évènement avec cet ID")
+            # Mise à jour des attributs de l'événement avec les nouvelles données
+            for key, value in data.items():
+                if hasattr(event, key):
+                    setattr(event, key, value)
+                else:
+                    console.print(f"L'événement n'a pas d'attribut '{key}'.", style="bold red")
 
-        for key, value in data.items():
-            setattr(event, key, value)
+            # Sauvegarder les modifications
+            session.commit()
 
-        session.commit()
+        except Exception as e:
+            console.print(f"Erreur inattendue : {str(e)}", style="bold red")
+            session.rollback()
 
     @classmethod
     @sentry_activate

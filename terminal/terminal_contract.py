@@ -2,7 +2,7 @@
 import os
 import sys
 from typing import Optional
-
+from sqlalchemy.orm import Session
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
@@ -132,40 +132,50 @@ class EpicTerminalContract:
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def create_contract(self, session) -> None:
+        """
+        Crée un nouveau contrat en permettant de :
+        - Sélectionner un client
+        - Saisir les données du contrat
+        - Ajouter le contrat à la base de données
+
+        :param session: Session SQLAlchemy pour interagir avec la base de données.
+        """
+        session = session()
         if not self.current_user:
             text = "Erreur : Utilisateur non connecté ou non valide."
             console.print(text, style="bold red")
             return
-        session = session()
-        # Récupérer tous les clients
-        customers = session.query(Customer).all()
-
-        customer_data = [{"name": f"{c.first_name} {c.last_name} {c.customer_id}", "value": c.customer_id}
-                         for c in customers]
-
-        # Récupérer l'identifiant du client sélectionné
-        customer_id = CustomerView.prompt_client(customer_data)
 
         try:
+            # Vérifiez que session est bien une instance de SQLAlchemy Session
+            if not isinstance(session, Session):
+                raise ValueError("La session passée n'est pas une instance de SQLAlchemy Session.")
+
+            # Récupérer les clients
+            customers = session.query(Customer).all()
+            customer_data = [{"name": f"{c.first_name} {c.last_name} {c.customer_id}", "value": c.customer_id} for c in customers]
+            customer_id = CustomerView.prompt_client(customer_data)
+
             # Obtenir les données du contrat
             data = ContractView.prompt_data_contract()
-
-            # Récupérer l'objet client correspondant à l'ID
-            customer = session.query(Customer).filter_by(customer_id=customer_id).first()
             data['customer_id'] = str(customer_id)
-            data['commercial_id'] = customer.commercial_id
-            if self.current_user.role == 'GES':
-                if isinstance(self.current_user, Gestion):
-                    data['gestion_id'] = self.current_user.epicuser_id
-                    ContractBase.create_contract(session, data)
+            commercial = session.query(Customer).filter_by(customer_id=customer_id).first()
+            if commercial:
+                data['commercial_id'] = commercial.commercial_id
+            if self.current_user.role == 'GES' and isinstance(self.current_user, Gestion):
+                data['gestion_id'] = self.current_user.epicuser_id
+                # Créer le contrat
+                ContractBase.create_contract(session, data)
             else:
-                print(f"Appel à create_contract avec session de type: {type(session)} et data: {data}, et role : {self.current_user.role.value}")
                 ContractBase.create_contract(session, data)
                 if ContractView.prompt_add_gestion():
                     EpicTerminalContract.update_contract_gestion(self, session)
 
         except KeyboardInterrupt:
             DataView.display_interupt()
+        except Exception as e:
+            text = f"Erreur rencontrée: {e}"
+            console.print(text, style="bold red")
 
     @sentry_activate
     @is_authenticated
@@ -177,56 +187,43 @@ class EpicTerminalContract:
         - Modifier les informations du contrat
         - Marquer le contrat comme signé
 
-        Cette méthode gère la mise à jour des informations du contrat et le changement de son état.
+        :param session: Session SQLAlchemy pour interagir avec la base de données.
         """
-        # Vérifiez si self.current_user est défini
-        if not self.current_user:
-            text = "Erreur : Utilisateur non connecté ou non valide."
-            console.print(text, style="bold red")
-            return
-        session = session()
-        # Récupérer tous les contrats
-        contracts = session.query(Contract).all()
-
-        # Filtrage des contrats pour les commerciaux
-        if self.current_user.role == 'COM':
-            if isinstance(self.current_user, Commercial):
-                commercial = self.current_user
-                contracts = [contract for contract in contracts if contract in commercial.contracts]
-
-        selected_contract = EventView.prompt_select_contract(contracts)
-
-        if not selected_contract:
-            raise ValueError("Contrat sélectionné invalide")
-
-        contract_id = selected_contract.contract_id
-        contract = session.query(Contract).filter_by(contract_id=contract_id).first()
-        if not contract:
-            raise ValueError("Contrat introuvable")
-
         try:
+            if not self.current_user:
+                raise ValueError("Utilisateur non connecté ou non valide.")
+
+            session = session()
+            contracts = session.query(Contract).all()
+
+            if self.current_user.role == 'COM' and isinstance(self.current_user, Commercial):
+                contracts = [contract for contract in contracts if contract in self.current_user.contracts]
+            selected_contract = EventView.prompt_select_contract(contracts)
+            if not selected_contract:
+                raise ValueError("Contrat sélectionné invalide")
+
+            contract_id = selected_contract.contract_id
+            contract = session.query(Contract).filter_by(contract_id=contract_id).first()
+            if not contract:
+                raise ValueError("Contrat introuvable")
+
             choice = ContractView.menu_update_contract(contract)
             match choice:
                 case 1:
-                    try:
-                        ContractView.display_contract_info(contract)
-                        data = ContractView.prompt_data_contract()
-                        print(f"data : {data} - type : {type(data)}")
-                        print(f"contract_id : {type(contract_id)}")
-                        print(f"session : {session} - type : {type(session)}")
-                        ContractBase.update_contract(session, contract_id, data)
-                        ContractView.display_contract_info(contract)
-                    except KeyboardInterrupt:
-                        DataView.display_interupt()
+                    data = ContractView.prompt_data_contract()
+                    print(f"data : {data} - type {type(data)}")
+                    print(f"contract_id , type : {type(contract_id)}")
+                    print(f"session type : {type(session)}")
+                    ContractBase.update_contract(contract_id, data, session)
+                    ContractView.display_contract_info(contract)
                 case 2:
-                    try:
-                        print(f"contract_id : {type(contract_id)}")
-                        print(f"session : {session} - type : {type(session)}")
-                        ContractBase.signed(session, contract_id)
-                    except KeyboardInterrupt:
-                        DataView.display_interupt()
+                    ContractBase.signed(contract_id, session)
+
         except KeyboardInterrupt:
             DataView.display_interupt()
+        except Exception as e:
+            text = f"Erreur rencontrée: {e}"
+            console.print(text, style="bold red")
 
     @sentry_activate
     @is_authenticated

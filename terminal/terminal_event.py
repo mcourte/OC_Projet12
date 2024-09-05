@@ -1,7 +1,6 @@
 # Import généraux
 import os
 import sys
-from sqlalchemy.orm import scoped_session
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
@@ -51,42 +50,39 @@ class EpicTerminalEvent:
 
     @sentry_activate
     @is_authenticated
-    @requires_roles('ADM', 'GES', 'SUP', 'Admin', 'Gestion', 'Support')
+    @requires_roles('ADM', 'COM', 'GES', 'Admin', 'Commercial', 'Gestion')
     def update_event(self, session):
         """
-        Met à jour un événement en permettant de :
-        - Sélectionner un support
-        - Sélectionner un contrat
-        - Sélectionner un événement à mettre à jour
-        - Appliquer les modifications dans la base de données.
+        Permet à l'utilisateur de sélectionner un événement à modifier et de mettre à jour ses informations.
 
         :param session: Session SQLAlchemy pour interagir avec la base de données.
         """
         try:
-            # Assurez-vous que session est bien une session SQLAlchemy
-            if not isinstance(session, scoped_session):
-                raise TypeError("La variable session doit être une instance de SQLAlchemy session")
+            if not self.current_user:
+                raise ValueError("Utilisateur non connecté ou non valide.")
 
-            session = session()
+            # Ne réaffectez pas la session ici, elle est déjà passée en paramètre
+            events = session.query(Event).all()
 
-            # Récupérer tous les événements non attribués à un support
-            events = session.query(Event).filter_by(support_id=None).all()
             if events:
-                event = EventView.prompt_select_event(events)
-                event_id = event.event_id
-                EventView.display_event_info(event)
-                data = EventView.prompt_data_event()
+                event = EventView.prompt_select_event(events)  # Sélection de l'événement
+                data = EventView.prompt_data_event()  # Récupération des nouvelles données de l'événement
+                print(f"data type : {type(data)}")
+                print(f"event_id : {event.event_id}, type - {type(event.event_id)}")
+                print(f"session type : {type(session)}")
 
-                # Mettre à jour l'événement
-                EventBase.update_event(event_id, session, data)
+                # Passez directement la session à la méthode update_event
+                EventBase.update_event(event.event_id, data, session)
 
+        except KeyboardInterrupt:
+            DataView.display_interupt()
         except Exception as e:
             text = f"Erreur rencontrée: {e}"
             console.print(text, style="bold red")
 
     @sentry_activate
     @is_authenticated
-    @requires_roles('ADM', 'COM', 'Admin', 'Commercial', 'GES', 'Gestion')
+    @requires_roles('ADM', 'COM', 'GES', 'Admin', 'Commercial', 'Gestion')
     def create_event(self, session):
         """
         Crée un nouvel événement en permettant de :
@@ -102,36 +98,28 @@ class EpicTerminalEvent:
             console.print(text, style="bold red")
             return
 
-        roles = EpicUserBase.get_roles(self)
-        self.roles = roles
-        session = session()
-        if self.current_user.role == 'COM':
-            if isinstance(self.current_user, Commercial):
+        try:
+            session = session()
+            if self.current_user.role == 'COM' and isinstance(self.current_user, Commercial):
                 contracts = session.query(Contract).filter(Contract.state == "S",
                                                            Contract.commercial_id == self.current_user.epicuser_id).all()
-                if contracts:
-                    contract = EventView.prompt_select_contract(contracts)
-                    try:
-                        data = EventView.prompt_data_event()
-                        event = EventBase.create_event(contract, data, session)
-                    except KeyboardInterrupt:
-                        DataView.display_interupt()
-                else:
-                    DataView.display_nocontracts()
-        else:
-            contracts = self.session.query(Contract).filter_by(state="S").all()
+            else:
+                contracts = session.query(Contract).filter_by(state="S").all()
+
             if contracts:
                 contract = EventView.prompt_select_contract(contracts)
-                try:
-                    data = EventView.prompt_data_event()
-                    print("Avant create")
-                    event = EventBase.create_event(contract, data, session)
-                    if EventView.prompt_add_support():
-                        EpicTerminalEvent.update_event_support(self, session, event)
-                except KeyboardInterrupt:
-                    DataView.display_interupt()
+                data = EventView.prompt_data_event()
+                event = EventBase.create_event(contract, data, session)
+                if EventView.prompt_add_support():
+                    EpicTerminalEvent.update_event_support(self, session, event)
             else:
                 DataView.display_nocontracts()
+
+        except KeyboardInterrupt:
+            DataView.display_interupt()
+        except Exception as e:
+            text = f"Erreur rencontrée: {e}"
+            console.print(text, style="bold red")
 
     @sentry_activate
     @is_authenticated

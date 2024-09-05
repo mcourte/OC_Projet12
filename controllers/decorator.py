@@ -15,8 +15,6 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-# Import des Views
-from views.error_view import ErrorView
 
 # Import des Controllers
 from controllers.session import ALGORITHM, SECRET_KEY
@@ -47,8 +45,11 @@ def sentry_activate(f):
             try:
                 return f(*args, **kwargs)
             except Exception as e:
-                ErrorView.display_error_exception(e)
+                # Affichage de l'erreur localement
+                print(f"Erreur inattendue : {str(e)}")
+                # Capture l'exception dans Sentry
                 capture_exception(e)
+                raise  # Relance l'exception après capture
     return decorator
 
 
