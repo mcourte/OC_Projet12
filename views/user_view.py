@@ -13,7 +13,6 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 sys.path.insert(0, parent_dir)
 
 from views.console_view import console
-from views.prompt_view import PromptView
 from views.regexformat import regexformat
 
 
@@ -59,7 +58,7 @@ class UserView:
         ).ask()
 
     @classmethod
-    def prompt_select_support(cls, values) -> str:
+    def prompt_select_support(cls, all_supports) -> str:
         """
         Demande à l'utilisateur de sélectionner un support parmi une liste.
 
@@ -71,8 +70,18 @@ class UserView:
         -----------
         str : Nom d'utilisateur du support sélectionné.
         """
-        return PromptView.prompt_select(
-            "Choix du support:", values)
+        choices = [f"{support.username}" for support in all_supports]
+
+        selected_choice = questionary.select(
+            "Choix du support:",
+            choices=choices,
+        ).ask()
+
+        if selected_choice:
+            for support in all_supports:
+                if f"{support.username}" == selected_choice:
+                    return support.username
+        return None
 
     @classmethod
     def prompt_confirm_profil(cls, **kwargs) -> bool:
@@ -293,8 +302,7 @@ class UserView:
         -----------
         Instance de gestionnaire : Instance du gestionnaire sélectionné ou None si aucun gestionnaire n'est sélectionné.
         """
-        print(f"Gestionnaires disponibles : {all_gestions}")
-        choices = [f"{gestion.first_name} {gestion.last_name}" for gestion in all_gestions]
+        choices = [f"{gestion.username}" for gestion in all_gestions]
 
         selected_choice = questionary.select(
             "Choix du gestionnaire:",
@@ -303,6 +311,33 @@ class UserView:
 
         if selected_choice:
             for gestion in all_gestions:
-                if f"{gestion.first_name} {gestion.last_name}" == selected_choice:
-                    return gestion
+                if f"{gestion.username}" == selected_choice:
+                    return gestion.username
+        return None
+
+    @classmethod
+    def prompt_select_users(cls, all_users):
+        """
+        Demande à l'utilisateur de sélectionner un gestionnaire parmi une liste.
+
+        Paramètres :
+        ------------
+        all_gestions (list) : Liste des instances de gestionnaires.
+
+        Retourne :
+        -----------
+        Instance de gestionnaire : Instance du gestionnaire sélectionné ou None si aucun gestionnaire n'est sélectionné.
+        """
+        print(f"Gestionnaires disponibles : {all_users}")
+        choices = [f"{user.first_name} - {user.last_name}" for user in all_users]
+
+        selected_choice = questionary.select(
+            "Choix du gestionnaire:",
+            choices=choices,
+        ).ask()
+
+        if selected_choice:
+            for user in all_users:
+                if f"{user.first_name} - {user.last_name}" == selected_choice:
+                    return user
         return None

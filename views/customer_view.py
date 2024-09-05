@@ -4,7 +4,8 @@ from rich.table import Table
 from rich import box
 import os
 import sys
-
+from rich.panel import Panel
+from rich.align import Align
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
@@ -89,6 +90,8 @@ class CustomerView:
         :param pager: Indique si le pager est utilisé. Par défaut à False.
         :type pager: bool, optionnel
         """
+        fmt_date = '%d/%m/%Y'
+
         table = Table(
             title="Liste des Clients",
             box=box.SQUARE,
@@ -100,11 +103,15 @@ class CustomerView:
         table.add_column("Téléphone", justify="center", style="cyan", header_style="bold cyan")
         table.add_column("Email", justify="center", style="cyan", header_style="bold cyan")
         table.add_column("Commercial associé", justify="center", style="cyan", header_style="bold cyan")
-
+        table.add_column("Date de création", justify="center", style="cyan", header_style="bold cyan")
+        table.add_column("Date de modification", justify="center", style="cyan", header_style="bold cyan")
         for c in all_customers:
+            creation_time = f"{c.creation_time.strftime(fmt_date)}"
+            update_time = f"{c.update_time.strftime(fmt_date)}"
             table.add_row(
                 f"{c.first_name} {c.last_name}", c.company_name, c.phone, c.email,
-                str(c.commercial.username) if c.commercial else 'Aucun commercial'
+                str(c.commercial.username) if c.commercial else 'Aucun commercial',
+                creation_time, update_time
             )
 
         if pager:
@@ -151,3 +158,28 @@ class CustomerView:
         """
         return questionary.confirm(
             "Souhaitez-vous ajouter un commercial associé à ce client ?", **kwargs).ask()
+
+    @classmethod
+    def display_customer(cls, customer):
+        """
+        Affiche les informations de profil d'un utilisateur.
+
+        :param e: Instance de l'utilisateur dont les informations doivent être affichées.
+        :type e: User
+        """
+        text = f'ID: {customer.customer_id}\n'
+        text += f'Prénom: {customer.first_name}\n'
+        text += f'Nom: {customer.last_name}\n'
+        text += f'Email: {customer.email}\n' if customer.email else 'Email: \n'
+        text += f'Téléphone: {customer.phone}\n'
+        text += f'Entreprise: {customer.company_name}\n'
+        text += f'Commercial associé: {customer.commercial_id}\n'
+        text += f'Date de création: {customer.creation_time}\n'
+        text += f'Date de la dernière modification: {customer.update_time}\n'
+        p = Panel(
+            Align.center(text, vertical='bottom'),
+            box=box.ROUNDED,
+            style='cyan',
+            title_align='center',
+            title='Information du client')
+        console.print(p)

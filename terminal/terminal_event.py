@@ -1,7 +1,7 @@
 # Import généraux
 import os
 import sys
-
+from sqlalchemy.orm import scoped_session
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
@@ -63,25 +63,23 @@ class EpicTerminalEvent:
         :param session: Session SQLAlchemy pour interagir avec la base de données.
         """
         try:
+            # Assurez-vous que session est bien une session SQLAlchemy
+            if not isinstance(session, scoped_session):
+                raise TypeError("La variable session doit être une instance de SQLAlchemy session")
+
+            session = session()
+
             # Récupérer tous les événements non attribués à un support
             events = session.query(Event).filter_by(support_id=None).all()
             if events:
                 event = EventView.prompt_select_event(events)
-                event_id = event.event_id  # Assurez-vous d'utiliser l'ID de l'événement
-
-                # Récupérer tous les supports
-                supports = session.query(EpicUser).filter_by(role='SUP').all()
-                supports_dict = {s.username: s.epicuser_id for s in supports}
-                support_username = UserView.prompt_select_support(list(supports_dict.keys()))
-                support_id = supports_dict[support_username]  # Obtenez l'ID du support sélectionné
-                text = f"Support sélectionné: {support_username} (ID: {support_id})"
-                console.print(text, style="cyan")
+                event_id = event.event_id
+                EventView.display_event_info(event)
+                data = EventView.prompt_data_event()
 
                 # Mettre à jour l'événement
-                EventBase.update_event(self, event_id, {"support_id": support_id})
+                EventBase.update_event(event_id, session, data)
 
-        except KeyboardInterrupt:
-            DataView.display_interupt()
         except Exception as e:
             text = f"Erreur rencontrée: {e}"
             console.print(text, style="bold red")
@@ -106,6 +104,7 @@ class EpicTerminalEvent:
 
         roles = EpicUserBase.get_roles(self)
         self.roles = roles
+        session = session()
         if self.current_user.role == 'COM':
             if isinstance(self.current_user, Commercial):
                 contracts = session.query(Contract).filter(Contract.state == "S",
@@ -120,11 +119,12 @@ class EpicTerminalEvent:
                 else:
                     DataView.display_nocontracts()
         else:
-            contracts = session.query(Contract).filter_by(state="S").all()
+            contracts = self.session.query(Contract).filter_by(state="S").all()
             if contracts:
                 contract = EventView.prompt_select_contract(contracts)
                 try:
                     data = EventView.prompt_data_event()
+                    print("Avant create")
                     event = EventBase.create_event(contract, data, session)
                     if EventView.prompt_add_support():
                         EpicTerminalEvent.update_event_support(self, session, event)
@@ -169,32 +169,43 @@ class EpicTerminalEvent:
             events = session.query(Event).all()
             EventView.display_list_events(events)
 
+    @sentry_activate
     @is_authenticated
-    @requires_roles('ADM', 'GES', 'SUP', 'COM', 'Admin', 'Gestion', 'Support', 'Commercial')
-    def update_event_support(self, session, event):
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
+    def update_event_support(self, session) -> None:
         """
-        Met à jour un événement en permettant de :
-        - Sélectionner un support
-        - Sélectionner un événement à mettre à jour
-        - Appliquer les modifications dans la base de données.
+        Met à jour le gestionnaire attribué à un contrat en permettant de :
+        - Sélectionner un contrat sans gestionnaire
+        - Sélectionner un gestionnaire
+        - Attribuer le gestionnaire sélectionné au contrat
 
-        :param session: Session SQLAlchemy pour interagir avec la base de données.
-        :param event: L'objet événement à mettre à jour.
+        Cette méthode met à jour le gestionnaire pour un contrat en fonction des sélections faites.
         """
-        try:
-            # Récupérer tous les supports
-            supports = session.query(EpicUser).filter_by(role='SUP').all()
-            supports_dict = {s.username: s.epicuser_id for s in supports}
-            support_username = UserView.prompt_select_support(list(supports_dict.keys()))
-            support_id = supports_dict[support_username]  # Obtenez l'ID du support sélectionné
-            text = f"Support sélectionné: {support_username} (ID: {support_id})"
-            console.print(text, style="cyan")
 
-            # Mettre à jour l'événement
-            EventBase.update_event(self, event.event_id, {"support_id": support_id})
-
-        except KeyboardInterrupt:
-            DataView.display_interupt()
-        except Exception as e:
-            text = f"Erreur rencontrée: {e}"
+        # Vérifiez si la session est correctement initialisée
+        if session is None:
+            text = "Erreur : La session est non initialisée."
             console.print(text, style="bold red")
+            return
+
+        # Récupérer tous les événements non attribués à un support
+        events = session.query(Event).filter_by(support_id=None).all()
+        if events:
+            event = EventView.prompt_select_event(events)
+
+        # Récupérer tous les supports
+        supports = session.query(EpicUser).filter_by(role='SUP').all()
+
+        # Demander à l'utilisateur de sélectionner un support
+        selected_support_username = UserView.prompt_select_support(supports)
+
+        # Récupérer l'ID du support sélectionné
+        selected_support = session.query(EpicUser).filter_by(username=selected_support_username).first()
+        if not selected_support:
+            text = "Erreur : Le support sélectionné n'existe pas."
+            console.print(text, style="bold red")
+            return
+        # Mettre à jour le support de l'évènement
+        EventBase.update_support_event(session, event.event_id, selected_support.epicuser_id)
+        text = f"Le support {selected_support.username} a été attribué à l'évènement {event.event_id} avec succès."
+        console.print(text, style="cyan")

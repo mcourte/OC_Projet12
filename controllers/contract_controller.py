@@ -2,7 +2,7 @@
 import os
 import sys
 from decimal import Decimal
-
+from sqlalchemy.orm import Session
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
@@ -43,37 +43,31 @@ class ContractBase:
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def create_contract(session, data):
-        """
-        Crée un nouveau contrat avec les informations fournies.
+        print(f"Type de 'data' : {type(data)}")
+        print(f"Type de 'session' : {type(session)}")
+        print(f"session object: {session}")
 
-        Paramètres :
-        ------------
-        session : Session
-            La session SQLAlchemy pour interagir avec la base de données.
-        data : dict
-            Un dictionnaire contenant les informations du contrat à créer,
-            telles que 'description', 'total_amount', 'remaining_amount',
-            'state', 'customer_id', 'paiement_state' et 'commercial_id'.
+        # Ajoutez cette vérification
+        if not hasattr(session, 'query'):
+            raise TypeError("L'objet 'session' n'a pas d'attribut 'query'. Session passée: {session}")
 
-        Retourne :
-        ----------
-        Contract
-            Le contrat nouvellement créé.
-        """
-        # Créez l'instance du contrat
         contract = Contract(
             description=data['description'],
             total_amount=data['total_amount'],
-            remaining_amount=data.get('remaining_amount'),
+            remaining_amount=data['remaining_amount'],
             state=data.get('state', 'C'),
             customer_id=data['customer_id'],
             paiement_state=data.get('paiement_state', 'N'),
-            commercial_id=data.get('commercial_id')
+            commercial_id=data['commercial_id'],
+            gestion_id=data.get('gestion_id')
         )
 
-        # Utilisation de self.session pour ajouter et valider
+        print(contract)
+
+        # Ajout du contrat à la session
         session.add(contract)
         session.commit()
+
         return contract
 
     @sentry_activate
@@ -95,9 +89,20 @@ class ContractBase:
         ValueError
             Levée si aucun contrat n'est trouvé avec l'ID spécifié.
         """
+        print("Entrée dans la fonction update_contract")
+
+        # Vérification de la session
+        if not isinstance(session, Session):
+            raise TypeError(f"La session n'est pas valide. Type attendu : Session, obtenu : {type(session)}")
+
+        # Débogage pour traquer l'erreur
+        print(f"Type de session avant query : {type(session)}")
         contract = session.query(Contract).filter_by(contract_id=contract_id).first()
+
         if not contract:
-            raise ValueError("Il n'existe pas de contrat avec cet ID")
+            raise ValueError(f"Aucun contrat trouvé avec l'ID {contract_id}")
+
+        # Mise à jour du contrat
         for key, value in data.items():
             setattr(contract, key, value)
 
@@ -183,7 +188,7 @@ class ContractBase:
     @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
-    def signed(session, contract_id):
+    def signed(contract_id, session):
         """
         Met à jour l'état d'un contrat pour le marquer comme signé.
 
@@ -199,6 +204,14 @@ class ContractBase:
         ValueError
             Levée si aucun contrat n'est trouvé avec l'ID spécifié.
         """
+        print("Entrée dans la fonction signed")
+
+        # Vérification de la session
+        if not isinstance(session, Session):
+            raise TypeError(f"La session n'est pas valide. Type attendu : Session, obtenu : {type(session)}")
+        print(f"contract_id : {contract_id} - type : {type(contract_id)}")
+        print(f"session : {session} - type : {type(session)}")
+
         contract = session.query(Contract).filter_by(contract_id=contract_id).first()
         if not contract:
             raise ValueError(f"Aucun contrat trouvé avec l'ID {contract_id}")
@@ -211,7 +224,7 @@ class ContractBase:
     @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
-    def update_gestion_contract(cls, current_user, session, contract_id, gestion_id):
+    def update_gestion_contract(self, session, contract_id, gestion_id):
         """
         Met à jour le commercial attribué à un contrat.
 
@@ -237,8 +250,6 @@ class ContractBase:
         if not contract:
             raise ValueError("Aucun contrat trouvé avec l'ID spécifié.")
 
-        # Mise à jour du commercial
+        # Mise à jour du gestionnaire
         contract.gestion_id = gestion_id
         session.commit()
-        text = f"Gestionnaire ID {gestion_id} attribué au contrat ID {contract_id}."
-        console.print(text, style="cyan")

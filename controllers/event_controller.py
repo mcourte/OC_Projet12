@@ -4,9 +4,6 @@ from models.entities import Event
 # Import Controllers
 from controllers.decorator import is_authenticated, requires_roles, sentry_activate
 
-# Import Views
-from views.console_view import console
-
 
 class EventBase:
     """
@@ -29,7 +26,7 @@ class EventBase:
     @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
-    def create_event(self, data, session):
+    def create_event(contract, data, session):
         """
         Crée un nouvel événement avec les données fournies.
 
@@ -50,15 +47,15 @@ class EventBase:
         ----------
         Event : L'événement créé.
         """
-        # Utilisez .get() pour gérer les clés manquantes
+        # Création de l'événement
         event = Event(
             title=data.get('title'),
             description=data.get('description'),
             location=data.get('location'),
-            attendees=data.get('attendees', 0),  # Par défaut à 0 si non fourni
+            attendees=data.get('attendees', 0),
             date_started=data.get('date_started'),
             date_ended=data.get('date_ended'),
-            contract_id=data.get('contract_id'),
+            contract_id=str(contract.contract_id),
             customer_id=data.get('customer_id'),
             support_id=data.get('support_id')
         )
@@ -69,26 +66,61 @@ class EventBase:
     @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'COM', 'GES', 'Admin', 'Commercial', 'Gestion')
-    def update_event(self, event_id, data):
+    def update_event(event_id, session, data):
         """
-        Met à jour un événement existant avec les nouvelles données.
+            Met à jour un événement existant avec les nouvelles données.
 
-        Paramètres :
-        ------------
-        event_id (int) : ID de l'événement à mettre à jour.
-        data (dict) : Dictionnaire contenant les nouvelles informations de l'événement.
+            Paramètres :
+            ------------
+            event_id (int) : ID de l'événement à mettre à jour.
+            session : Session SQLAlchemy.
+            data (dict) : Dictionnaire contenant les nouvelles informations de l'événement.
 
-        Lève :
-        ------
-        ValueError : Si l'événement avec l'ID fourni n'existe pas.
-        """
-        event = self.session.query(Event).filter_by(event_id=event_id).first()
+            Lève :
+            ------
+            ValueError : Si l'événement avec l'ID fourni n'existe pas.
+            """
+        # Rechercher l'événement
+        event = session.query(Event).filter_by(event_id=event_id).first()
+
         if not event:
-            raise ValueError("Il n'existe pas d'événements avec cet ID")
+            raise ValueError("Il n'existe pas d'évènement avec cet ID")
 
         for key, value in data.items():
             setattr(event, key, value)
 
-        self.session.commit()
-        text = "L'événement a bien été mis à jour."
-        console.print(text, style="bold green")
+        session.commit()
+
+    @classmethod
+    @sentry_activate
+    @is_authenticated
+    @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
+    def update_support_event(self, session, event_id, support_id):
+        """
+        Met à jour le commercial attribué à un client.
+
+        Paramètres :
+        ------------
+        cls : type
+            La classe CustomerBase.
+        current_user : EpicUser
+            L'utilisateur actuel effectuant la mise à jour.
+        session : Session
+            La session SQLAlchemy utilisée pour effectuer les opérations de base de données.
+        customer_id : int
+            L'ID du client à mettre à jour.
+        commercial_id : int
+            L'ID du nouveau commercial à attribuer au client.
+
+        Exceptions :
+        ------------
+        ValueError
+            Levée si aucun client n'est trouvé avec l'ID spécifié.
+        """
+        event = session.query(Event).filter_by(event_id=event_id).first()
+        if not event:
+            raise ValueError("Aucun évènement trouvé avec l'ID spécifié.")
+
+        # Mise à jour du support
+        event.support_id = support_id
+        session.commit()

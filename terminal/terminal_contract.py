@@ -16,7 +16,7 @@ from controllers.contract_controller import ContractBase
 from controllers.user_controller import EpicUserBase
 
 # Import Modèles
-from models.entities import Customer, Contract, Commercial, EpicUser
+from models.entities import Customer, Contract, Commercial, EpicUser, Gestion
 
 # Import Terminaux
 from terminal.terminal_customer import EpicTerminalCustomer
@@ -126,25 +126,20 @@ class EpicTerminalContract:
         else:
             # Afficher tous les contrats si l'utilisateur n'est pas un commercial
             contracts = session.query(Contract).all()
-            ContractView.display_list_contracts(contracts, session)
+            ContractView.display_list_contracts(contracts)
 
     @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def create_contract(self, session) -> None:
-        """
-        Crée un nouveau contrat en permettant de :
-        - Sélectionner un client
-        - Saisir les données du contrat
-        - Mettre à jour la base de données
-        - Générer une tâche en attente de signature.
+        if not self.current_user:
+            text = "Erreur : Utilisateur non connecté ou non valide."
+            console.print(text, style="bold red")
+            return
+        session = session()
+        # Récupérer tous les clients
+        customers = session.query(Customer).all()
 
-        Cette méthode demande les informations nécessaires pour créer un contrat,
-        y compris la sélection d'un client et l'ajout des données du contrat.
-        """
-        customers = self.session.query(Customer).all()
-
-        # Assurez-vous que 'client_data' contient des identifiants corrects
         customer_data = [{"name": f"{c.first_name} {c.last_name} {c.customer_id}", "value": c.customer_id}
                          for c in customers]
 
@@ -152,20 +147,22 @@ class EpicTerminalContract:
         customer_id = CustomerView.prompt_client(customer_data)
 
         try:
+            # Obtenir les données du contrat
             data = ContractView.prompt_data_contract()
 
-            # Ajouter l'identifiant du client sélectionné au dictionnaire data
-            data['customer_id'] = customer_id
+            # Récupérer l'objet client correspondant à l'ID
             customer = session.query(Customer).filter_by(customer_id=customer_id).first()
-            commercial_id = customer.commercial_id
-            data['commercial_id'] = commercial_id
-            # Appeler la fonction pour créer le contrat
-            contract = ContractBase.create_contract(session, data)
-            if ContractView.prompt_add_gestion():
-                EpicTerminalContract.update_contract_choose(self, session, contract)
-            contract_ref = data['description']
-            text = f'Contrat {contract_ref} en attente de signature'
-            return text
+            data['customer_id'] = str(customer_id)
+            data['commercial_id'] = customer.commercial_id
+            if self.current_user.role == 'GES':
+                if isinstance(self.current_user, Gestion):
+                    data['gestion_id'] = self.current_user.epicuser_id
+                    ContractBase.create_contract(session, data)
+            else:
+                print(f"Appel à create_contract avec session de type: {type(session)} et data: {data}, et role : {self.current_user.role.value}")
+                ContractBase.create_contract(session, data)
+                if ContractView.prompt_add_gestion():
+                    EpicTerminalContract.update_contract_gestion(self, session)
 
         except KeyboardInterrupt:
             DataView.display_interupt()
@@ -187,7 +184,7 @@ class EpicTerminalContract:
             text = "Erreur : Utilisateur non connecté ou non valide."
             console.print(text, style="bold red")
             return
-
+        session = session()
         # Récupérer tous les contrats
         contracts = session.query(Contract).all()
 
@@ -214,12 +211,17 @@ class EpicTerminalContract:
                     try:
                         ContractView.display_contract_info(contract)
                         data = ContractView.prompt_data_contract()
-                        ContractBase.update_contract(contract_id, data, session)
+                        print(f"data : {data} - type : {type(data)}")
+                        print(f"contract_id : {type(contract_id)}")
+                        print(f"session : {session} - type : {type(session)}")
+                        ContractBase.update_contract(session, contract_id, data)
                         ContractView.display_contract_info(contract)
                     except KeyboardInterrupt:
                         DataView.display_interupt()
                 case 2:
                     try:
+                        print(f"contract_id : {type(contract_id)}")
+                        print(f"session : {session} - type : {type(session)}")
                         ContractBase.signed(session, contract_id)
                     except KeyboardInterrupt:
                         DataView.display_interupt()
@@ -238,28 +240,33 @@ class EpicTerminalContract:
 
         Cette méthode met à jour le gestionnaire pour un contrat en fonction des sélections faites.
         """
+
         # Vérifiez si la session est correctement initialisée
         if session is None:
             text = "Erreur : La session est non initialisée."
             console.print(text, style="bold red")
             return
+
         # Récupérer tous les contrats sans gestionnaire
         contracts = session.query(Contract).filter_by(gestion_id=None).all()
         ref = EventView.prompt_select_contract(contracts)
         selected_contract = session.query(Contract).filter_by(contract_id=ref.contract_id).first()
         selected_contract_id = selected_contract.contract_id
-        # Récupérer tous les gestionnaires
-        users = session.query(EpicUser).filter_by(role='GES').all()
 
-        # Demander à l'utilisateur de sélectionner un gestionnaire
-        selected_gestion = UserView.prompt_select_gestion(users)
+        # Récupérer tous les gestionnaires
+        gestionnaires = session.query(EpicUser).filter_by(role='GES').all()
+
+        # Demander à l'utilisateur de sélectionner un gestionaire
+        selected_gestion_username = UserView.prompt_select_gestion(gestionnaires)
+
+        # Récupérer l'ID du gestionnaire sélectionné
+        selected_gestion = session.query(EpicUser).filter_by(username=selected_gestion_username).first()
         if not selected_gestion:
-            text = "Erreur : Aucun contrat sélectionné."
+            text = "Erreur : Le gestionnaire sélectionné n'existe pas."
             console.print(text, style="bold red")
             return
-
         # Mettre à jour le gestionnaire du contrat
-        ContractBase.update_gestion_contract(self.current_user, session, selected_contract_id, selected_gestion.epicuser_id)
+        ContractBase.update_gestion_contract(session, selected_contract_id, selected_gestion.epicuser_id)
         text = f"Le gestionnaire {selected_gestion.username} a été attribué au contrat {selected_contract_id} avec succès."
         console.print(text, style="cyan")
         ContractBase.update_contract
@@ -281,14 +288,18 @@ class EpicTerminalContract:
             console.print(text, style="bold red")
             return
         # Récupérer tous les gestionnaires
-        users = session.query(EpicUser).filter_by(role='GES').all()
+        gestionnaires = session.query(EpicUser).filter_by(role='GES').all()
 
-        # Demander à l'utilisateur de sélectionner un gestionnaire
-        selected_gestion = UserView.prompt_select_gestion(users)
+        # Demander à l'utilisateur de sélectionner un gestionaire
+        selected_gestion_username = UserView.prompt_select_gestion(gestionnaires)
+
+        # Récupérer l'ID du gestionnaire sélectionné
+        selected_gestion = session.query(EpicUser).filter_by(username=selected_gestion_username).first()
         if not selected_gestion:
-            text = "Erreur : Aucun contrat sélectionné."
+            text = "Erreur : Le gestionnaire sélectionné n'existe pas."
             console.print(text, style="bold red")
             return
+
         # Mettre à jour le gestionnaire du contrat
         ContractBase.update_gestion_contract(self.current_user, session, contract.contract_id, selected_gestion.epicuser_id)
         text = f"Le gestionnaire {selected_gestion.username} a été attribué au contrat {contract} avec succès."

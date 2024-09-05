@@ -1,11 +1,13 @@
+import os
+import sys
 import re
 import questionary
 from datetime import datetime
 from rich.table import Table
 from rich import box
-import os
-import sys
 
+from rich.panel import Panel
+from rich.align import Align
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
@@ -54,8 +56,8 @@ class EventView:
             else:
                 str_support = ''
             fmt_date = '%d/%m/%Y'
-            debut_dates = f'du {e.date_started.strftime(fmt_date)}'
-            end_dates = f'\nau {e.date_ended.strftime(fmt_date)}'
+            debut_dates = f'{e.date_started.strftime(fmt_date)}'
+            end_dates = f'{e.date_ended.strftime(fmt_date)}'
             table.add_row(
                 str(e.event_id),
                 e.title,
@@ -181,8 +183,6 @@ class EventView:
         -----------
         Contract : Instance du contrat sélectionné ou None si aucun contrat n'est sélectionné.
         """
-        text = (f"Contrats disponibles: {all_contracts}")
-        console.print(text, justify="center", style="bold blue")
         choices = [f"{contract.contract_id} {contract.description}" for contract in all_contracts]
 
         selected_choice = questionary.select(
@@ -255,3 +255,39 @@ class EventView:
         return questionary.confirm(
             "Souhaitez-vous voir la totalité des évènements (Y) ou "
             "uniquement ceux qui vous sont associés (n)  ?", **kwargs).ask()
+
+    @classmethod
+    def display_event_info(cls, event) -> None:
+        """
+        Affiche les informations d'un contrat spécifique.
+
+        :param contract: Instance du contrat à afficher.
+        :type contract: Contract
+        """
+
+        if event.support_id:
+            str_support = str(event.support_id)
+        else:
+            str_support = ''
+        fmt_date = '%d/%m/%Y'
+
+        text = f'Event_ID {event.event_id}\n'
+        text += f'Titre: {event.title}\n'
+        text += f'Description: {event.description}\n'
+        text += f'Lieu: {event.location}\n'
+        text += f'Nombre de participants: {event.attendees}\n'
+        text += f'Date de début: {event.date_started.strftime(fmt_date)}\n'
+        text += f'Date de fin: {event.date_ended.strftime(fmt_date)}\n'
+        text += f'ID du contrat associé: {event.contract_id}\n'
+        text += f'ID du client associé: {event.customer_id}\n'
+        text += f'ID du support associé: {str_support}\n'
+        p = Panel(
+            Align.center(text, vertical='bottom'),
+            box=box.ROUNDED,
+            style='cyan',
+            title_align='center',
+            title='Informations de l`évènement')
+        console.print(p)
+
+        console.print("\nAppuyez sur Entrée pour continuer...")
+        input()

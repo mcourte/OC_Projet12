@@ -159,7 +159,8 @@ def is_authenticated(f):
             if user.state != 'A':
                 print("Erreur : Utilisateur inactif.")
                 raise PermissionError("User inactive")
-
+            print("Inside is_authenticated decorator")
+            print(f"Arguments passed: {args}, {kwargs}")
             # Assurez-vous de définir self.current_user
             cls.current_user = user
             return f(cls, session, *args, **kwargs)
@@ -203,12 +204,15 @@ def is_admin(f):
         try:
             decoded = decode_token(token, SECRET_KEY, ALGORITHM)
             if decoded.get('role') in {'ADM', 'Admin'}:
+                print("Inside is_authenticated decorator")
+                print(f"Arguments passed: {args}, {kwargs}")
                 return f(cls, session, *args, **kwargs)
             else:
                 raise PermissionError("User does not have admin permissions")
         except PermissionError as e:
             print(e)
             raise
+
     return decorator
 
 

@@ -22,7 +22,7 @@ class ContractView:
     """
 
     @classmethod
-    def display_list_contracts(cls, all_contracts, pager=False) -> None:
+    def display_list_contracts(cls, all_contracts) -> None:
         """
         Affiche la liste des contrats.
 
@@ -68,11 +68,7 @@ class ContractView:
                 text = f"Erreur inattendue lors du traitement des contrats : {e}"
                 console.print(text, style="bold red")
 
-        if pager:
-            with console.pager():
-                console.print(table)
-        else:
-            console.print(table)
+        console.print(table)
 
         # Après l'affichage de la liste, demander à l'utilisateur de continuer
         text = "\nAppuyez sur Entrée pour continuer..."

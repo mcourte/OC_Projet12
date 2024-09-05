@@ -26,10 +26,7 @@ class CustomerBase:
         """
         self.session = session
 
-    @sentry_activate
-    @is_authenticated
-    @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
-    def create_customer(self, session, customer_data):
+    def create_customer(session, customer_data):
         """
         Crée un nouveau client avec les informations fournies.
 
@@ -47,7 +44,6 @@ class CustomerBase:
         Customer
             Le client nouvellement créé.
         """
-        # Utilisation de .get() pour gérer les clés manquantes
         customer = Customer(
             first_name=customer_data.get('first_name'),
             last_name=customer_data.get('last_name'),
@@ -56,10 +52,11 @@ class CustomerBase:
             company_name=customer_data.get('company_name'),
             creation_time=datetime.utcnow(),
             update_time=datetime.utcnow(),
-            commercial_id=customer_data.get('commercial_id')  # Gestion de l'absence de commercial_id
+            commercial_id=customer_data.get('commercial_id')
         )
         session.add(customer)
         session.commit()
+        console.print(f"Client {customer.first_name} {customer.last_name} ajouté avec succès", style="bold green")
         return customer
 
     @sentry_activate
@@ -88,6 +85,7 @@ class CustomerBase:
 
         for key, value in data.items():
             setattr(customer, key, value)
+        console.print(f"Client {customer.first_name} {customer.last_name} mis à jour avec succès", style="bold green")
 
         session.commit()
 
@@ -95,7 +93,7 @@ class CustomerBase:
     @sentry_activate
     @is_authenticated
     @requires_roles('ADM', 'COM', 'Admin', 'Commercial')
-    def update_commercial_customer(cls, current_user, session, customer_id, commercial_id):
+    def update_commercial_customer(self, session, customer_id, commercial_id):
         """
         Met à jour le commercial attribué à un client.
 
@@ -117,6 +115,7 @@ class CustomerBase:
         ValueError
             Levée si aucun client n'est trouvé avec l'ID spécifié.
         """
+
         customer = session.query(Customer).filter_by(customer_id=customer_id).first()
         if not customer:
             raise ValueError("Aucun client trouvé avec l'ID spécifié.")

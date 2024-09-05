@@ -16,7 +16,7 @@ from controllers.user_controller import EpicUserBase, EpicUser
 from controllers.customer_controller import CustomerBase
 
 # Import Modèles
-from models.entities import Customer, Commercial
+from models.entities import Customer, Commercial, Admin
 
 # Import Views
 from views.user_view import UserView
@@ -136,7 +136,7 @@ class EpicTerminalCustomer:
             return
 
         # Mettre à jour le commercial du client
-        CustomerBase.update_commercial_customer(self.current_user, session, selected_customer_id, selected_commercial.epicuser_id)
+        CustomerBase.update_commercial_customer(session, selected_customer_id, selected_commercial.epicuser_id)
         text = f"Le commercial {selected_commercial.username} a été attribué au client {selected_customer_id} avec succès."
         console.print(text, style="cyan")
 
@@ -157,14 +157,13 @@ class EpicTerminalCustomer:
             console.print(text, style="bold red")
             return
 
-        roles = EpicUserBase.get_roles(self)
-        self.roles = roles
         data = CustomerView.prompt_data_customer()
         if self.current_user.role == 'COM':
             if isinstance(self.current_user, Commercial):
                 data['commercial_id'] = self.current_user.epicuser_id
-                customer = CustomerBase.create_customer(self.current_user, session, data)
+                customer = CustomerBase.create_customer(session, data)
         else:
+            customer = CustomerBase.create_customer(session, data)
             if CustomerView.prompt_confirm_commercial():
                 EpicTerminalCustomer.add_customer_commercial(self, session, customer)
 
@@ -196,10 +195,13 @@ class EpicTerminalCustomer:
 
         roles = EpicUserBase.get_roles(self)
         self.roles = roles
-
-        # Récupérer tous les clients associés à l'utilisateur actuel
-        customers = session.query(Customer).filter_by(commercial_id=self.current_user.epicuser_id).all()
-        customers_data = [{"name": f"{c.first_name} {c.last_name}", "value": c.customer_id} for c in customers]
+        if isinstance(self.current_user, Admin):
+            # Récupérer tous les clients associés à l'utilisateur actuel
+            customers = session.query(Customer).all()
+            customers_data = [{"name": f"{c.first_name} {c.last_name}", "value": c.customer_id} for c in customers]
+        else:
+            customers = session.query(Customer).filter_by(commercial_id=self.current_user.epicuser_id).all()
+            customers_data = [{"name": f"{c.first_name} {c.last_name}", "value": c.customer_id} for c in customers]
 
         # Vérifiez s'il y a des clients associés
         if not customers_data:
@@ -219,14 +221,13 @@ class EpicTerminalCustomer:
         customer = session.query(Customer).filter_by(customer_id=selected_customer_id).one_or_none()
         if customer:
             # Utilisation des attributs de l'objet client
-            title = f"Données du client {customer}"
+            CustomerView.display_customer(customer)
             # Afficher ou manipuler les données du client
-            console.print(title, style="bold cyan")
         else:
             text = "Aucun client trouvé avec cet ID."
             console.print(text, style="red")
             return  # Sortir si le client n'existe pas
-
+        session = session()
         # Mettre à jour le client avec les nouvelles données
         CustomerBase.update_customer(self.current_user, session, selected_customer_id)
 
@@ -269,8 +270,8 @@ class EpicTerminalCustomer:
             text = "Erreur : Le commercial sélectionné n'existe pas."
             console.print(text, style="bold red")
             return
-
+        customer_name = f"{customer.first_name} {customer.last_name}"
         # Mettre à jour le commercial du client
-        CustomerBase.update_commercial_customer(self.current_user, session, customer.customer_id, selected_commercial.epicuser_id)
-        text = f"Le commercial {selected_commercial.username} a été attribué au client {customer} avec succès."
+        CustomerBase.update_commercial_customer(session, customer.customer_id, selected_commercial.epicuser_id)
+        text = f"Le commercial {selected_commercial.username} a été attribué au client {customer_name} avec succès."
         console.print(text, style="cyan")
