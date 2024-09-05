@@ -4,13 +4,11 @@ import sys
 import sentry_sdk
 import logging
 
-# Configuration de base du logging
-logging.basicConfig(
-    level=logging.DEBUG,  # Niveau de log minimum
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # Format des messages de log
-)
-# Créer un logger pour ce module
-logger = logging.getLogger(__name__)
+# Désactiver tous les messages sauf CRITICAL
+logging.basicConfig(level=logging.CRITICAL)
+
+# Pour asyncio seulement (ou n'importe quelle autre bibliothèque spécifique)
+logging.getLogger('asyncio').setLevel(logging.CRITICAL)
 
 
 # Déterminez le chemin absolu du répertoire parent
