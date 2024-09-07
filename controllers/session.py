@@ -48,9 +48,10 @@ def create_token(user_data, secret=SECRET_KEY):
     payload = {
         "username": user_data['username'],
         "role": user_data['role'],
-        "exp": datetime.utcnow() + timedelta(minutes=30)  # Par exemple, 30 minutes
+        "exp": datetime.utcnow() + timedelta(minutes=180)  # Par exemple, 30 minutes
     }
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    print(f"Token généré : {token}")
     return token
 
 

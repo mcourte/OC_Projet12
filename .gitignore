@@ -12,3 +12,4 @@ alembic/
 .coveragerc
 session.json
 .flake8
+database.ini
