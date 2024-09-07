@@ -74,7 +74,7 @@ class EpicUser(Base):
     )
 
     role = Column(
-        ChoiceType(EPIC_ROLES, impl=String(length=1)),
+        ChoiceType(EPIC_ROLES, impl=String(length=3)),
         nullable=False)
     epicuser_id = Column(Integer, Sequence('user_id_seq'), primary_key=True)
     first_name = Column(String(50), nullable=False)
