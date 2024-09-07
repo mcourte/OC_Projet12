@@ -50,7 +50,6 @@ class EpicTerminalEvent:
 
     @sentry_activate
     @is_authenticated
-    @requires_roles('ADM', 'COM', 'GES', 'Admin', 'Commercial', 'Gestion')
     def update_event(self, session):
         """
         Permet à l'utilisateur de sélectionner un événement à modifier et de mettre à jour ses informations.
@@ -63,7 +62,10 @@ class EpicTerminalEvent:
 
             session = session()
             events = session.query(Event).all()
-
+            if self.current_user.role == 'SUP':
+                events = session.query(Event).filter_by(support_id=self.current_user.epicuser_id)
+            else:
+                events = session.query(Event).all()
             if events:
                 event = EventView.prompt_select_event(events)  # Sélection de l'événement
                 data = EventView.prompt_data_event()  # Récupération des nouvelles données de l'événement

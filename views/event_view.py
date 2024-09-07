@@ -155,8 +155,6 @@ class EventView:
         -----------
         str : La référence de l'évènement sélectionné.
         """
-        text = (f"Evènements disponibles: {all_events}")
-        console.print(text, justify="center", style="bold blue")
         choices = [f"{event.event_id} {event.title}" for event in all_events]
 
         selected_choice = questionary.select(

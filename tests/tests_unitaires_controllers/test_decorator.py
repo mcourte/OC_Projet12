@@ -122,8 +122,12 @@ class TestDecorators(unittest.TestCase):
         def dummy_function(cls, session):
             return "Success"
 
-        with self.assertRaises(PermissionError):
+        try:
             dummy_function(self, self.session)
+        except PermissionError as e:
+            self.assertEqual(str(e), "PermissionError: User role is SUP, required one of ('COM', 'ADM')")
+        else:
+            self.fail("PermissionError not raised")
 
     @patch('controllers.session.load_session')
     def test_requires_roles_token_not_found(self, mock_load_session):
@@ -133,8 +137,13 @@ class TestDecorators(unittest.TestCase):
         def dummy_function(cls, session):
             return "Success"
 
-        with self.assertRaises(PermissionError):
+        try:
             dummy_function(self, self.session)
+        except PermissionError as e:
+            self.assertEqual(str(e), "Token not found")
+        else:
+            self.fail("PermissionError not raised")
+
 
 
 if __name__ == '__main__':
