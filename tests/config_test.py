@@ -3,9 +3,9 @@ import sys
 import os
 import datetime
 import jwt
+import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
+from sqlalchemy.orm import sessionmaker, scoped_session
 # Add the root directory to PYTHONPATH
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
@@ -13,11 +13,50 @@ sys.path.insert(0, parent_dir)
 
 # Import the necessary controllers
 from controllers import user_controller, contract_controller, epic_controller, event_controller, customer_controller
-from config_init import Base, SECRET_KEY
-
+from config_init import Base, SECRET_KEY, ALGORITHM
+from controllers.epic_controller import EpicDatabase
 # Setup SQLAlchemy in-memory database for testing
 engine = create_engine('sqlite:///:memory:', echo=False)
 Session = sessionmaker(bind=engine)
+
+
+# Variable globale pour stocker le token
+TOKEN_CACHE = None
+
+
+@pytest.fixture(scope='session')
+def epic_database():
+    # Créer une instance de la base de données
+    db = EpicDatabase(database='test_db', host='localhost', user='user', password='password')
+    return db
+
+
+@pytest.fixture(scope='function')
+def test_session(epic_database):
+    # Créer une session de test
+    engine = epic_database.get_engine()
+    Session = scoped_session(sessionmaker(bind=engine))
+    session = Session()
+    yield session
+    session.remove()
+
+
+def generate_token(username, role, secret_key=SECRET_KEY, expiration_days=30):
+    expiration_date = datetime.datetime.utcnow() + datetime.timedelta(days=expiration_days)
+    payload = {
+        'username': username,
+        'role': role,
+        'exp': expiration_date
+    }
+    return jwt.encode(payload, secret_key, algorithm=ALGORITHM)
+
+
+def get_cached_token():
+    global TOKEN_CACHE
+    if TOKEN_CACHE is None:
+        # Génère et cache le token pour une utilisation future
+        TOKEN_CACHE = generate_token('mcourte', 'ADM')
+    return TOKEN_CACHE
 
 
 def setup_in_memory_database():

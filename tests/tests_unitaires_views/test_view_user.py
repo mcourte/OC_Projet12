@@ -88,9 +88,9 @@ def test_prompt_confirm_profil(mock_confirm):
 
 @patch('questionary.password')
 def test_prompt_password(mock_password):
-    mock_password.return_value.ask.return_value = 'password123'
+    mock_password.return_value.ask.return_value = 'newpassword'
     result = UserView.prompt_password()
-    assert result == {'password': 'password123'}
+    assert result == {'password': 'newpassword'}
 
 
 @patch('questionary.select')

@@ -1,7 +1,6 @@
 import os
 import sys
 import unittest
-import pytest
 from unittest.mock import patch, MagicMock
 from datetime import datetime
 from rich.console import Console
@@ -47,7 +46,6 @@ class TestEventView(unittest.TestCase):
             title_style="bold blue"
         )
 
-    @pytest.mark.unit
     @patch('questionary.text')
     def test_prompt_data_event(self, mock_text):
         title = 'Titre'
@@ -56,11 +54,20 @@ class TestEventView(unittest.TestCase):
         attendees = '10'
         date_started = '24/10/2024'
         date_ended = '25/10/2024'
-        result = {title, description, location, attendees, date_started, date_ended}
+        mock_text.return_value.ask.side_effect = [title, description, location, attendees, date_started, date_ended]
 
         result = EventView.prompt_data_event()
 
-        assert result == result
+        expected_result = {
+            'title': title,
+            'description': description,
+            'location': location,
+            'attendees': attendees,
+            'date_started': date_started,
+            'date_ended': date_ended
+        }
+
+        self.assertEqual(result, expected_result)
 
     @patch('questionary.select')
     @patch.object(Console, 'print')
@@ -132,3 +139,7 @@ class TestEventView(unittest.TestCase):
         result = EventView.prompt_filtered_events_support()
 
         self.assertTrue(result)
+
+
+if __name__ == '__main__':
+    unittest.main()

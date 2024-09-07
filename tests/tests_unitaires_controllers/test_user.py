@@ -1,8 +1,10 @@
 import unittest
+import pytest
 from unittest.mock import patch, MagicMock
 from controllers.user_controller import EpicUserBase
 from models.entities import EpicUser
 from config_test import generate_valid_token
+from terminal.terminal_contract import EpicTerminalContract
 
 
 class TestEpicBase(unittest.TestCase):
@@ -14,6 +16,12 @@ class TestEpicBase(unittest.TestCase):
         self.current_user.role = 'ADM'
         self.session.query().filter_by().first.return_value = self.current_user
         self.valid_token = generate_valid_token('openclassroom_projet12', self.current_user.username)
+
+    # Supprimer l'utilisateur spécifique s'il existe
+        user_to_delete = self.session.query(EpicUser).filter_by(username='jdoe').first()
+        if user_to_delete:
+            self.session.delete(user_to_delete)
+            self.session.commit()
 
     @patch('controllers.user_controller.EpicUserBase.create_user')
     def test_create_user_success(self, mock_create_user):
@@ -58,6 +66,33 @@ class TestEpicBase(unittest.TestCase):
         mock_reassign_contracts.return_value = True
         result = EpicUserBase.reassign_contracts('contract_id', 'user_id')
         self.assertTrue(result)
+
+    def test_user_missing_required_field():
+        with pytest.raises(ValueError):
+            # Créer un utilisateur sans fournir un champ requis, par exemple 'email'
+            EpicUserBase(password='password', first_name='Admin', last_name='User', role='Commercial')
+
+    def test_valid_user_role():
+        user = EpicUserBase(password='password', first_name='Admin', last_name='User', role='Admin')
+        assert user.role == 'Admin'
+
+    def test_invalid_user_role():
+        with pytest.raises(ValueError):
+            EpicUserBase(password='password', first_name='Admin', last_name='User', role='InvalidRole')
+
+    def test_user_with_contracts(self):
+        user = EpicUserBase(password='password', first_name='Admin', last_name='User', role='Admin')
+        contract1 = EpicTerminalContract(user=user, contract_id=1)
+        contract2 = EpicTerminalContract(user=user, contract_id=2)
+        self.session.add(user)
+        self.session.commit()
+
+        assert len(user.contracts) == 2
+
+    def test_user_edge_case():
+        user = EpicUserBase(password='password', role='Commercial')  # Cas limite, nom vide
+        with pytest.raises(ValueError):
+            user.validate()  # Validation échoue pour nom vide
 
 
 if __name__ == '__main__':

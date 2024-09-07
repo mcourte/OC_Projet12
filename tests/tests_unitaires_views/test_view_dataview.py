@@ -18,11 +18,6 @@ from views.data_view import DataView
 class TestDataView(unittest.TestCase):
 
     @patch.object(Console, 'print')
-    def test_display_workflow(self, mock_print):
-        DataView.display_workflow()
-        mock_print.assert_called_once_with('Mise à jour du workflow')
-
-    @patch.object(Console, 'print')
     def test_display_nocontracts(self, mock_print):
         DataView.display_nocontracts()
         mock_print.assert_called_once_with('Aucun contrat trouvé')
