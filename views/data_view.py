@@ -18,13 +18,6 @@ class DataView:
     """
 
     @classmethod
-    def display_workflow(cls):
-        """
-        Affiche un message indiquant la mise à jour du workflow.
-        """
-        console.print('Mise à jour du workflow')
-
-    @classmethod
     def display_nocontracts(cls):
         """
         Affiche un message indiquant qu'aucun contrat n'a été trouvé.

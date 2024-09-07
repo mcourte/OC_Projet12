@@ -1,5 +1,6 @@
 import questionary
 from .console_view import console
+import re
 
 
 class AuthenticationView:
@@ -51,3 +52,45 @@ class AuthenticationView:
         """
         text = f'La base {name} est opérationnelle'
         console.print(text, style="green")
+
+    @classmethod
+    def prompt_baseinit(cls, **kwargs):
+        """
+        Demande les informations nécessaires pour initialiser une nouvelle base de données.
+        Paramètres :
+        ------------
+        **kwargs : Arguments supplémentaires pour la fonction questionary.text et questionary.password.
+        Retourne :
+        -----------
+        tuple : Un tuple contenant le nom de la base de données, l'identifiant administrateur,
+        le mot de passe administrateur et le port.
+        """
+        basename = questionary.text(
+            "Nom de votre base de données:",
+            validate=lambda text: True,
+            **kwargs).ask()
+        if basename is None:
+            raise KeyboardInterrupt
+
+        username = questionary.text(
+            "Identifiant administrateur:",
+            validate=lambda text: True
+            if re.match(r"^[a-zA-Z]+$", text)
+            else "Seul des caractères alpha sont autorisés",
+            **kwargs).ask()
+        if username is None:
+            raise KeyboardInterrupt
+        password = questionary.password(
+            "Password administrateur:", **kwargs).ask()
+        if password is None:
+            raise KeyboardInterrupt
+
+        port = questionary.text(
+            "Port:",
+            validate=lambda text: True
+            if re.match(r"^[0-9]+$", text)
+            else "Seul des chiffres sont autorisés",
+            **kwargs).ask()
+        if port is None:
+            port = '5432'
+        return (basename, username, password, port)
