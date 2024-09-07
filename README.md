@@ -60,7 +60,7 @@ Plusieurs possibilités s'offrent à vous suivant le rôle que vous souhaitez av
 
 |   Nom d'utilisateur   |   Mot de passe |   Rôle |
 |---    |:-:    |:-:    |
-|   mcourte |   your_password   |   Admin |
+|   mcourte |   password   |   Admin |
 |   jcourte   |   password |   Commercial|
 |   xjouppe   |   password  |   Commercial |
 |   hstarck   |   password  |   Commercial |
