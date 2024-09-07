@@ -82,6 +82,9 @@ class EpicDatabase:
         """
         return f'{self.name} database'
 
+    def get_engine_url(self):
+        return self.url
+
     def database_disconnect(self):
         """
         Déconnecte la session de la base de données et ferme le moteur.
@@ -103,15 +106,14 @@ class EpicDatabase:
         password : str
             Le mot de passe pour l'utilisateur.
         """
-        create_database(self.url)
+        if not database_exists(self.url):
+            create_database(self.url)
+
         # Initialisation de la structure de la base de données
         engine = create_engine(self.url)
         Base.metadata.create_all(engine)
         self.session = scoped_session(sessionmaker(bind=engine))
         self.db_users = EpicUserBase(self.session)
-        # Ajout des données initiales
-        self.first_initdb(username, password)
-        self.session.remove()
 
     def check_connection(self, username, password) -> EpicUser:
         """

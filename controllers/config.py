@@ -43,17 +43,17 @@ class Config:
         else:
             raise NoSectionPostgresql(filename=self.filename, section=section)
 
-    def create_config(self, username, password):
+    def create_config(self, name_db, username, password, port):
         """
         Crée un fichier de configuration avec des valeurs spécifiées.
         """
         with open(self.filename, 'w') as configfile:
             configfile.write('[postgresql]\n')
-            configfile.write('DATABASE = app_db\n')
+            configfile.write(f'DATABASE = {name_db}\n')
             configfile.write('HOST = localhost\n')
             configfile.write(f'USER = {username}\n')
             configfile.write(f'PASSWORD = {password}\n')
-            configfile.write('PORT = 5432\n')
+            configfile.write(f'PORT = {port}\n')
 
 
 class FileNotExists(Exception):

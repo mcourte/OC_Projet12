@@ -106,7 +106,7 @@ class EpicBase:
 
                 token = create_token(user_dict, self.env.SECRET_KEY)
                 create_session(user_dict, token)
-
+                print(token)
                 text = "Connexion réussie"
                 console.print(text, style="bold blue")
                 return True
@@ -201,3 +201,18 @@ class EpicBase:
             self.current_user = user  # Assurez-vous de définir current_user ici
             return True
         return False
+
+    @classmethod
+    def initbase(cls):
+        """
+        Initialise la base de données et crée un fichier de configuration.
+        Demande à l'utilisateur de saisir les informations nécessaires pour la configuration,
+        puis crée la base de données, la configure, et crée les tables.
+        """
+        clear_session()
+        values = AuthenticationView.prompt_baseinit()
+        print(f"Valeurs retournées: {values}")
+        Config().create_config(*values)
+        db = EpicDatabase(database=values[0], host='localhost', user=values[1], password=values[2], port=int(values[3]))
+        db.database_creation(username=values[1], password=values[2])
+        AuthenticationView.display_database_connection(values[0])

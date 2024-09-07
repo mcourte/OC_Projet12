@@ -40,11 +40,9 @@ def main():
     pass
 
 
-# Ajouter les sous-commandes de epic_cli au groupe principal
 main.add_command(epic_cli.start)
 main.add_command(epic_cli.logout)
 main.add_command(epic_cli.initbase)
-
 if __name__ == '__main__':
     sentry_activate()
     main()
