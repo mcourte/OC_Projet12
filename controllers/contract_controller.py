@@ -196,13 +196,10 @@ class ContractBase:
         ValueError
             Levée si aucun contrat n'est trouvé avec l'ID spécifié.
         """
-        print("Entrée dans la fonction signed")
 
         # Vérification de la session
         if not isinstance(session, Session):
             raise TypeError(f"La session n'est pas valide. Type attendu : Session, obtenu : {type(session)}")
-        print(f"contract_id : {contract_id} - type : {type(contract_id)}")
-        print(f"session : {session} - type : {type(session)}")
 
         contract = session.query(Contract).filter_by(contract_id=contract_id).first()
         if not contract:
