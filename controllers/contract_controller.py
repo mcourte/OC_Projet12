@@ -54,18 +54,18 @@ class ContractBase:
         Contract : Le contrat créé.
         """
         contract = Contract(
-            description=data.get('description'),
-            total_amount=data.get('total_amount'),
-            remaining_amount=data.get('remaining_amount'),
+            description=data['description'],
+            total_amount=data['total_amount'],
+            remaining_amount=data['remaining_amount'],
             state="C",
-            customer_id=data.get('customer_id'),
+            customer_id=data['customer_id'],
             paiement_state="N",
-            commercial_id=data.get('commercial_id'),
-            gestion_id=data.get('gestion_id')
+            commercial_id=data['commercial_id'],
+            gestion_id=data['gestion_id']
         )
         session.add(contract)
         session.commit()
-        console.print(f"Le contrat {contract.contract_id} à été crée avec succès.")
+        console.print(f"Le contrat {contract.contract_id} a été créé avec succès.")
         return contract
 
     @sentry_activate

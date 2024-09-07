@@ -64,13 +64,13 @@ class EpicDashboard:
                     self.database.users.create_user(self.session)
                 if self.gestion.current_user.role.code in {'ADM'}:
                     self.database.users.inactivate_user(self.session)
+                if self.gestion.current_user.role.code in {'SUP'}:
+                    self.database.events.update_event(self.session)
             case '08':
                 if self.gestion.current_user.role.code in {'GES'}:
                     self.database.users.inactivate_user(self.session)
                 if self.gestion.current_user.role.code in {'COM'}:
                     self.database.customers.update_customer(self.session)
-                if self.gestion.current_user.role.code in {'SUP'}:
-                    self.database.events.update_event(self.session)
                 if self.gestion.current_user.role.code in {'ADM'}:
                     self.database.customers.create_customer(self.session)
             case '09':

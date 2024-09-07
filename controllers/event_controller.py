@@ -67,7 +67,6 @@ class EventBase:
 
     @staticmethod
     @sentry_activate
-    @requires_roles('ADM', 'COM', 'GES', 'Admin', 'Commercial', 'Gestion')
     def update_event(event_id, data, session):
         """
         Met à jour un événement existant avec les nouvelles données.

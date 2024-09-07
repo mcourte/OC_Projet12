@@ -271,7 +271,7 @@ def requires_roles(*roles):
         @wraps(f)
         def wrapped(cls, session, *args, **kwargs):
             token = load_session()
-            if token is None:
+            if not token:
                 raise PermissionError("Token not found")
 
             try:
