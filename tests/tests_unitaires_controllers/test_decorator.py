@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch, Mock
-from controllers.decorator import is_commercial, is_support, is_authenticated, is_admin, requires_roles
+from controllers.decorator import is_commercial, is_authenticated, is_admin, requires_roles
 from models.entities import EpicUser
 from config_test import SECRET_KEY, ALGORITHM
 
@@ -143,7 +143,6 @@ class TestDecorators(unittest.TestCase):
             self.assertEqual(str(e), "Token not found")
         else:
             self.fail("PermissionError not raised")
-
 
 
 if __name__ == '__main__':

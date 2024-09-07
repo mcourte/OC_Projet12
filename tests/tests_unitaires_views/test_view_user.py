@@ -1,7 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from views.user_view import UserView
-from views.data_view import DataView
 from enum import Enum
 
 
