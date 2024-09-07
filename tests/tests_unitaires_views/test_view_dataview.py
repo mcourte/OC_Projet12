@@ -1,8 +1,7 @@
 import sys
-import pytest
 import os
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 from rich.panel import Panel
 from rich.console import Console, Align
 from rich import box
@@ -38,9 +37,10 @@ class TestDataView(unittest.TestCase):
         DataView.display_data_update()
         mock_print.assert_called_once_with('Vos modifications ont été enregistrées')
 
-    @patch.object(Console, 'print')
-    @patch('views.console_view.Panel', autospec=True)
-    def test_display_profil(self, mock_panel, mock_print):
+    @patch('rich.console.Console.print')
+    def test_display_profil(self, mock_print):
+        # Mocking Console.print
+
         # Création d'un mock pour l'utilisateur
         mock_user = MagicMock()
         mock_user.first_name = 'John'
@@ -49,23 +49,29 @@ class TestDataView(unittest.TestCase):
         mock_user.role.value = 'Admin'
         mock_user.state.value = 'Active'
 
-        # Configure le mock Panel pour vérifier les appels
-        mock_panel.return_value = Panel(
-            Align.center('Prénom: John\nNom: Doe\nEmail: john.doe@example.com\nRôle: Admin\nÉtat: Active\n', vertical='bottom'),
-            box=box.ROUNDED,
-            style='cyan',
-            title_align='center',
-            title='Mes informations'
-        )
-
+        # Appel à la méthode display_profil
         DataView.display_profil(mock_user)
 
-        # Vérifier que Panel a été appelé avec les bons arguments
-        mock_panel.assert_called_once_with(
-            Align.center('Prénom: John\nNom: Doe\nEmail: john.doe@example.com\nRôle: Admin\nÉtat: Active\n', vertical='bottom'),
+        # Définir le texte attendu à afficher dans le Panel
+        expected_text = (
+            "Prénom: John\n"
+            "Nom: Doe\n"
+            "Email: john.doe@example.com\n"
+            "Rôle: Admin\n"
+            "État: Active\n"
+        )
+
+        # Définir le Panel attendu
+        expected_panel = Panel(
+            Align.center(expected_text, vertical='bottom'),
             box=box.ROUNDED,
             style='cyan',
             title_align='center',
             title='Mes informations'
         )
-        mock_print.assert_called_once_with(mock_panel.return_value)
+
+        # Appels attendus
+        call_1 = call(expected_panel)
+
+        # Vérification des appels à Console.print
+        mock_print.assert_has_calls([call_1])

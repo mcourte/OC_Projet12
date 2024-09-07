@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 from rich.panel import Panel
 from rich.columns import Columns
-import pytest
+
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))

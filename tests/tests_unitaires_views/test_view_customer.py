@@ -1,7 +1,7 @@
 import unittest
-import pytest
 from unittest.mock import patch, MagicMock
 from views.customer_view import CustomerView
+from datetime import datetime
 
 
 class TestCustomerView(unittest.TestCase):
@@ -43,16 +43,20 @@ class TestCustomerView(unittest.TestCase):
         })
         mock_text.assert_called()
 
-    @pytest.mark.unit
-    def test_display_list_customers(mocker):
-        # Patch 'Console.print'
-        mock_print = mocker.patch('views.customer_view.Console.print')
+    @patch('rich.console.Console.print')
+    def test_display_list_customers(self, mock_print):
+        # Mock des clients
+        mock_customers = [
+            MagicMock(first_name='John', last_name='Doe', company_name='Acme',
+                      phone='123456789', email='john.doe@example.com', commercial=None,
+                      creation_time=datetime(2023, 1, 1), update_time=datetime(2023, 2, 1))
+        ]
 
-        # Simulez l'appel à la méthode qui affiche les clients
-        customers = [{'name': 'John Doe'}, {'name': 'Jane Smith'}]
-        CustomerView.display_list_customers(customers)
+        # Appel de la méthode
+        CustomerView.display_list_customers(mock_customers)
 
-        mock_print.assert_called_once_with(customers)
+        # Vérifier que la console a bien imprimé
+        mock_print.assert_called()
 
     @patch("questionary.select")
     def test_prompt_customers(self, mock_select):

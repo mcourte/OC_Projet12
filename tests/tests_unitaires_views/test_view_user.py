@@ -3,8 +3,6 @@ from unittest.mock import patch, MagicMock
 from views.user_view import UserView
 from views.data_view import DataView
 from enum import Enum
-from rich.align import Align
-from rich import box
 
 
 class RoleEnum(Enum):
@@ -137,46 +135,23 @@ def test_prompt_select_gestion(mock_select):
     assert selected_gestion == 'jdoe'
 
 
-@patch('views.console_view.Panel')
-@patch('views.console_view.Console.print')
-def test_display_profil(self, mock_panel, mock_print):
-
-    # Créez un mock pour l'utilisateur
-    mock_user = MagicMock()
-    mock_user.first_name = 'John'
-    mock_user.last_name = 'Doe'
-    mock_user.email = 'john.doe@example.com'
-    mock_user.role.value = 'Admin'
-    mock_user.state.value = 'Active'
-
-    # Configurez le mock Panel pour renvoyer un panel simulé
-    mock_panel.return_value = MagicMock()
-
-    # Appelez la méthode à tester
-    DataView.display_profil(mock_user)
-
-    # Vérifiez que Panel a été appelé avec les bons arguments
-    mock_panel.assert_called_once_with(
-        Align.center(
-            'Prénom: John\nNom: Doe\nEmail: john.doe@example.com\nRôle: Admin\nÉtat: Active\n',
-            vertical='bottom'
-        ),
-        box=box.ROUNDED,
-        style='cyan',
-        title_align='center',
-        title='Mes informations'
-    )
-
-    # Vérifiez que Console.print a été appelé avec le panel
-    mock_panel.assert_called_once_with(mock_user)
-
-
 @patch('questionary.select')
 def test_prompt_select_users(self, mock_select):
-    mock_select.return_value.ask.return_value = 'John Doe'
-    
-    users = [MagicMock(first_name="John", last_name="Doe"), MagicMock(first_name="Jane", last_name="Smith")]
-    
-    result = UserView.prompt_select_users(users)
-    
-    assert result == 'John Doe'
+    # Liste factice d'utilisateurs
+    mock_users = [
+        MagicMock(first_name='John', last_name='Doe'),
+        MagicMock(first_name='Jane', last_name='Smith')
+    ]
+
+    # Définir la réponse de questionary
+    mock_select.return_value.ask.return_value = "John - Doe"
+
+    # Appeler la méthode
+    selected_user = DataView.prompt_select_users(mock_users)
+
+    # Vérifier que l'utilisateur correct a été sélectionné
+    self.assertEqual(selected_user.first_name, 'John')
+    self.assertEqual(selected_user.last_name, 'Doe')
+
+    # Vérifier que questionary.select a bien été appelé
+    mock_select.assert_called_once()

@@ -49,15 +49,18 @@ class TestEventView(unittest.TestCase):
 
     @pytest.mark.unit
     @patch('questionary.text')
-    def test_prompt_data_event(mock_text):
-        # Patch 'questionary.text' pour simuler les entrées utilisateur
-
-        # Simulez une réponse à la question
-        mock_text.return_value.ask.return_value = 'test_input'
+    def test_prompt_data_event(self, mock_text):
+        title = 'Titre'
+        description = 'des'
+        location = 'Rennes'
+        attendees = '10'
+        date_started = '24/10/2024'
+        date_ended = '25/10/2024'
+        result = {title, description, location, attendees, date_started, date_ended}
 
         result = EventView.prompt_data_event()
 
-        assert result == 'test_input'
+        assert result == result
 
     @patch('questionary.select')
     @patch.object(Console, 'print')

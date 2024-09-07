@@ -3,7 +3,6 @@ import sys
 from rich.panel import Panel
 from rich import box
 from rich.align import Align
-
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../'))
@@ -50,7 +49,9 @@ class DataView:
     def display_profil(cls, e):
         """
         Affiche les informations de profil d'un utilisateur.
-
+        Paramètres :
+        ------------
+        e (User) : Instance de l'utilisateur dont les informations doivent être affichées.
         :param e: Instance de l'utilisateur dont les informations doivent être affichées.
         :type e: User
         """

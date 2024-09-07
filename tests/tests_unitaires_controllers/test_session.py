@@ -1,7 +1,6 @@
 import os
 import sys
 import unittest
-import pytest
 from unittest.mock import patch, MagicMock, mock_open
 import jwt
 # Déterminez le chemin absolu du répertoire parent
@@ -14,7 +13,7 @@ print(parent_dir)
 
 # Imports des fonctions à tester depuis le fichier cible
 from controllers.session import (
-    create_token, save_session, load_session, clear_session,
+    create_token, load_session, clear_session,
     renew_session, get_current_user, force_refresh_token, serialize_user
 )
 
@@ -66,12 +65,14 @@ class TestEpicFunctions(unittest.TestCase):
 
     @patch('controllers.session.get_current_user')
     def test_get_current_user(self, mock_get_current_user):
-        user = {'username': 'tuser'}
-        mock_get_current_user.return_value = user
-        
+        mock_user = {'username': 'tuser'}
+        mock_get_current_user.return_value = mock_user
+
+        # Assurez-vous que `get_current_user` est bien appelé
         result = get_current_user()
-        
-        assert result == user
+
+        # Vérifier le résultat
+        self.assertEqual(result, mock_user)
 
     @patch('controllers.session.save_session')
     def test_save_session(self, mock_save_session):

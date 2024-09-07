@@ -3,8 +3,6 @@ from unittest.mock import patch, MagicMock
 from controllers.user_controller import EpicUserBase
 from models.entities import EpicUser
 from config_test import generate_valid_token
-import pytest
-from controllers.session import decode_token
 
 
 class TestEpicBase(unittest.TestCase):
@@ -24,16 +22,23 @@ class TestEpicBase(unittest.TestCase):
         result = EpicUserBase.create_user('pmontgomrry', 'password')
         self.assertTrue(result)
 
-    @pytest.mark.unit
     @patch('controllers.session.decode_token')
-    def test_set_activate_inactivate(mock_decode_token):
-        # Patch 'decode_token' pour qu'il renvoie un payload valide
-        mock_decode_token = {'username': 'tuser'}
+    def test_set_activate_inactivate(self, mock_decode_token):
+        mock_decode_token.return_value = {'username': 'jdoe'}
 
-        # Simulez une action qui appelle decode_token
-        result = decode_token()
+        # Simuler une session et un utilisateur
+        mock_session = MagicMock()
+        mock_user = MagicMock(username='jdoe', state='A')
+        mock_session.query.return_value.filter_by.return_value.first.return_value = mock_user
 
-        assert result['username'] == 'tuser'
+        # Générer un token valide
+        valid_token = generate_valid_token('openclassroom_projet12', 'jdoe')
+
+        # Appeler la méthode avec le token valide
+        EpicUserBase.set_activate_inactivate(mock_session, valid_token)
+
+        # Vérifier que l'état de l'utilisateur a été modifié
+        self.assertEqual(mock_user.state, 'I')
 
     @patch('controllers.user_controller.EpicUserBase.update_user')
     def test_update_user(self, mock_update_user):
