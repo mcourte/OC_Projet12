@@ -48,13 +48,13 @@ class CustomerView:
         :raises KeyboardInterrupt: Si l'utilisateur appuie sur Ctrl+C.
         """
         first_name = questionary.text(
-            "Nom :",
+            "Prénon :",
             validate=lambda text: True
             if re.match(regexformat['all_nospace'][0], text)
             else regexformat['all_nospace'][1]).ask()
 
         last_name = questionary.text(
-            "Prénom:",
+            "Nom:",
             validate=lambda text: True
             if re.match(regexformat['all_letters'][0], text)
             else regexformat['all_letters'][1]).ask()
