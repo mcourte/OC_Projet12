@@ -18,6 +18,7 @@ DATABASE_URL = f'postgresql+psycopg2://{db_user}:{db_password}@{db_host}/{db_nam
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'default_secret_key')
 TOKEN_DELTA = os.getenv('TOKEN_DELTA', '3600')
+ALGORITHM = "HS256"
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

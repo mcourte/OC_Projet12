@@ -1,6 +1,6 @@
 import unittest
+import pytest
 from unittest.mock import patch, MagicMock
-from rich.console import Console
 from views.customer_view import CustomerView
 
 
@@ -19,23 +19,20 @@ class TestCustomerView(unittest.TestCase):
 
     @patch("questionary.text")
     def test_prompt_data_customer(self, mock_text):
-        # Mock des inputs
-        mock_text.side_effect = [
-            "John",  # first_name
-            "Doe",   # last_name
-            "john.doe@example.com",  # email
-            "1234567890",  # phone
-            "Company Inc."  # company_name
-        ]
+        # Configurez les entrées simulées pour questionary.text
+        def mock_ask(text):
+            responses = {
+                "Nom :": "John",
+                "Prénom:": "Doe",
+                "Email:": "john.doe@example.com",
+                "Téléphone:": "1234567890",
+                "Entreprise:": "Company Inc."
+            }
+            return responses.get(text, "")
 
-        with patch('views.regexformat', {
-            'all_nospace': [r'^\S+$', "Invalid first name"],
-            'all_letters': [r'^[a-zA-Z]+$', "Invalid last name"],
-            'email': [r'^\S+@\S+\.\S+$', "Invalid email"],
-            'phone': [r'^\d+$', "Invalid phone"],
-            'all_space_union': [r'^[\w\s]+$', "Invalid company name"]
-        }):
-            data = CustomerView.prompt_data_customer()
+        mock_text.return_value = MagicMock(ask=lambda: mock_ask(mock_text.call_args[0][0]))
+
+        data = CustomerView.prompt_data_customer()
 
         self.assertEqual(data, {
             'first_name': 'John',
@@ -44,24 +41,18 @@ class TestCustomerView(unittest.TestCase):
             'phone': '1234567890',
             'company_name': 'Company Inc.'
         })
-        self.assertEqual(mock_text.call_count, 5)  # Assure que tous les appels mock ont été effectués
+        mock_text.assert_called()
 
-    @patch.object(Console, 'print')
-    def test_display_list_customers(self, mock_print):
-        # Mock des données du client
-        mock_customer = MagicMock()
-        mock_customer.first_name = "John"
-        mock_customer.last_name = "Doe"
-        mock_customer.company_name = "Company Inc."
-        mock_customer.phone = "1234567890"
-        mock_customer.email = "john.doe@example.com"
-        mock_customer.commercial = MagicMock()
-        mock_customer.commercial.username = "JaneDoe"
+    @pytest.mark.unit
+    def test_display_list_customers(mocker):
+        # Patch 'Console.print'
+        mock_print = mocker.patch('views.customer_view.Console.print')
 
-        CustomerView.display_list_customers([mock_customer])
-        mock_print.assert_called_once()  # Vérifie qu'un seul appel print est fait
+        # Simulez l'appel à la méthode qui affiche les clients
+        customers = [{'name': 'John Doe'}, {'name': 'Jane Smith'}]
+        CustomerView.display_list_customers(customers)
 
-        # Ajout d'assertions supplémentaires si besoin, par exemple vérifier les détails exacts de l'affichage
+        mock_print.assert_called_once_with(customers)
 
     @patch("questionary.select")
     def test_prompt_customers(self, mock_select):

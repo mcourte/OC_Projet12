@@ -31,6 +31,11 @@ class EpicUserBase:
         self.session = session
         self.user = user
 
+    def get_user_info(self):
+        if self.user:
+            return self.user
+        return None
+
     @staticmethod
     def create_user(session, data_profil):
         """
@@ -383,22 +388,23 @@ class EpicUserBase:
             text_l2 = "Veuillez réaffecter les Contrats/Clients/Evènement qui lui sont associés"
             message = text + text_l2
             console.print(message, style="bold red")
+            if UserView.prompt_delete_user():
 
-            if user.role.code == 'COM':
-                self.reassign_customers(session, user)
-            elif user.role.code == 'GES':
-                self.reassign_contracts(session, user)
-            elif user.role.code == 'SUP':
-                self.reassign_events(session, user)
+                if user.role.code == 'COM':
+                    self.reassign_customers(session, user)
+                elif user.role.code == 'GES':
+                    self.reassign_contracts(session, user)
+                elif user.role.code == 'SUP':
+                    self.reassign_events(session, user)
 
-            # Suppression de l'utilisateur
-            session.delete(user)
+                # Suppression de l'utilisateur
+                session.delete(user)
 
-            # Validation de la transaction
-            session.commit()
-            text = f"L'utilisateur '{user.username}' (ID {user.epicuser_id}) a été supprimé avec succès."
-            console.print(text, style="bold green")
-            return True
+                # Validation de la transaction
+                session.commit()
+                text = f"L'utilisateur '{user.username}' (ID {user.epicuser_id}) a été supprimé avec succès."
+                console.print(text, style="bold green")
+                return True
         except Exception as e:
             # Annulation de la transaction en cas d'erreur
             if isinstance(session, Session):  # Vérification supplémentaire

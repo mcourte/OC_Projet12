@@ -26,7 +26,7 @@ class TestContractView(unittest.TestCase):
         mock_contract.remaining_amount = 100
         mock_contract.total_amount = 1000
         mock_contract.state.value = "Active"
-        mock_contract.customer.commercial.username = "JaneDoe"
+        mock_contract.customer.commercial.username = "jdoe"
         mock_contract.gestion_id = "123"
         mock_contract.events = []
 
@@ -47,7 +47,7 @@ class TestContractView(unittest.TestCase):
         mock_contract.remaining_amount = 100
         mock_contract.state.value = "Active"
         mock_contract.events = []
-        mock_contract.customer.commercial.username = "JaneDoe"
+        mock_contract.customer.commercial.username = "jdoe"
 
         ContractView.display_contract_info(mock_contract)
         mock_print.assert_called()
@@ -55,10 +55,19 @@ class TestContractView(unittest.TestCase):
 
     @patch("questionary.text")
     def test_prompt_data_contract(self, mock_text):
-        # Mock the inputs from questionary
-        mock_text.side_effect = ["REF123", "Contract Description", "500"]
+        # Configurez les entrées simulées pour questionary.text
+        def mock_ask(text):
+            responses = {
+                "Référence:": "REF123",
+                "Description:": "Contract Description",
+                "Montant:": "500"
+            }
+            return responses.get(text, "")
 
-        with patch('your_module.regexformat', {
+        mock_text.return_value = MagicMock(ask=lambda: mock_ask(mock_text.call_args[0][0]))
+
+        # Mettez en place la configuration nécessaire pour regexformat
+        with patch('views.regexformat', {
             '3cn': [r'^[a-zA-Z]+$', "Invalid reference"],
             'all_letters': [r'^[a-zA-Z\s]+$', "Invalid description"],
             'numposmax': [r'^\d+$', "Invalid amount"]
@@ -70,12 +79,20 @@ class TestContractView(unittest.TestCase):
             'description': 'Contract Description',
             'total_amount': '500'
         })
-        mock_text.assert_called()
+        # Vérifiez que questionary.text a été appelé le bon nombre de fois
+        self.assertEqual(mock_text.call_count, 3)
 
     @patch("questionary.text")
     def test_prompt_data_paiement(self, mock_text):
-        # Mock the inputs from questionary
-        mock_text.side_effect = ["PAY123", "250"]
+        # Configurez les entrées simulées pour questionary.text
+        def mock_ask(text):
+            responses = {
+                "Référence:": "PAY123",
+                "Montant:": "250"
+            }
+            return responses.get(text, "")
+
+        mock_text.return_value = MagicMock(ask=lambda: mock_ask(mock_text.call_args[0][0]))
 
         data = ContractView.prompt_data_paiement()
 
@@ -83,7 +100,8 @@ class TestContractView(unittest.TestCase):
             'paiement_id': 'PAY123',
             'amount': '250'
         })
-        mock_text.assert_called()
+        # Vérifiez que questionary.text a été appelé le bon nombre de fois
+        self.assertEqual(mock_text.call_count, 2)
 
     @patch("questionary.confirm")
     def test_prompt_confirm_contract_state(self, mock_confirm):

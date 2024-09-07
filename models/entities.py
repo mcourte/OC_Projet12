@@ -421,7 +421,6 @@ class Event(Base):
     description = Column(String)
     location = Column(String)
     attendees = Column(Integer)
-    report = Column(String)
     date_started = Column(TIMESTAMP, nullable=False)
     date_ended = Column(TIMESTAMP, nullable=False)
 

@@ -81,7 +81,7 @@ class CustomerBase:
         data = CustomerView.prompt_data_customer(customer_id)
         customer = session.query(Customer).filter_by(customer_id=customer_id).first()
         if not customer:
-            raise ValueError("Aucun client n'a été trouvé.")
+            raise Exception("Le Client n'a pas été trouvé dans la base de données.")
 
         for key, value in data.items():
             setattr(customer, key, value)

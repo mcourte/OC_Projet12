@@ -179,9 +179,16 @@ def get_current_user():
         logging.error("Erreur : Aucun jeton trouvé dans la session.")
         return None
 
-    decoded = decode_token(token, SECRET_KEY, ALGORITHM)
-    if not decoded:
-        return None
+    try:
+        decoded = decode_token(token, SECRET_KEY, ALGORITHM)
+    except PermissionError:
+        # Si le jeton a expiré, on le renouvelle
+        logging.info("Le jeton a expiré. Tentative de renouvellement...")
+        new_token = force_refresh_token()
+        if new_token:
+            decoded = decode_token(new_token, SECRET_KEY, ALGORITHM)
+        else:
+            return None
 
     username = decoded.get('username')
     if not username:
@@ -210,7 +217,7 @@ def force_refresh_token():
         logging.warning("Aucun jeton trouvé dans la session.")
         return None
 
-    decoded = decode_token(token)
+    decoded = decode_token(token, SECRET_KEY, ALGORITHM)
     if not decoded:
         return None
 

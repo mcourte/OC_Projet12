@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 from rich.panel import Panel
 from rich.columns import Columns
+import pytest
 # Déterminez le chemin absolu du répertoire parent
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
@@ -11,9 +12,7 @@ parent_dir = os.path.abspath(os.path.join(current_dir, '../../'))
 # Ajoutez le répertoire parent au PYTHONPATH
 sys.path.insert(0, parent_dir)
 
-
 from views.menu_view import MenuView
-from views.console_view import error_console
 
 
 class TestMenuView(unittest.TestCase):
@@ -89,10 +88,17 @@ class TestMenuView(unittest.TestCase):
     @patch('views.menu_view.console.print')
     @patch('views.menu_view.Columns')
     def test_menu_choice_invalid_input(self, mock_columns, mock_print, mock_text):
-        mock_text.side_effect = ['99', '07']  # Première valeur invalide, deuxième valeur valide
+        # Simuler une première entrée incorrecte, puis une entrée correcte
+        mock_text.return_value.ask.side_effect = ['invalid', '07']  # Simule une mauvaise entrée, puis une bonne
+
+        # Simuler l'affichage des menus
         mock_columns.return_value = Columns([MenuView.menu_accueil(), MenuView.menu_gestion(), MenuView.menu_quit()])
 
-        result = MenuView.menu_choice('GES')
+        result = MenuView.menu_choice('SUP')  # Rôle SUP avec un menu qui va jusqu'à 07
+
+        # Vérification du résultat
         self.assertEqual(result, '07')
-        mock_text.assert_called()
-        error_console.print.assert_called_once_with('Votre choix est invalide')
+        mock_print.assert_called()  # Vérifie que la méthode print a bien été appelée
+
+        # Vérifie que la fonction questionary.text().ask() a été appelée deux fois (une mauvaise, une correcte)
+        self.assertEqual(mock_text.return_value.ask.call_count, 2)

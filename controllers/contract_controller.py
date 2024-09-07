@@ -87,7 +87,7 @@ class ContractBase:
             contract = session.query(Contract).filter_by(contract_id=contract_id).first()
 
             if not contract:
-                raise ValueError(f"Le contrat avec l'ID {contract_id} n'a pas été trouvé.")
+                raise Exception("Le Contrat n'a pas été trouvé dans la base de données.")
 
             # Mise à jour des données du contrat
             for key, value in data.items():
