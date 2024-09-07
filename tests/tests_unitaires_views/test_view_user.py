@@ -119,9 +119,9 @@ def test_display_list_users(mocker):
 
 @patch('questionary.text')
 def test_prompt_update_user(mock_text):
-    mock_text.return_value.ask.side_effect = ['John', 'Doe', 'newpassword']
+    mock_text.return_value.ask.side_effect = ['Choupette', 'Doe', 'newpassword']
     new_first_name, new_last_name, new_password = UserView.prompt_update_user(None)
-    assert new_first_name == 'John'
+    assert new_first_name == 'Choupette'
     assert new_last_name == 'Doe'
     assert new_password == 'newpassword'
 
@@ -135,23 +135,18 @@ def test_prompt_select_gestion(mock_select):
     assert selected_gestion == 'jdoe'
 
 
-@patch('questionary.select')
-def test_prompt_select_users(self, mock_select):
-    # Liste factice d'utilisateurs
-    mock_users = [
-        MagicMock(first_name='John', last_name='Doe'),
-        MagicMock(first_name='Jane', last_name='Smith')
-    ]
+def test_prompt_select_users(mocker):
+    mock_select = mocker.patch('questionary.select')
+    mock_select.return_value.ask.return_value = 'John - Doe'
 
-    # Définir la réponse de questionary
-    mock_select.return_value.ask.return_value = "John - Doe"
+    # Création de mocks pour les utilisateurs
+    mock_user = MagicMock()
+    mock_user.first_name = 'John'
+    mock_user.last_name = 'Doe'
+    all_users = [mock_user]
 
-    # Appeler la méthode
-    selected_user = DataView.prompt_select_users(mock_users)
+    # Appel à la méthode prompt_select_users
+    selected_user = UserView.prompt_select_users(all_users)
 
-    # Vérifier que l'utilisateur correct a été sélectionné
-    self.assertEqual(selected_user.first_name, 'John')
-    self.assertEqual(selected_user.last_name, 'Doe')
-
-    # Vérifier que questionary.select a bien été appelé
-    mock_select.assert_called_once()
+    # Vérification du résultat
+    assert selected_user == mock_user

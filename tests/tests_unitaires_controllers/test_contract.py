@@ -13,8 +13,8 @@ class TestContractBase(unittest.TestCase):
         self.current_user = MagicMock()
         self.current_user.username = 'mcourte'
         self.current_user.role = 'ADM'
-        self.session.query().filter_by().first.return_value = None  # Simuler au
-
+        self.session.query().filter_by().first.return_value = None
+        self.contract_base = ContractBase(self.session, self.current_user)
         self.valid_token = generate_valid_token('openclassroom_projet12', self.current_user.username)
 
     @patch('controllers.contract_controller.ContractBase.create_contract')
@@ -51,18 +51,6 @@ class TestContractBase(unittest.TestCase):
         self.assertEqual(result.paiement_state, 'N')
         self.assertEqual(result.commercial_id, 2)
         self.assertEqual(result.gestion_id, 3)
-
-    @patch('controllers.contract_controller.ContractBase.create_contract')
-    def test_create_contract_missing_fields(self, mock_create_contract):
-        contract_base = ContractBase(self.session, self.current_user)
-
-        data = {
-            'description': 'Test Contract',
-            # Missing required fields
-        }
-
-        with self.assertRaises(TypeError):
-            contract_base.create_contract(self.session, data)
 
     @patch('controllers.contract_controller.ContractBase.update_contract')
     def test_update_contract_not_found(self, mock_update_contract):

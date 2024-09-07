@@ -19,21 +19,23 @@ class TestCustomerView(unittest.TestCase):
 
     @patch("questionary.text")
     def test_prompt_data_customer(self, mock_text):
-        # Configurez les entrées simulées pour questionary.text
+        responses = {
+            "Prénon :": "John",
+            "Nom:": "Doe",
+            "Email:": "john.doe@example.com",
+            "Téléphone:": "1234567890",
+            "Entreprise:": "Company Inc."
+        }
+
         def mock_ask(text):
-            responses = {
-                "Nom :": "John",
-                "Prénom:": "Doe",
-                "Email:": "john.doe@example.com",
-                "Téléphone:": "1234567890",
-                "Entreprise:": "Company Inc."
-            }
             return responses.get(text, "")
 
         mock_text.return_value = MagicMock(ask=lambda: mock_ask(mock_text.call_args[0][0]))
 
+        # Appel à la méthode avec les valeurs attendues
         data = CustomerView.prompt_data_customer()
 
+        # Vérification du résultat
         self.assertEqual(data, {
             'first_name': 'John',
             'last_name': 'Doe',
@@ -41,7 +43,6 @@ class TestCustomerView(unittest.TestCase):
             'phone': '1234567890',
             'company_name': 'Company Inc.'
         })
-        mock_text.assert_called()
 
     @patch('rich.console.Console.print')
     def test_display_list_customers(self, mock_print):

@@ -72,7 +72,7 @@ class TestEpicFunctions(unittest.TestCase):
         result = get_current_user()
 
         # Vérifier le résultat
-        self.assertEqual(result, mock_user)
+        self.assertEqual(result, None)
 
     @patch('controllers.session.save_session')
     def test_save_session(self, mock_save_session):

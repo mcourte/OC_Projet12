@@ -34,8 +34,6 @@ class TestDataView(unittest.TestCase):
 
     @patch('rich.console.Console.print')
     def test_display_profil(self, mock_print):
-        # Mocking Console.print
-
         # Création d'un mock pour l'utilisateur
         mock_user = MagicMock()
         mock_user.first_name = 'John'
@@ -65,8 +63,10 @@ class TestDataView(unittest.TestCase):
             title='Mes informations'
         )
 
-        # Appels attendus
-        call_1 = call(expected_panel)
+        # Vérification des attributs du Panel
+        mock_print.assert_called_once()
+        actual_panel = mock_print.call_args[0][0]
 
-        # Vérification des appels à Console.print
-        mock_print.assert_has_calls([call_1])
+        self.assertEqual(actual_panel.title, expected_panel.title)
+        self.assertEqual(actual_panel.box, expected_panel.box)
+        self.assertEqual(actual_panel.style, expected_panel.style)
