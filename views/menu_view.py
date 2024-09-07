@@ -227,11 +227,11 @@ class MenuView:
                 case 'ADM': max_menu_idx = 19
                 case 'COM': max_menu_idx = 10
                 case 'SUP': max_menu_idx = 7
-            if result == 'Q':
-                return True
-            elif int(result) <= max_menu_idx:
-                return True
-            else:
+
+            try:
+                if result == 'Q' or int(result) <= max_menu_idx:
+                    return True
+            except ValueError:
                 return False
         text = "Menu du CRM d'EpicEvents"
         panel = Panel(Text(text, justify="center", style="bold blue"))

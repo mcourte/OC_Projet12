@@ -1,6 +1,8 @@
 from rich.console import Console
 from rich.progress import Progress
 import time
+from rich.panel import Panel
+
 
 console = Console(width=160)
 

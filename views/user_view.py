@@ -328,7 +328,6 @@ class UserView:
         -----------
         Instance de gestionnaire : Instance du gestionnaire sélectionné ou None si aucun gestionnaire n'est sélectionné.
         """
-        print(f"Gestionnaires disponibles : {all_users}")
         choices = [f"{user.first_name} - {user.last_name}" for user in all_users]
 
         selected_choice = questionary.select(
@@ -341,3 +340,19 @@ class UserView:
                 if f"{user.first_name} - {user.last_name}" == selected_choice:
                     return user
         return None
+
+    @classmethod
+    def prompt_delete_user(cls, **kwargs) -> bool:
+        """
+        Demande une confirmation à l'utilisateur pour supprimer un utilisateur.
+
+        Paramètres :
+        ------------
+        **kwargs : Arguments supplémentaires pour la fonction `questionary.confirm`.
+
+        Retourne :
+        -----------
+        bool : `True` si l'utilisateur confirme la suppression, sinon `False`.
+        """
+        return questionary.confirm(
+            " Etes-vous sûr de vouloir supprimer l'utilsateur ? Cette action ne peut être annulée ?", **kwargs).ask()
