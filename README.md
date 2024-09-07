@@ -60,13 +60,29 @@ Plusieurs possibilités s'offrent à vous suivant le rôle que vous souhaitez av
 
 |   Nom d'utilisateur   |   Mot de passe |   Rôle |
 |---    |:-:    |:-:    |
-|   mcourte |   password   |   Admin |
+|   mcourte |   your_password   |   Admin |
 |   jcourte   |   password |   Commercial|
-|   mthomas   |   password   |   Gestion 
+|   xjouppe   |   password  |   Commercial |
+|   hstarck   |   password  |   Commercial |
 |   idavid   |   password  |   Support |
+|   ccourte   |   password  |   Support |
+|   mblattner   |   password  |   Gestion |
+|   mthomas   |   password   |   Gestion 
 
 
 ## Etape 6 : L'application
 
 * Le menu varie en fonction du rôle de l'utilisateur
 * La base de données contient déjà quelques clients, contrats & évenèments pour que vous puissez tester chaque fonction
+
+
+## Etape 7 : Créer une database
+
+* Pour créer une nouvelle base de données vierge :
+```
+python3 main.py initdb
+```
+Les identifiants à rentrer sont ceux là :
+|   Nom d'utilisateur   |   Mot de passe |
+|---    |:-:    |
+|   mcourte |   your_password   |
