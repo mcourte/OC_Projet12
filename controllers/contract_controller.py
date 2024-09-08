@@ -56,12 +56,11 @@ class ContractBase:
         contract = Contract(
             description=data['description'],
             total_amount=data['total_amount'],
-            remaining_amount=data['remaining_amount'],
+            remaining_amount=data['total_amount'],
             state="C",
             customer_id=data['customer_id'],
             paiement_state="N",
-            commercial_id=data['commercial_id'],
-            gestion_id=data['gestion_id']
+            commercial_id=data['commercial_id']
         )
         session.add(contract)
         session.commit()
