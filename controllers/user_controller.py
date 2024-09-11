@@ -160,7 +160,7 @@ class EpicUserBase:
         }
         return role_map.get(role_name)
 
-    @sentry_activate
+
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def set_activate_inactivate(self, session, username):
@@ -170,42 +170,39 @@ class EpicUserBase:
         :param session: SQLAlchemy session instance
         :param username: Nom d'utilisateur à activer ou désactiver
         """
-        try:
-            # Vérifiez que session est une instance de SQLAlchemy Session ou scoped_session
-            if not isinstance(session, (Session, scoped_session)):
-                print(f"Erreur : Type trouvé : {type(session)}")
-                return
-            print(f"Type de session reçu : {type(session)}")
-            user = session.query(EpicUser).filter_by(username=username).first()
+        # Vérifiez que session est une instance de SQLAlchemy Session ou scoped_session
+        if not isinstance(session, (Session, scoped_session)):
+            print(f"Erreur : Type trouvé : {type(session)}")
+            return
+        print(f"Type de session reçu : {type(session)}")
+        user = session.query(EpicUser).filter_by(username=username).first()
 
-            if not user:
-                print(f"Utilisateur avec le nom {username} non trouvé.")
-                return
+        if not user:
+            print(f"Utilisateur avec le nom {username} non trouvé.")
+            return
 
-            print(f"Le statut actuel de {username} est {user.state}")
+        print(f"Le statut actuel de {username} est {user.state}")
+        
+        if user.state == 'A':
+            user.state = 'I'
+            text = f"{user.username} est Inactif.Veuillez réaffecter les Contrats/Clients/Evènement qui lui sont associés"
+            console.print(text)
+            if user.role == 'COM':
+                print(f"réaffectation rôle {user.role}")
+                self.reassign_customers(session, user)
+            elif user.role == 'GES':
+                print(f"réaffectation rôle {user.role}")
+                self.reassign_contracts(session, user)
+            elif user.role == 'SUP':
+                print(f"réaffectation rôle {user.role}")
+                self.reassign_events(session, user)
+            session.commit()
 
-            if user.state == 'A':
-                user.state = 'I'
-                text = f"{user.username} est Inactif.Veuillez réaffecter les Contrats/Clients/Evènement qui lui sont associés"
-                console.print(text)
-                if user.role == 'COM':
-                    print(f"réaffectation rôle {user.role}")
-                    self.reassign_customers(session, user)
-                elif user.role == 'GES':
-                    print(f"réaffectation rôle {user.role}")
-                    self.reassign_contracts(session, user)
-                elif user.role == 'SUP':
-                    print(f"réaffectation rôle {user.role}")
-                    self.reassign_events(session, user)
-                session.commit()
+        elif user.state == 'I':
+            user.state = 'A'
+            print(f"{user.username} est de nouveau Actif")
+            session.commit()
 
-            elif user.state == 'I':
-                user.state = 'A'
-                print(f"{user.username} est de nouveau Actif")
-                session.commit()
-
-        except Exception as e:
-            print(f"Erreur inattendue lors de la mise à jour de l'utilisateur: {e}")
 
     @sentry_activate
     @is_authenticated

@@ -158,7 +158,7 @@ class EpicTerminalUser:
         except KeyboardInterrupt:
             DataView.display_interupt()
 
-    @sentry_activate
+
     @is_authenticated
     @requires_roles('ADM', 'GES', 'Admin', 'Gestion')
     def inactivate_user(self, session) -> None:

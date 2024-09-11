@@ -217,8 +217,11 @@ def force_refresh_token():
         logging.warning("Aucun jeton trouvé dans la session.")
         return None
 
-    decoded = decode_token(token, SECRET_KEY, ALGORITHM)
-    if not decoded:
+    try:
+        # Tente de décoder le token même s'il est expiré, sans lever une erreur
+        decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_exp": False})
+    except jwt.InvalidTokenError as e:
+        logging.error(f"Erreur lors du décodage du jeton expiré : {e}")
         return None
 
     username = decoded.get('username')
@@ -231,7 +234,8 @@ def force_refresh_token():
         logging.error(f"Utilisateur {username} non trouvé dans la base de données.")
         return None
 
-    new_token = create_token(user.username, user.role)
+    # Renouvelle le token
+    new_token = create_token(serialize_user(user))
     save_session(new_token)
     return new_token
 
