@@ -13,3 +13,4 @@ alembic/
 session.json
 .flake8
 database.ini
+soutenance.pdf
