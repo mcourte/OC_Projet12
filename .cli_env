@@ -1,0 +1,8 @@
+PYTHONPATH=/home/magali/OpenClassrooms/Formation/Projet_12-V1:/home/magali/OpenClassrooms/Formation/Projet_12-V1/env/lib/python3.12/site-packages
+DB_USER=user
+DB_PASSWORD=password
+DB_HOST=localhost
+DB_NAME=app_db
+SECRET_KEY=openclassroom_projet12
+TOKEN_DELTA=18000
+DEFAULT_DATABASE=postgresql+psycopg2://postgres:password@localhost/app_db

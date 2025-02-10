@@ -3,12 +3,9 @@ env/
 __pycache__/
 .coverage
 /.coverage
-pytest.ini
-alembic.ini
 alembic/
 /sqlite3
 .vscode/
-.cli_env
 .coveragerc
 session.json
 .flake8
